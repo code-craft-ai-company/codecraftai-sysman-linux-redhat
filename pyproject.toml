@@ -1,19 +1,24 @@
 [tool.poetry]
-name = "<package name>"
-description = "<package description>"
+name = "automojo-sysman-linux-redhat"
+description = "System management package for automating the maintenance of software configurations on Red Hat Linux systems."
 version = "0.0.1"
-authors = []
+authors = ["Automation Mojo"]
 readme = "README.rst"
 license = "LICENSE.txt"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: POSIX"
+    "Operating System :: POSIX :: Linux"
 ]
 keywords = [
-    "python"
+    "python",
+    "automation",
+    "system-management",
+    "linux",
+    "redhat",
+    "maintenance"
 ]
-packages = [{include="mojo", from="source/packages"}]
+packages = [{include="automojo", from="source/packages"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
