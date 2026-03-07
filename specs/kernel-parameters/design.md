@@ -10,42 +10,69 @@ The kernel parameters feature is implemented as two cooperating classes in a sin
 - **`KernelModuleManager`** — manages kernel module load/unload at runtime and persisted
   boot-time load configuration under `/etc/modules-load.d/`.
 
-Both classes are constructed with the same `ICommandRunner` and `KernelManagerConfig`.
-The coordinator instantiates them directly and calls their methods to perform discrete
-maintenance actions.
+Both classes are constructed with the same `ICommandRunner` implementing the command runner
+interface. The coordinator instantiates them directly and calls their methods to perform
+discrete maintenance actions.
 
-All system interaction is delegated to the command runner.  No direct file system access
-or `subprocess` calls are made inside the module.
+All system interaction is delegated to the command runner. No direct file system access
+or `subprocess` calls are made inside the module. The feature works identically whether
+commands execute locally (via `LocalCommandRunner`) or remotely over SSH (via
+`SSHCommandRunner`). When using SSH, the coordinator can track reliability metrics and
+apply execution aspects without any changes to the manager code.
+
+**See Also:** [Command Runner Architecture](../command-runner-architecture/design.md) for
+details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│          Maintenance Coordinator        │  (external package)
-└──────────────┬──────────────────────────┘
-               │ calls
-       ┌───────┴────────────┐
-       ▼                    ▼
-┌──────────────────┐  ┌─────────────────────┐  automojo.sysman.linux.redhat.kernelparameters
-│ KernelParam      │  │ KernelModule        │
-│ Manager          │  │ Manager             │
-│                  │  │                     │
-│ read()           │  │ load()              │
-│ write()          │  │ unload()            │
-│ persist()        │  │ query_loaded()      │
-│ remove_persisted │  │ persist_load()      │
-│ apply_all()      │  │ remove_persisted_   │
-│ query_all()      │  │   load()            │
-└──────┬───────────┘  └──────┬──────────────┘
-       └──────────┬───────────┘
-                  │ delegates to
-                  ▼
-┌─────────────────────────────────────────┐
-│        ICommandRunner                   │  automojo-interfaces
-│  run(args, elevated=False) → RunResult  │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              Maintenance Coordinator                        │
+│  - Instantiates runner (Local or SSH)                      │
+│  - Configures aspects (optional)                           │
+│  - Injects runner into managers                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │ instantiates & injects
+               ┌─────────┴────────────┐
+               ▼                      ▼
+┌─────────────────────────┐  ┌─────────────────────────────────┐
+│ KernelParamManager      │  │ KernelModuleManager             │
+│                         │  │                                 │
+│ read()                  │  │ load()                          │
+│ write()                 │  │ unload()                        │
+│ persist()               │  │ query_loaded()                  │
+│ remove_persisted()      │  │ persist_load()                  │
+│ apply_all()             │  │ remove_persisted_load()         │
+│ query_all()             │  │                                 │
+└────────────┬────────────┘  └────────────┬────────────────────┘
+             └──────────────┬──────────────┘
+                            │ delegates to
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   ICommandRunner                            │
+│  run(args, elevated, cwd, env, timeout) → RunResult         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+┌──────────────────────┐      ┌──────────────────────┐
+│ LocalCommandRunner   │      │ SSHCommandRunner     │
+│ - subprocess.run()   │      │ - SSH connection     │
+│ - sudo for elevation │      │ - reliability metrics│
+│ - local execution    │      │ - connection retry   │
+└──────────────────────┘      └──────────────────────┘
+          │                             │
+          └──────────────┬──────────────┘
+                         │ optional
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Execution Aspects                        │
+│  - PersistenceAspect: audit logging                         │
+│  - RetryAspect: transient failure retry                     │
+│  - TimeoutAspect: global timeout policy                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -288,7 +315,174 @@ source/testroots/testbase/
 
 ---
 
+---
+
+## Usage Examples
+
+### Local Execution (Default)
+
+```python
+from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from automojo.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
+
+# Create local runner
+runner = LocalCommandRunner(LocalRunnerConfig())
+
+# Inject into kernel managers
+config = KernelManagerConfig(elevated=True, dry_run=False)
+param_mgr = KernelParamManager(runner, config)
+module_mgr = KernelModuleManager(runner, config)
+
+# Set runtime kernel parameters
+param_mgr.write("vm.swappiness", "10")
+param_mgr.write("net.ipv4.ip_forward", "1")
+
+# Make parameters persistent
+param_mgr.persist("vm.swappiness", "10")
+param_mgr.persist("net.ipv4.ip_forward", "1")
+
+# Apply all persistent parameters
+param_mgr.apply_all()
+
+# Query current values
+swappiness = param_mgr.read("vm.swappiness")
+print(f"Current swappiness: {swappiness}")
+
+# List all parameters
+all_params = param_mgr.query_all()
+print(f"Total parameters: {len(all_params)}")
+
+# Load kernel modules
+module_mgr.load("overlay")
+module_mgr.load("br_netfilter")
+
+# Make module loads persistent
+module_mgr.persist_load("overlay")
+module_mgr.persist_load("br_netfilter")
+
+# Check loaded modules
+loaded = module_mgr.query_loaded()
+print(f"Loaded modules: {len(loaded)}")
+```
+
+### SSH Execution with Reliability Tracking
+
+```python
+from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from automojo.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
+
+# Create SSH runner for remote system
+ssh_config = SSHRunnerConfig(
+    host="192.168.1.100",
+    username="admin",
+    key_filename="/home/user/.ssh/id_rsa",
+    max_connection_retries=5,
+    keepalive_interval=60.0
+)
+runner = SSHCommandRunner(ssh_config)
+
+# Inject into kernel managers (same code as local!)
+config = KernelManagerConfig(elevated=True)
+param_mgr = KernelParamManager(runner, config)
+module_mgr = KernelModuleManager(runner, config)
+
+# Configure kernel parameters over SSH
+param_mgr.write("kernel.pid_max", "4194304")
+param_mgr.persist("kernel.pid_max", "4194304")
+
+# Configure kernel modules over SSH
+module_mgr.load("ip_vs")
+module_mgr.persist_load("ip_vs")
+
+# Apply all persistent settings
+param_mgr.apply_all()
+
+# Check SSH reliability metrics
+metrics = runner.get_metrics()
+print(f"Success rate: {metrics.success_count / (metrics.success_count + metrics.failure_count):.2%}")
+print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
+print(f"Connection retries: {metrics.retry_count}")
+```
+
+### SSH Execution with Aspects
+
+```python
+from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from automojo.sysman.linux.redhat.storage import SQLiteStorage
+from automojo.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
+
+# Create SSH runner
+runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))
+
+# Add persistence aspect for audit logging
+storage = SQLiteStorage("/var/log/maintenance/commands.db")
+persistence = PersistenceAspect(PersistenceAspectConfig(storage_backend=storage))
+runner.add_aspect(persistence)
+
+# Add retry aspect for transient failures
+retry = RetryAspect(RetryAspectConfig(
+    max_retries=3,
+    retryable_exit_codes=[1, 2],  # sysctl/modprobe errors
+    retryable_error_patterns=["Device or resource busy", "Operation not permitted"]
+))
+runner.add_aspect(retry)
+
+# Add timeout aspect for global policy
+timeout = TimeoutAspect(TimeoutAspectConfig(default_timeout=60.0))
+runner.add_aspect(timeout)
+
+# Inject into kernel managers
+config = KernelManagerConfig(elevated=True)
+param_mgr = KernelParamManager(runner, config)
+module_mgr = KernelModuleManager(runner, config)
+
+# All kernel operations now have:
+# - Audit logging to SQLite
+# - Automatic retry on busy/permission errors
+# - 1-minute timeout enforcement
+
+# Configure comprehensive kernel tuning
+param_mgr.write("vm.dirty_ratio", "15")
+param_mgr.write("vm.dirty_background_ratio", "5")
+param_mgr.write("net.core.rmem_max", "16777216")
+param_mgr.write("net.core.wmem_max", "16777216")
+
+# Make all changes persistent
+param_mgr.persist("vm.dirty_ratio", "15")
+param_mgr.persist("vm.dirty_background_ratio", "5")
+param_mgr.persist("net.core.rmem_max", "16777216")
+param_mgr.persist("net.core.wmem_max", "16777216")
+
+# Load required modules
+module_mgr.load("nf_conntrack")
+module_mgr.persist_load("nf_conntrack")
+
+# Apply all persistent settings
+param_mgr.apply_all()
+```
+
+### Dry-Run Mode Across Transports
+
+```python
+# Dry-run works identically for local and SSH
+runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin", dry_run=True))
+param_mgr = KernelParamManager(runner, KernelManagerConfig(elevated=True))
+
+# No SSH connection is made, no commands executed
+result = param_mgr.write("dangerous.parameter", "unsafe_value")
+print("Would have set parameter:", result.message)
+
+result = param_mgr.persist("dangerous.parameter", "unsafe_value")
+print("Would have persisted parameter:", result.message)
+```
+
+---
+
 ## Testing Strategy
+
+### Unit Testing
 
 - All tests use a `MockCommandRunner` keyed on command args prefix.
 - `sysctl -n`, `sysctl -a`, and `lsmod` mock responses drive idempotency guards.
@@ -298,3 +492,26 @@ source/testroots/testbase/
 - `tee` stdin content is verified in persist tests to confirm correct file rendering.
 - `lsmod` and `sysctl -a` parsing tests are pure Python using representative output strings.
 - No test requires root access or a live kernel.
+
+### Property-Based Testing
+
+The implementation uses the `hypothesis` library for property-based testing in Python. Each correctness property defined above will be implemented as a property-based test that:
+
+- Generates random but valid inputs (parameter names/values, module names)
+- Executes the operation under test
+- Verifies the property holds across all generated inputs
+- Runs a minimum of 100 iterations per property test
+
+Property-based tests are tagged with comments referencing the specific correctness property they validate, using the format: `# Feature: kernel-parameters, Property N: <property description>`
+
+**Property Test Coverage:**
+
+- Properties 1-3: Runtime parameter tests generate random parameter names/values and verify sysctl command construction
+- Properties 4-6: Persistent parameter tests verify file operations and idempotency
+- Properties 7-9: Parameter query tests verify command construction and result parsing
+- Properties 10-11: Persistent query tests verify file reading and edge cases
+- Properties 12-13: Persistent removal tests verify file modification correctness
+- Properties 14-19: System operation tests (reload, list_all, query_pattern) verify command construction and parsing
+- Properties 20-22: Dry-run safety and elevation tests verify correct flag usage
+
+Both unit tests and property-based tests are complementary: unit tests verify specific examples and edge cases, while property tests verify universal correctness across many inputs.

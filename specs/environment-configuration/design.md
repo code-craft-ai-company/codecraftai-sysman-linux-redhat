@@ -4,43 +4,80 @@
 
 The environment configuration feature is implemented as a single module,
 `automojo.sysman.linux.redhat.environmentconfiguration`, that exposes an
-`EnvironmentConfigurator` class.  The coordinator instantiates `EnvironmentConfigurator`
+`EnvironmentConfigurator` class. The coordinator instantiates `EnvironmentConfigurator`
 and calls its methods to set, unset, and query environment variables in system-wide and
 per-user configuration files.
 
 All file reads and writes go through the `IFileOperator` abstraction from
-`automojo-interfaces`.  User home directory resolution is the only place where
-`pwd.getpwnam` is called directly, isolated in a private helper.  No subprocess calls
+`automojo-interfaces`. User home directory resolution is the only place where
+`pwd.getpwnam` is called directly, isolated in a private helper. No subprocess calls
 are made; no direct open/write calls touch the filesystem outside the file operator.
+
+The feature works identically whether the underlying file operations execute locally or
+remotely over SSH through the command runner architecture. When using SSH, the coordinator
+can track reliability metrics and apply execution aspects (persistence, retry, timeout)
+without any changes to the `EnvironmentConfigurator` code.
+
+**See Also:** [Command Runner Architecture](../command-runner-architecture/design.md) for
+details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│          Maintenance Coordinator        │  (external package)
-└───────────────────┬─────────────────────┘
-                    │ calls
-                    ▼
-┌─────────────────────────────────────────┐
-│        EnvironmentConfigurator          │  automojo.sysman.linux.redhat.environmentconfiguration
-│                                         │
-│  set_system_var()   unset_system_var()  │
-│  set_etc_env_var()  unset_etc_env_var() │
-│  set_user_var()     unset_user_var()    │
-│  query_system()     query_etc_env()     │
-│  query_user()                           │
-└───────────────────┬─────────────────────┘
-                    │ delegates to
-                    ▼
-┌─────────────────────────────────────────┐
-│        IFileOperator                    │  automojo-interfaces
-│  read_text(path) → str                  │
-│  write_text(path, content, elevated)    │
-│  delete(path, elevated)                 │
-│  exists(path) → bool                   │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              Maintenance Coordinator                        │
+│  - Instantiates runner (Local or SSH)                      │
+│  - Configures aspects (optional)                           │
+│  - Injects runner into EnvironmentConfigurator             │
+└────────────────────────┬────────────────────────────────────┘
+                         │ instantiates & injects
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│        EnvironmentConfigurator                              │
+│  automojo.sysman.linux.redhat.environmentconfiguration     │
+│                                                             │
+│  set_system_var()   unset_system_var()                     │
+│  set_etc_env_var()  unset_etc_env_var()                    │
+│  set_user_var()     unset_user_var()                       │
+│  query_system()     query_etc_env()                        │
+│  query_user()                                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │ delegates to
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│        IFileOperator                                        │
+│  read_text(path) → str                                      │
+│  write_text(path, content, elevated)                       │
+│  delete(path, elevated)                                     │
+│  exists(path) → bool                                        │
+└────────────────────────┬────────────────────────────────────┘
+                         │ implemented via
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   ICommandRunner                            │
+│  run(args, elevated, cwd, env, timeout) → RunResult         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+┌──────────────────────┐      ┌──────────────────────┐
+│ LocalCommandRunner   │      │ SSHCommandRunner     │
+│ - subprocess.run()   │      │ - SSH connection     │
+│ - sudo for elevation │      │ - reliability metrics│
+│ - local execution    │      │ - connection retry   │
+└──────────────────────┘      └──────────────────────┘
+          │                             │
+          └──────────────┬──────────────┘
+                         │ optional
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Execution Aspects                        │
+│  - PersistenceAspect: audit logging                         │
+│  - RetryAspect: transient failure retry                     │
+│  - TimeoutAspect: global timeout policy                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -229,6 +266,258 @@ determine what *would* happen, enabling accurate `SKIPPED` vs `DRY_RUN` reportin
 
 ---
 
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Set Operation Idempotency
+
+*For any* variable name, value, and target file (system, /etc/environment, or user rc), calling the corresponding set operation twice with the same arguments should result in the first call returning `SUCCESS` and the second call returning `SKIPPED` with no file modification on the second call.
+
+**Validates: Requirements 1.2, 3.2, 5.2**
+
+### Property 2: Update In-Place Correctness
+
+*For any* variable that exists in a file with value V1, setting it to a different value V2 should update the existing line in place (preserving line position) and return `SUCCESS`, and a subsequent query should return V2.
+
+**Validates: Requirements 1.3, 3.3, 5.3**
+
+### Property 3: Unset Operation Idempotency
+
+*For any* variable name and target file, calling the corresponding unset operation on a non-existent variable should return `SKIPPED` without modifying the file or invoking write operations.
+
+**Validates: Requirements 2.2, 4.2, 6.2**
+
+### Property 4: Dry-Run Safety
+
+*For any* write operation (set or unset) across all file types with `dry_run=True`, the file operator should never be invoked for write or delete operations, and the result status should be `DRY_RUN`.
+
+**Validates: Requirements 1.5, 2.5, 3.5, 4.4, 5.6, 6.5**
+
+### Property 5: System File Shebang Creation
+
+*For any* new `/etc/profile.d/<filename>` file created by `set_system_var()`, the file should begin with `#!/usr/bin/env bash\n` followed by the export statement.
+
+**Validates: Requirements 1.4**
+
+### Property 6: User RC File Creation
+
+*For any* non-existent user rc file, calling `set_user_var()` should create the file and write the export statement, returning `SUCCESS`.
+
+**Validates: Requirements 5.4**
+
+### Property 7: Empty File Cleanup
+
+*For any* `/etc/profile.d/<filename>` file, if `unset_system_var()` removes the last variable leaving only a shebang or no content lines, the file should be deleted rather than written.
+
+**Validates: Requirements 2.3**
+
+### Property 8: User Validation for Set Operations
+
+*For any* non-existent username provided to `set_user_var()`, the operation should return an `EnvActionResult` with status `FAILED` and a descriptive error message without attempting file operations.
+
+**Validates: Requirements 5.5**
+
+### Property 9: User Validation for Unset Operations
+
+*For any* non-existent username provided to `unset_user_var()`, the operation should return an `EnvActionResult` with status `FAILED` and a descriptive error message without attempting file operations.
+
+**Validates: Requirements 6.4**
+
+### Property 10: User Validation for Query Operations
+
+*For any* non-existent username provided to `query_user()`, the operation should raise an `EnvConfigError` with a descriptive message.
+
+**Validates: Requirements 8.3**
+
+### Property 11: System Variable Format Correctness
+
+*For any* variable name and value set via `set_system_var()`, the written line should match the format `export <NAME>="<value>"` with proper quote escaping for values containing double quotes.
+
+**Validates: Requirements 1.1**
+
+### Property 12: /etc/environment Format Correctness
+
+*For any* variable name and value set via `set_etc_env_var()`, the written line should match the format `<NAME>="<value>"` (no `export` keyword) with proper quote escaping.
+
+**Validates: Requirements 3.1**
+
+### Property 13: User Variable Format Correctness
+
+*For any* variable name and value set via `set_user_var()`, the written line should match the format `export <NAME>="<value>"` with proper quote escaping.
+
+**Validates: Requirements 5.1**
+
+### Property 14: Variable Removal Correctness
+
+*For any* variable present in a file, calling the corresponding unset operation should remove exactly the line matching that variable name and return `SUCCESS`, leaving all other lines unchanged.
+
+**Validates: Requirements 2.1, 4.1, 6.1**
+
+### Property 15: Query Parsing Correctness
+
+*For any* file containing valid variable definitions, the corresponding query operation should return a dict where each key-value pair matches a variable definition in the file, with proper quote unescaping.
+
+**Validates: Requirements 7.1, 7.2, 8.1**
+
+### Property 16: Query Non-Existent File Handling
+
+*For any* non-existent file path, the corresponding query operation should return an empty dict without raising an error.
+
+**Validates: Requirements 7.3, 8.2**
+
+### Property 17: Parser Robustness
+
+*For any* file containing lines that do not match the expected format (`export NAME=value` or `NAME=value`), the parser should skip those lines without raising an error and return only the valid variable definitions.
+
+**Validates: Requirements 7.4, 8.4**
+
+### Property 18: Elevation for System Writes
+
+*For any* write operation to `/etc/profile.d/` or `/etc/environment` with `elevated=True` in the config, the file operator should be invoked with `elevated=True`.
+
+**Validates: Requirements 9.1**
+
+### Property 19: No Elevation for Queries
+
+*For any* query operation (query_system, query_etc_env, query_user), the file operator should never be invoked with `elevated=True`.
+
+**Validates: Requirements 9.2**
+
+### Property 20: Set-Query Round Trip
+
+*For any* variable name and value, after successfully setting it in a file, querying that file should return a dict containing that variable name mapped to the same value.
+
+**Validates: Requirements 1.1, 3.1, 5.1, 7.1, 7.2, 8.1**
+
+---
+
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Set Operation Idempotency
+
+*For any* variable name, value, and target file (system, /etc/environment, or user rc), calling the corresponding set operation twice with the same arguments should result in the first call returning `SUCCESS` and the second call returning `SKIPPED` with no file modification on the second call.
+
+**Validates: Requirements 1.2, 3.2, 5.2**
+
+### Property 2: Update In-Place Correctness
+
+*For any* variable that exists in a file with value V1, setting it to a different value V2 should update the existing line in place (preserving line position) and return `SUCCESS`, and a subsequent query should return V2.
+
+**Validates: Requirements 1.3, 3.3, 5.3**
+
+### Property 3: Unset Operation Idempotency
+
+*For any* variable name and target file, calling the corresponding unset operation on a non-existent variable should return `SKIPPED` without modifying the file or invoking write operations.
+
+**Validates: Requirements 2.2, 4.2, 6.2**
+
+### Property 4: Dry-Run Safety
+
+*For any* write operation (set or unset) across all file types with `dry_run=True`, the file operator should never be invoked for write or delete operations, and the result status should be `DRY_RUN`.
+
+**Validates: Requirements 1.5, 2.5, 3.5, 4.4, 5.6, 6.5**
+
+### Property 5: System File Shebang Creation
+
+*For any* new `/etc/profile.d/<filename>` file created by `set_system_var()`, the file should begin with `#!/usr/bin/env bash\n` followed by the export statement.
+
+**Validates: Requirements 1.4**
+
+### Property 6: User RC File Creation
+
+*For any* non-existent user rc file, calling `set_user_var()` should create the file and write the export statement, returning `SUCCESS`.
+
+**Validates: Requirements 5.4**
+
+### Property 7: Empty File Cleanup
+
+*For any* `/etc/profile.d/<filename>` file, if `unset_system_var()` removes the last variable leaving only a shebang or no content lines, the file should be deleted rather than written.
+
+**Validates: Requirements 2.3**
+
+### Property 8: User Validation for Set Operations
+
+*For any* non-existent username provided to `set_user_var()`, the operation should return an `EnvActionResult` with status `FAILED` and a descriptive error message without attempting file operations.
+
+**Validates: Requirements 5.5**
+
+### Property 9: User Validation for Unset Operations
+
+*For any* non-existent username provided to `unset_user_var()`, the operation should return an `EnvActionResult` with status `FAILED` and a descriptive error message without attempting file operations.
+
+**Validates: Requirements 6.4**
+
+### Property 10: User Validation for Query Operations
+
+*For any* non-existent username provided to `query_user()`, the operation should raise an `EnvConfigError` with a descriptive message.
+
+**Validates: Requirements 8.3**
+
+### Property 11: System Variable Format Correctness
+
+*For any* variable name and value set via `set_system_var()`, the written line should match the format `export <NAME>="<value>"` with proper quote escaping for values containing double quotes.
+
+**Validates: Requirements 1.1**
+
+### Property 12: /etc/environment Format Correctness
+
+*For any* variable name and value set via `set_etc_env_var()`, the written line should match the format `<NAME>="<value>"` (no `export` keyword) with proper quote escaping.
+
+**Validates: Requirements 3.1**
+
+### Property 13: User Variable Format Correctness
+
+*For any* variable name and value set via `set_user_var()`, the written line should match the format `export <NAME>="<value>"` with proper quote escaping.
+
+**Validates: Requirements 5.1**
+
+### Property 14: Variable Removal Correctness
+
+*For any* variable present in a file, calling the corresponding unset operation should remove exactly the line matching that variable name and return `SUCCESS`, leaving all other lines unchanged.
+
+**Validates: Requirements 2.1, 4.1, 6.1**
+
+### Property 15: Query Parsing Correctness
+
+*For any* file containing valid variable definitions, the corresponding query operation should return a dict where each key-value pair matches a variable definition in the file, with proper quote unescaping.
+
+**Validates: Requirements 7.1, 7.2, 8.1**
+
+### Property 16: Query Non-Existent File Handling
+
+*For any* non-existent file path, the corresponding query operation should return an empty dict without raising an error.
+
+**Validates: Requirements 7.3, 8.2**
+
+### Property 17: Parser Robustness
+
+*For any* file containing lines that do not match the expected format (`export NAME=value` or `NAME=value`), the parser should skip those lines without raising an error and return only the valid variable definitions.
+
+**Validates: Requirements 7.4, 8.4**
+
+### Property 18: Elevation for System Writes
+
+*For any* write operation to `/etc/profile.d/` or `/etc/environment` with `elevated=True` in the config, the file operator should be invoked with `elevated=True`.
+
+**Validates: Requirements 9.1**
+
+### Property 19: No Elevation for Queries
+
+*For any* query operation (query_system, query_etc_env, query_user), the file operator should never be invoked with `elevated=True`.
+
+**Validates: Requirements 9.2**
+
+### Property 20: Set-Query Round Trip
+
+*For any* variable name and value, after successfully setting it in a file, querying that file should return a dict containing that variable name mapped to the same value.
+
+**Validates: Requirements 1.1, 3.1, 5.1, 7.1, 7.2, 8.1**
+
+---
+
 ## Module Layout
 
 ```
@@ -243,7 +532,126 @@ source/testroots/testbase/
 
 ---
 
+---
+
+## Usage Examples
+
+### Local Execution (Default)
+
+```python
+from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from automojo.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
+
+# Create local runner and file operator
+runner = LocalCommandRunner(LocalRunnerConfig())
+file_operator = LocalFileOperator(runner)  # IFileOperator implementation
+
+# Inject into environment configurator
+config = EnvironmentConfiguratorConfig(elevated=True, dry_run=False)
+env_config = EnvironmentConfigurator(file_operator, config)
+
+# Set system-wide environment variable
+result = env_config.set_system_var("JAVA_HOME", "/usr/lib/jvm/java-11", "java.sh")
+print(f"Set system var: {result.status}")
+
+# Query user environment variables
+user_vars = env_config.query_user("appuser", ".bashrc")
+print(f"User vars: {user_vars}")
+```
+
+### SSH Execution with Reliability Tracking
+
+```python
+from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from automojo.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
+
+# Create SSH runner for remote system
+ssh_config = SSHRunnerConfig(
+    host="192.168.1.100",
+    username="admin",
+    key_filename="/home/user/.ssh/id_rsa",
+    max_connection_retries=5,
+    keepalive_interval=60.0
+)
+runner = SSHCommandRunner(ssh_config)
+file_operator = SSHFileOperator(runner)  # IFileOperator implementation over SSH
+
+# Inject into environment configurator (same code as local!)
+config = EnvironmentConfiguratorConfig(elevated=True)
+env_config = EnvironmentConfigurator(file_operator, config)
+
+# Set environment variable over SSH
+result = env_config.set_etc_env_var("DATABASE_URL", "postgresql://localhost/myapp")
+
+# Check SSH reliability metrics
+metrics = runner.get_metrics()
+print(f"Success rate: {metrics.success_count / (metrics.success_count + metrics.failure_count):.2%}")
+print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
+print(f"Connection retries: {metrics.retry_count}")
+```
+
+### SSH Execution with Aspects
+
+```python
+from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from automojo.sysman.linux.redhat.storage import SQLiteStorage
+from automojo.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
+
+# Create SSH runner
+runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))
+
+# Add persistence aspect for audit logging
+storage = SQLiteStorage("/var/log/maintenance/commands.db")
+persistence = PersistenceAspect(PersistenceAspectConfig(storage_backend=storage))
+runner.add_aspect(persistence)
+
+# Add retry aspect for transient failures (e.g., file system busy)
+retry = RetryAspect(RetryAspectConfig(
+    max_retries=3,
+    retryable_exit_codes=[1, 16],  # File system errors
+    retryable_error_patterns=["Device or resource busy", "Text file busy"]
+))
+runner.add_aspect(retry)
+
+# Add timeout aspect for global policy
+timeout = TimeoutAspect(TimeoutAspectConfig(default_timeout=60.0))
+runner.add_aspect(timeout)
+
+# Create file operator and environment configurator
+file_operator = SSHFileOperator(runner)
+env_config = EnvironmentConfigurator(file_operator, EnvironmentConfiguratorConfig(elevated=True))
+
+# All environment operations now have:
+# - Audit logging to SQLite
+# - Automatic retry on file system busy
+# - 1-minute timeout enforcement
+result = env_config.set_user_var("appuser", "NODE_ENV", "production", ".bashrc")
+
+# Set multiple environment variables
+env_config.set_system_var("PYTHON_PATH", "/opt/python/lib", "python.sh")
+env_config.set_etc_env_var("LANG", "en_US.UTF-8")
+```
+
+### Dry-Run Mode Across Transports
+
+```python
+# Dry-run works identically for local and SSH
+runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin", dry_run=True))
+file_operator = SSHFileOperator(runner)
+env_config = EnvironmentConfigurator(file_operator, EnvironmentConfiguratorConfig(elevated=True))
+
+# No SSH connection is made, no files modified
+result = env_config.set_system_var("DANGEROUS_VAR", "value", "danger.sh")
+assert result.status == EnvActionStatus.DRY_RUN
+```
+
+---
+
 ## Testing Strategy
+
+### Unit Testing
 
 - All tests use a `MockFileOperator` backed by an in-memory `dict[str, str]` mapping
   paths to file contents.
@@ -256,3 +664,28 @@ source/testroots/testbase/
 - Dry-run tests verify that `MockFileOperator.write_text` and `.delete` are never called
   while reads still occur.
 - No test requires root access or a live filesystem.
+
+### Property-Based Testing
+
+The implementation uses the `hypothesis` library for property-based testing in Python. Each correctness property defined above will be implemented as a property-based test that:
+
+- Generates random but valid inputs (variable names, values, file paths, usernames)
+- Executes the operation under test
+- Verifies the property holds across all generated inputs
+- Runs a minimum of 100 iterations per property test
+
+Property-based tests are tagged with comments referencing the specific correctness property they validate, using the format: `# Feature: environment-configuration, Property N: <property description>`
+
+**Property Test Coverage:**
+
+- Properties 1-3: Idempotency tests generate random variable names/values and verify repeated operations
+- Property 4: Dry-run safety tests verify no file operator write invocation across all operations
+- Properties 5-7: File creation and cleanup tests verify correct file handling
+- Properties 8-10: User validation tests generate random usernames including non-existent ones
+- Properties 11-13: Format correctness tests verify proper line formatting and quote escaping
+- Property 14: Removal tests verify correct line deletion
+- Properties 15-17: Query and parsing tests verify correct dict construction and error handling
+- Properties 18-19: Elevation tests verify correct elevation flag usage
+- Property 20: Round-trip tests verify set-query consistency
+
+Both unit tests and property-based tests are complementary: unit tests verify specific examples and edge cases, while property tests verify universal correctness across many inputs.

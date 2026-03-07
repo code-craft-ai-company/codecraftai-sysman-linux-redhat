@@ -102,13 +102,101 @@
   - Honour `dry_run` flag; pass `elevated` flag to runner
   - _Requirements: 8_
 
-- [ ] 15. Create test module
+- [ ] 15. Create test module and mock infrastructure
   - Create `source/testroots/testbase/automojo/tests/sysman/linux/redhat/test_repositorymanagement.py`
   - Implement `MockCommandRunner` that returns configurable `RunResult` values
   - Override `repos_dir` in `RepositoryManagerConfig` to a temp path in all tests
+  - Set up hypothesis testing framework configuration
+  - Create test fixtures for common test scenarios
   - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9_
 
-- [ ] 16. Write tests for `list_repos()`
+- [ ] 16. Write property-based test for idempotent repository addition
+  - **Property 1: Idempotent Repository Addition**
+  - Generate random repository definitions
+  - Verify add with identical content returns SKIPPED
+  - **Validates: Requirements 1.2**
+  - _Requirements: 1_
+
+- [ ] 17. Write property-based test for idempotent repository removal
+  - **Property 2: Idempotent Repository Removal**
+  - Generate random repository IDs
+  - Verify remove on non-existent file returns SKIPPED
+  - **Validates: Requirements 2.2**
+  - _Requirements: 2_
+
+- [ ] 18. Write property-based test for idempotent repository enable
+  - **Property 3: Idempotent Repository Enable**
+  - Generate random repository IDs
+  - Verify enable on already enabled repo returns SKIPPED
+  - **Validates: Requirements 3.2**
+  - _Requirements: 3_
+
+- [ ] 19. Write property-based test for idempotent repository disable
+  - **Property 4: Idempotent Repository Disable**
+  - Generate random repository IDs
+  - Verify disable on already disabled repo returns SKIPPED
+  - **Validates: Requirements 4.2**
+  - _Requirements: 4_
+
+- [ ] 20. Write property-based test for idempotent priority setting
+  - **Property 5: Idempotent Priority Setting**
+  - Generate random repository IDs and priority values
+  - Verify set_priority with unchanged value returns SKIPPED
+  - **Validates: Requirements 7.2**
+  - _Requirements: 7_
+
+- [ ] 21. Write property-based test for dry-run safety
+  - **Property 6: Dry-Run Safety**
+  - Generate random operations with dry_run=True
+  - Verify command runner is never invoked for write operations
+  - Verify all results have DRY_RUN status
+  - **Validates: Requirements 1.6, 2.5, 3.6, 4.6, 5.5, 7.5, 8.6**
+  - _Requirements: 1, 2, 3, 4, 5, 7, 8_
+
+- [ ] 22. Write property-based test for file existence validation
+  - **Property 7: File Existence Validation**
+  - Generate random file paths (non-existing)
+  - Verify RepoKeyFileNotFoundError raised before runner invocation
+  - **Validates: Requirements 8.3**
+  - _Requirements: 8_
+
+- [ ] 23. Write property-based test for repository file not found precondition
+  - **Property 8: Repository File Not Found Precondition**
+  - Generate random repository IDs (non-existing)
+  - Verify RepoNotFoundError raised for set_priority
+  - **Validates: Requirements 7.3**
+  - _Requirements: 7_
+
+- [ ] 24. Write property-based test for command construction correctness
+  - **Property 9: Command Construction Correctness**
+  - Generate random repository data and operation types
+  - Verify constructed commands match expected format from Command Mappings
+  - **Validates: Requirements 1.1, 2.1, 3.1, 4.1, 5.1, 5.2, 6.1, 7.1, 8.1, 8.2**
+  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8_
+
+- [ ] 25. Write property-based test for elevation consistency
+  - **Property 10: Elevation Consistency**
+  - Generate random operations with elevated=True/False
+  - Verify write operations pass elevated flag correctly
+  - Verify read operations never use elevation
+  - **Validates: Requirements 9.1, 9.2, 9.4**
+  - _Requirements: 9_
+
+- [ ] 26. Write property-based test for repo file rendering consistency
+  - **Property 11: Repo File Rendering Consistency**
+  - Generate random repository definitions
+  - Verify repeated rendering produces identical output
+  - **Validates: Requirements 1.1**
+  - _Requirements: 1_
+
+- [ ] 27. Write property-based test for status mapping correctness
+  - **Property 12: Status Mapping Correctness**
+  - Generate random exit codes from command runner
+  - Verify correct RepoActionResult status mapping
+  - **Validates: Requirements 1.4, 1.5, 2.3, 2.4, 3.3, 3.4, 3.5, 4.3, 4.5, 5.3, 5.4, 7.4, 8.4, 8.5**
+  - _Requirements: 1, 2, 3, 4, 5, 7, 8_
+
+- [ ] 28. Write unit tests for `list_repos()`
   - Test: repos returned — output parsed into correct `RepoInfo` list
   - Test: no repos configured — returns empty list
   - Test: command failure — raises `RepoQueryError`
@@ -160,3 +248,55 @@
   - Test: import failure — returns `FAILED` with exit code and stderr
   - Test: dry-run mode — returns `DRY_RUN`, runner not called
   - _Requirements: 8_
+
+- [ ] 29. Write unit tests for `add()`
+  - Test: new repo — runner called with tee command and rendered content, returns `SUCCESS`
+  - Test: existing repo with identical content — returns `SKIPPED`, no write issued
+  - Test: existing repo with different content — file overwritten, returns `SUCCESS`
+  - Test: write failure — returns `FAILED`
+  - Test: dry-run mode — returns `DRY_RUN`, runner not called for write
+  - Test: elevated mode — runner called with `elevated=True`
+  - _Requirements: 1_
+
+- [ ] 30. Write unit tests for `remove()`
+  - Test: file exists — rm command issued, returns `SUCCESS`
+  - Test: file does not exist — returns `SKIPPED`, no command issued
+  - Test: removal failure — returns `FAILED`
+  - Test: dry-run mode — returns `DRY_RUN`, runner not called
+  - _Requirements: 2_
+
+- [ ] 31. Write unit tests for `enable()` and `disable()`
+  - Test: enable a disabled repo — config-manager called, returns `SUCCESS`
+  - Test: enable an already-enabled repo — returns `SKIPPED`
+  - Test: enable unknown repo — returns `FAILED`
+  - Test: disable an enabled repo — config-manager called, returns `SUCCESS`
+  - Test: disable an already-disabled repo — returns `SKIPPED`
+  - Test: dry-run mode on both — returns `DRY_RUN`, runner not called
+  - _Requirements: 3, 4_
+
+- [ ] 32. Write unit tests for `refresh()`
+  - Test: all repos, both commands succeed — returns `SUCCESS`
+  - Test: all repos, first command fails — returns `FAILED` with first command's stderr
+  - Test: scoped refresh, both commands use correct repo flags — returns `SUCCESS`
+  - Test: dry-run mode — returns `DRY_RUN`, runner not called
+  - _Requirements: 5_
+
+- [ ] 33. Write unit tests for `set_priority()`
+  - Test: file exists, priority changes — config-manager called, returns `SUCCESS`
+  - Test: file exists, priority unchanged — returns `SKIPPED`, no write issued
+  - Test: file does not exist — raises `RepoNotFoundError`
+  - Test: dry-run mode — returns `DRY_RUN`, runner not called
+  - _Requirements: 7_
+
+- [ ] 34. Write unit tests for `import_gpg_key()`
+  - Test: URL key source — runner called with correct args, returns `SUCCESS`
+  - Test: local file path, file exists — runner called, returns `SUCCESS`
+  - Test: local file path, file missing — raises `RepoKeyFileNotFoundError` before runner called
+  - Test: import failure — returns `FAILED` with exit code and stderr
+  - Test: dry-run mode — returns `DRY_RUN`, runner not called
+  - _Requirements: 8_
+
+- [ ] 35. Checkpoint - Ensure all tests pass
+  - Run all unit tests and property-based tests
+  - Verify all properties pass with 100+ iterations
+  - Ensure all tests pass, ask the user if questions arise

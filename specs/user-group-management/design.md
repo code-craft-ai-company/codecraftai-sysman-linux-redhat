@@ -9,48 +9,74 @@ module, `automojo.sysman.linux.redhat.usergroupmanagement`:
   password expiry.
 - **`GroupManager`** — handles group lifecycle.
 
-Both classes are constructed with the same `ICommandRunner` and
-`UserGroupManagerConfig`.  The coordinator instantiates them directly and calls their
-methods to perform discrete maintenance actions.
+Both classes are constructed with the same command runner implementing the `ICommandRunner`
+interface and `UserGroupManagerConfig`. The coordinator instantiates them directly and calls
+their methods to perform discrete maintenance actions.
 
-All system interaction is delegated to the command runner.  Reads from `/etc/passwd`,
+All system interaction is delegated to the command runner. Reads from `/etc/passwd`,
 `/etc/group`, and `authorized_keys` are performed via `getent` and `cat` through the
-runner.  No direct file system access or `subprocess` calls are made inside the module.
+runner. No direct file system access or `subprocess` calls are made inside the module.
+
+The feature works identically whether commands execute locally (via `LocalCommandRunner`) or
+remotely over SSH (via `SSHCommandRunner`). When using SSH, the coordinator can track
+reliability metrics and apply execution aspects (persistence, retry, timeout) without any
+changes to the `UserManager` or `GroupManager` code.
+
+**See Also:** [Command Runner Architecture](../command-runner-architecture/design.md) for
+details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│          Maintenance Coordinator        │  (external package)
-└──────────────┬──────────────────────────┘
-               │ calls
-       ┌───────┴───────┐
-       ▼               ▼
-┌─────────────┐  ┌──────────────┐   automojo.sysman.linux.redhat.usergroupmanagement
-│ UserManager │  │ GroupManager │
-│             │  │              │
-│ create()    │  │ create()     │
-│ delete()    │  │ delete()     │
-│ modify()    │  │ query()      │
-│ query()     │  └──────┬───────┘
-│ add_to_group│         │
-│ remove_from_│         │
-│ add_ssh_key │         │
-│ remove_ssh_ │         │
-│ lock()      │         │
-│ unlock()    │         │
-│ expire_pw() │         │
-│ set_pw_age()│         │
-└──────┬──────┘         │
-       └────────┬────────┘
-                │ delegates to
-                ▼
-┌─────────────────────────────────────────┐
-│        ICommandRunner                   │  automojo-interfaces
-│  run(args, elevated=False) → RunResult  │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              Maintenance Coordinator                        │
+│  - Instantiates runner (Local or SSH)                      │
+│  - Configures aspects (optional)                           │
+│  - Injects runner into UserManager and GroupManager        │
+└────────────────────────┬────────────────────────────────────┘
+                         │ instantiates & injects
+                 ┌───────┴───────┐
+                 ▼               ▼
+┌─────────────────────────┐  ┌──────────────────────────┐
+│      UserManager        │  │      GroupManager        │
+│                         │  │                          │
+│ create()    lock()      │  │ create()                 │
+│ delete()    unlock()    │  │ delete()                 │
+│ modify()    expire_pw() │  │ query()                  │
+│ query()     set_pw_age()│  │                          │
+│ add_to_group()          │  │                          │
+│ remove_from_group()     │  │                          │
+│ add_ssh_key()           │  │                          │
+│ remove_ssh_key()        │  │                          │
+└────────────┬────────────┘  └──────────┬───────────────┘
+             └────────────┬──────────────┘
+                          │ delegates to
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   ICommandRunner                            │
+│  run(args, elevated, cwd, env, timeout) → RunResult         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+┌──────────────────────┐      ┌──────────────────────┐
+│ LocalCommandRunner   │      │ SSHCommandRunner     │
+│ - subprocess.run()   │      │ - SSH connection     │
+│ - sudo for elevation │      │ - reliability metrics│
+│ - local execution    │      │ - connection retry   │
+└──────────────────────┘      └──────────────────────┘
+          │                             │
+          └──────────────┬──────────────┘
+                         │ optional
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Execution Aspects                        │
+│  - PersistenceAspect: audit logging                         │
+│  - RetryAspect: transient failure retry                     │
+│  - TimeoutAspect: global timeout policy                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -180,6 +206,120 @@ class GroupInfo:
 
 ---
 
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Idempotent User Creation
+
+*For any* username, calling `UserManager.create()` on an already existing user should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 1.2**
+
+### Property 2: Idempotent User Deletion
+
+*For any* username, calling `UserManager.delete()` on a non-existent user should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 2.3**
+
+### Property 3: Idempotent Group Creation
+
+*For any* groupname, calling `GroupManager.create()` on an already existing group should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 5.4**
+
+### Property 4: Idempotent Group Deletion
+
+*For any* groupname, calling `GroupManager.delete()` on a non-existent group should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 6.2**
+
+### Property 5: Idempotent Group Membership Addition
+
+*For any* username and groupname, calling `UserManager.add_to_group()` when the user is already a member should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 7.2**
+
+### Property 6: Idempotent Group Membership Removal
+
+*For any* username and groupname, calling `UserManager.remove_from_group()` when the user is not a member should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 8.2**
+
+### Property 7: Idempotent SSH Key Addition
+
+*For any* username and public key, calling `UserManager.add_ssh_key()` when the key is already present in authorized_keys should return `SKIPPED` status without modifying the file.
+
+**Validates: Requirements 9.2**
+
+### Property 8: Idempotent SSH Key Removal
+
+*For any* username and public key, calling `UserManager.remove_ssh_key()` when the key is not present in authorized_keys should return `SKIPPED` status without modifying the file.
+
+**Validates: Requirements 9.5**
+
+### Property 9: Idempotent Account Lock
+
+*For any* username, calling `UserManager.lock()` on an already locked account should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 10.2**
+
+### Property 10: Idempotent Account Unlock
+
+*For any* username, calling `UserManager.unlock()` on an already unlocked account should return `SKIPPED` status without invoking the command runner.
+
+**Validates: Requirements 10.4**
+
+### Property 11: Dry-Run Safety
+
+*For any* write operation (create user/group, delete user/group, modify user, add/remove group member, add/remove SSH key, lock/unlock, expire password, set password age) with `dry_run=True`, the command runner should never be invoked, and the result status should be `DRY_RUN`.
+
+**Validates: Requirements 1.11, 2.6, 3.10, 5.7, 6.5, 7.7, 8.7, 9.8, 10.8, 11.8**
+
+### Property 12: User Existence Preconditions
+
+*For any* username, operations that require an existing user (modify, add_to_group, remove_from_group, add_ssh_key, remove_ssh_key, lock, unlock, expire_password, set_password_age) should raise `UserNotFoundError` when called on a non-existent user.
+
+**Validates: Requirements 3.2, 7.3, 8.3, 9.7, 10.5, 11.5**
+
+### Property 13: Group Existence Preconditions
+
+*For any* groupname, operations that require an existing group (add_to_group, remove_from_group) should raise `GroupNotFoundError` when called with a non-existent group.
+
+**Validates: Requirements 7.4, 8.4**
+
+### Property 14: SSH Key Validation
+
+*For any* username, calling `UserManager.add_ssh_key()` or `UserManager.remove_ssh_key()` with an empty or whitespace-only key string should raise `UserKeyError` before any command runner invocation.
+
+**Validates: Requirements 9.6**
+
+### Property 15: Command Construction Correctness
+
+*For any* user or group operation, the constructed command arguments passed to the runner should match the expected command format specified in the Command Mappings table.
+
+**Validates: Requirements 1.1, 1.3-1.8, 2.1-2.2, 3.1, 3.3-3.7, 4.1, 5.1-5.3, 6.1, 7.1, 8.1, 9.1, 9.3-9.4, 10.1, 10.3, 11.1-11.4**
+
+### Property 16: Elevation Consistency
+
+*For any* write operation with `elevated=True` in the config, the command runner should be invoked with `elevated=True`; for read operations (query user, query group), `elevated` should never be `True`.
+
+**Validates: Requirements 12.1, 12.2**
+
+### Property 17: Query Consistency
+
+*For any* username or groupname, if `query()` returns an info object, then calling `query()` again immediately should return an equivalent info object with the same field values.
+
+**Validates: Requirements 4.2, 4.3**
+
+### Property 18: Status Mapping Correctness
+
+*For any* operation result from the command runner, the action result status should correctly reflect the runner's exit code: 0 maps to `SUCCESS`, non-zero maps to `FAILED` (unless the operation was skipped or in dry-run mode).
+
+**Validates: Requirements 1.9, 1.10, 2.4, 2.5, 3.8, 3.9, 5.5, 5.6, 6.3, 6.4, 7.5, 7.6, 8.5, 8.6, 10.6, 10.7, 11.6, 11.7**
+
+---
+
 ## Interfaces
 
 ### `ICommandRunner` (from `automojo-interfaces`)
@@ -306,6 +446,8 @@ source/testroots/testbase/
 
 ## Testing Strategy
 
+### Unit Testing
+
 - All tests use a `MockCommandRunner` injected at construction time.
 - `getent passwd` and `getent group` mock responses drive idempotency guard behaviour.
 - `passwd -S` mock responses drive lock/unlock skip detection.
@@ -314,3 +456,26 @@ source/testroots/testbase/
 - `PasswordAgeSpec` tests verify the correct `chage` flags are assembled for each
   combination of fields.
 - No test requires root access, real system users, or a live PAM stack.
+
+### Property-Based Testing
+
+The implementation uses the `hypothesis` library for property-based testing in Python. Each correctness property defined above will be implemented as a property-based test that:
+
+- Generates random but valid inputs (usernames, groupnames, keys, configurations)
+- Executes the operation under test
+- Verifies the property holds across all generated inputs
+- Runs a minimum of 100 iterations per property test
+
+Property-based tests are tagged with comments referencing the specific correctness property they validate, using the format: `# Feature: user-group-management, Property N: <property description>`
+
+**Property Test Coverage:**
+
+- Properties 1-10: Idempotency tests generate random names and verify repeated operations
+- Property 11: Dry-run safety tests verify no runner invocation across all operations
+- Properties 12-14: Precondition tests verify correct exception raising
+- Property 15: Command construction tests verify correct argument formatting
+- Property 16: Elevation tests verify correct elevation flag usage
+- Property 17: Query consistency tests verify stable results across multiple calls
+- Property 18: Status mapping tests verify correct result interpretation
+
+Both unit tests and property-based tests are complementary: unit tests verify specific examples and edge cases, while property tests verify universal correctness across many inputs.

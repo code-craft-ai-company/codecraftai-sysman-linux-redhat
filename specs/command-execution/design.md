@@ -16,30 +16,59 @@ inside this module, except for:
 
 Everything else goes through `ICommandRunner`.
 
+The feature works identically whether the underlying runner executes locally (via 
+`LocalCommandRunner`) or remotely over SSH (via `SSHCommandRunner`). When using SSH, the
+coordinator can track reliability metrics and apply execution aspects (persistence, retry,
+timeout) without any changes to the `CommandExecutor` code.
+
+**See Also:** [Command Runner Architecture](../command-runner-architecture/design.md) for
+details on local/SSH execution, reliability tracking, and aspect configuration.
+
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│          Maintenance Coordinator        │  (external package)
-└───────────────────┬─────────────────────┘
-                    │ calls
-                    ▼
-┌─────────────────────────────────────────┐
-│            CommandExecutor              │  automojo.sysman.linux.redhat.commandexecution
-│                                         │
-│  run()          run_sequence()          │
-│  run_script()                           │
-└───────────────────┬─────────────────────┘
-                    │ delegates to
-                    ▼
-┌─────────────────────────────────────────┐
-│        ICommandRunner                   │  automojo-interfaces
-│  run(args, elevated, cwd, env,          │
-│      timeout, on_output, on_error)      │
-│      → RunResult                        │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              Maintenance Coordinator                        │
+│  - Instantiates runner (Local or SSH)                      │
+│  - Configures aspects (optional)                           │
+│  - Injects runner into CommandExecutor                     │
+└────────────────────────┬────────────────────────────────────┘
+                         │ instantiates & injects
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│            CommandExecutor                                  │
+│  automojo.sysman.linux.redhat.commandexecution             │
+│                                                             │
+│  run()          run_sequence()                              │
+│  run_script()                                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │ delegates to
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   ICommandRunner                            │
+│  run(args, elevated, cwd, env, timeout) → RunResult         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+┌──────────────────────┐      ┌──────────────────────┐
+│ LocalCommandRunner   │      │ SSHCommandRunner     │
+│ - subprocess.run()   │      │ - SSH connection     │
+│ - sudo for elevation │      │ - reliability metrics│
+│ - local execution    │      │ - connection retry   │
+└──────────────────────┘      └──────────────────────┘
+          │                             │
+          └──────────────┬──────────────┘
+                         │ optional
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Execution Aspects                        │
+│  - PersistenceAspect: audit logging                         │
+│  - RetryAspect: transient failure retry                     │
+│  - TimeoutAspect: global timeout policy                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -188,6 +217,78 @@ When `CommandExecutorConfig.dry_run=True`:
 
 ---
 
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Success Mapping Consistency
+
+*For any* command execution, if the exit code is 0, then `success` should be `True`; if the exit code is non-zero, then `success` should be `False`.
+
+**Validates: Requirements 1.2, 1.3**
+
+### Property 2: Dry-Run Safety
+
+*For any* command execution (run, run_sequence, run_script) with `dry_run=True`, the command runner should never be invoked, and the result should have `dry_run=True` with `success=True`.
+
+**Validates: Requirements 1.5, 2.6, 3.6**
+
+### Property 3: Working Directory Validation
+
+*For any* command execution with a `working_dir` parameter, if the directory does not exist, the command should return a failure result without invoking the command runner.
+
+**Validates: Requirements 4.3**
+
+### Property 4: Environment Merging Correctness
+
+*For any* command execution with an `env` parameter, the merged environment passed to the runner should contain all keys from `os.environ` plus all keys from the provided `env`, with `env` values taking precedence on conflicts.
+
+**Validates: Requirements 5.1, 5.3**
+
+### Property 5: Sequence Stop-on-Failure Behavior
+
+*For any* command sequence with `stop_on_failure=True`, if a command fails, no subsequent commands should be executed, and `failed_at` should equal the index of the first failed command.
+
+**Validates: Requirements 2.3**
+
+### Property 6: Sequence Continue-on-Failure Behavior
+
+*For any* command sequence with `stop_on_failure=False`, all commands should be executed regardless of failures, and `failed_at` should equal the index of the first failed command (or `None` if all succeed).
+
+**Validates: Requirements 2.4**
+
+### Property 7: Empty Sequence Handling
+
+*For any* empty command list, `run_sequence()` should return `all_succeeded=True` with an empty results list without invoking the command runner.
+
+**Validates: Requirements 2.5**
+
+### Property 8: Script Temp File Cleanup
+
+*For any* script execution, the temporary script file should be deleted after execution completes, regardless of whether the script succeeded or failed.
+
+**Validates: Requirements 3.4**
+
+### Property 9: Timeout Propagation
+
+*For any* command execution with a `timeout_seconds` parameter, the timeout value should be passed to the command runner, and if the runner reports a timeout, the result should have `timed_out=True` and `success=False`.
+
+**Validates: Requirements 6.1, 6.2**
+
+### Property 10: Elevation Propagation
+
+*For any* command execution with `elevated=True`, the command runner should be invoked with `elevated=True`; when `elevated=False` or not specified, the runner should receive `elevated=False`.
+
+**Validates: Requirements 8.1, 8.2**
+
+### Property 11: Output Capture Completeness
+
+*For any* command execution, the returned `CommandResult` should contain the complete stdout and stderr from the command, regardless of whether streaming callbacks were provided.
+
+**Validates: Requirements 7.3**
+
+---
+
 ## Module Layout
 
 ```
@@ -202,7 +303,140 @@ source/testroots/testbase/
 
 ---
 
+---
+
+## Usage Examples
+
+### Local Execution (Default)
+
+```python
+from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from automojo.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig, CommandSpec
+
+# Create local runner
+runner = LocalCommandRunner(LocalRunnerConfig())
+
+# Inject into command executor
+config = CommandExecutorConfig(dry_run=False)
+cmd_executor = CommandExecutor(runner, config)
+
+# Execute single command
+result = cmd_executor.run(["ls", "-la"], elevated=False, working_dir="/tmp")
+print(f"Exit code: {result.exit_code}")
+print(f"Output: {result.stdout}")
+
+# Execute command sequence
+commands = [
+    CommandSpec(["systemctl", "stop", "nginx"], elevated=True),
+    CommandSpec(["systemctl", "start", "nginx"], elevated=True),
+    CommandSpec(["systemctl", "status", "nginx"], elevated=False)
+]
+seq_result = cmd_executor.run_sequence(commands, stop_on_failure=True)
+print(f"All succeeded: {seq_result.all_succeeded}")
+```
+
+### SSH Execution with Reliability Tracking
+
+```python
+from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from automojo.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig
+
+# Create SSH runner for remote system
+ssh_config = SSHRunnerConfig(
+    host="192.168.1.100",
+    username="admin",
+    key_filename="/home/user/.ssh/id_rsa",
+    max_connection_retries=5,
+    keepalive_interval=60.0
+)
+runner = SSHCommandRunner(ssh_config)
+
+# Inject into command executor (same code as local!)
+config = CommandExecutorConfig()
+cmd_executor = CommandExecutor(runner, config)
+
+# Execute script over SSH
+script = """
+#!/bin/bash
+echo "Checking disk space..."
+df -h
+echo "Checking memory..."
+free -h
+"""
+result = cmd_executor.run_script(script, elevated=False)
+
+# Check SSH reliability metrics
+metrics = runner.get_metrics()
+print(f"Success rate: {metrics.success_count / (metrics.success_count + metrics.failure_count):.2%}")
+print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
+print(f"Connection retries: {metrics.retry_count}")
+```
+
+### SSH Execution with Aspects
+
+```python
+from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from automojo.sysman.linux.redhat.storage import SQLiteStorage
+from automojo.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig
+
+# Create SSH runner
+runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))
+
+# Add persistence aspect for audit logging
+storage = SQLiteStorage("/var/log/maintenance/commands.db")
+persistence = PersistenceAspect(PersistenceAspectConfig(storage_backend=storage))
+runner.add_aspect(persistence)
+
+# Add retry aspect for transient failures
+retry = RetryAspect(RetryAspectConfig(
+    max_retries=3,
+    retryable_exit_codes=[255],  # SSH connection errors
+    retryable_error_patterns=["Connection reset", "Broken pipe"]
+))
+runner.add_aspect(retry)
+
+# Add timeout aspect for global policy
+timeout = TimeoutAspect(TimeoutAspectConfig(default_timeout=300.0))
+runner.add_aspect(timeout)
+
+# Inject into command executor
+cmd_executor = CommandExecutor(runner, CommandExecutorConfig())
+
+# All commands now have:
+# - Audit logging to SQLite
+# - Automatic retry on connection failures
+# - 5-minute timeout enforcement
+result = cmd_executor.run(["systemctl", "restart", "nginx"], elevated=True)
+
+# Execute sequence with aspects applied to each command
+commands = [
+    CommandSpec(["systemctl", "stop", "apache2"], elevated=True),
+    CommandSpec(["systemctl", "start", "nginx"], elevated=True),
+    CommandSpec(["systemctl", "reload", "nginx"], elevated=True)
+]
+seq_result = cmd_executor.run_sequence(commands)
+```
+
+### Dry-Run Mode Across Transports
+
+```python
+# Dry-run works identically for local and SSH
+runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin", dry_run=True))
+cmd_executor = CommandExecutor(runner, CommandExecutorConfig())
+
+# No SSH connection is made, no commands executed
+result = cmd_executor.run(["rm", "-rf", "/important/data"], elevated=True)
+assert result.dry_run == True
+assert result.success == True  # Synthetic success in dry-run
+```
+
+---
+
 ## Testing Strategy
+
+### Unit Testing
 
 - All tests use a `MockCommandRunner` whose `.run()` return value is configured per test.
 - `working_dir` existence checks are tested with `tmp_path` (pytest fixture) for existing
@@ -214,3 +448,28 @@ source/testroots/testbase/
 - Timeout handling uses a `MockCommandRunner` that returns `RunResult(timed_out=True)`.
 - Environment merging is verified by inspecting the `env` kwarg passed to the runner.
 - No test requires a live system or root access.
+
+### Property-Based Testing
+
+The implementation uses the `hypothesis` library for property-based testing in Python. Each correctness property defined above will be implemented as a property-based test that:
+
+- Generates random but valid inputs (commands, arguments, configurations)
+- Executes the operation under test
+- Verifies the property holds across all generated inputs
+- Runs a minimum of 100 iterations per property test
+
+Property-based tests are tagged with comments referencing the specific correctness property they validate, using the format: `# Feature: command-execution, Property N: <property description>`
+
+**Property Test Coverage:**
+
+- Property 1: Success mapping tests generate random exit codes
+- Property 2: Dry-run safety tests verify no runner invocation
+- Property 3: Working directory validation tests generate valid/invalid paths
+- Property 4: Environment merging tests verify correct precedence
+- Properties 5-7: Sequence behavior tests verify execution flow
+- Property 8: Script cleanup tests verify file deletion
+- Property 9: Timeout tests verify propagation and handling
+- Property 10: Elevation tests verify flag propagation
+- Property 11: Output capture tests verify completeness
+
+Both unit tests and property-based tests are complementary: unit tests verify specific examples and edge cases, while property tests verify universal correctness across many inputs.

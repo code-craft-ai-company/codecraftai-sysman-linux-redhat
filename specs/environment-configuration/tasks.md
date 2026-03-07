@@ -181,7 +181,7 @@
   - Test unset: dry-run — `DRY_RUN`
   - _Requirements: 5, 6_
 
-- [ ] 25. Write tests for `query_system()`, `query_etc_env()`, and `query_user()`
+- [ ] 25. Write unit tests for `query_system()`, `query_etc_env()`, and `query_user()`
   - Test query_system: file with multiple exports — dict returned correctly
   - Test query_system: file not found — empty dict
   - Test query_etc_env: file with multiple NAME=value lines — dict returned correctly
@@ -190,3 +190,86 @@
   - Test query_user: file not found — empty dict
   - Test query_user: unknown user — raises `EnvConfigError`
   - _Requirements: 7, 8_
+
+- [ ]* 26. Write property test for set operation idempotency
+  - **Property 1: Set Operation Idempotency**
+  - **Validates: Requirements 1.2, 3.2, 5.2**
+
+- [ ]* 27. Write property test for update in-place correctness
+  - **Property 2: Update In-Place Correctness**
+  - **Validates: Requirements 1.3, 3.3, 5.3**
+
+- [ ]* 28. Write property test for unset operation idempotency
+  - **Property 3: Unset Operation Idempotency**
+  - **Validates: Requirements 2.2, 4.2, 6.2**
+
+- [ ]* 29. Write property test for dry-run safety
+  - **Property 4: Dry-Run Safety**
+  - **Validates: Requirements 1.5, 2.5, 3.5, 4.4, 5.6, 6.5**
+
+- [ ]* 30. Write property test for system file shebang creation
+  - **Property 5: System File Shebang Creation**
+  - **Validates: Requirements 1.4**
+
+- [ ]* 31. Write property test for user RC file creation
+  - **Property 6: User RC File Creation**
+  - **Validates: Requirements 5.4**
+
+- [ ]* 32. Write property test for empty file cleanup
+  - **Property 7: Empty File Cleanup**
+  - **Validates: Requirements 2.3**
+
+- [ ]* 33. Write property test for user validation in set operations
+  - **Property 8: User Validation for Set Operations**
+  - **Validates: Requirements 5.5**
+
+- [ ]* 34. Write property test for user validation in unset operations
+  - **Property 9: User Validation for Unset Operations**
+  - **Validates: Requirements 6.4**
+
+- [ ]* 35. Write property test for user validation in query operations
+  - **Property 10: User Validation for Query Operations**
+  - **Validates: Requirements 8.3**
+
+- [ ]* 36. Write property test for system variable format correctness
+  - **Property 11: System Variable Format Correctness**
+  - **Validates: Requirements 1.1**
+
+- [ ]* 37. Write property test for /etc/environment format correctness
+  - **Property 12: /etc/environment Format Correctness**
+  - **Validates: Requirements 3.1**
+
+- [ ]* 38. Write property test for user variable format correctness
+  - **Property 13: User Variable Format Correctness**
+  - **Validates: Requirements 5.1**
+
+- [ ]* 39. Write property test for variable removal correctness
+  - **Property 14: Variable Removal Correctness**
+  - **Validates: Requirements 2.1, 4.1, 6.1**
+
+- [ ]* 40. Write property test for query parsing correctness
+  - **Property 15: Query Parsing Correctness**
+  - **Validates: Requirements 7.1, 7.2, 8.1**
+
+- [ ]* 41. Write property test for query non-existent file handling
+  - **Property 16: Query Non-Existent File Handling**
+  - **Validates: Requirements 7.3, 8.2**
+
+- [ ]* 42. Write property test for parser robustness
+  - **Property 17: Parser Robustness**
+  - **Validates: Requirements 7.4, 8.4**
+
+- [ ]* 43. Write property test for elevation in system writes
+  - **Property 18: Elevation for System Writes**
+  - **Validates: Requirements 9.1**
+
+- [ ]* 44. Write property test for no elevation in queries
+  - **Property 19: No Elevation for Queries**
+  - **Validates: Requirements 9.2**
+
+- [ ]* 45. Write property test for set-query round trip
+  - **Property 20: Set-Query Round Trip**
+  - **Validates: Requirements 1.1, 3.1, 5.1, 7.1, 7.2, 8.1**
+
+- [ ] 46. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
