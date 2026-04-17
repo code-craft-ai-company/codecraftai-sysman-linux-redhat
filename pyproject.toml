@@ -27,6 +27,7 @@ automojo-arcli = { git = 'https://github.com/automationmojo/automojo-arcli.git',
 automojo-errors = { git = "https://github.com/automationmojo/automojo-errors.git", branch = "main" }
 automojo-credentials = { git = "https://github.com/automationmojo/automojo-credentials.git", branch = "main" }
 automojo-dataprofiles = { git = "https://github.com/automationmojo/automojo-dataprofiles.git", branch = "main" }
+automojo-interfaces = { git = "https://github.com/automationmojo/automojo-interfaces.git", branch = "main" }
 automojo-testbase = { git = "https://github.com/automationmojo/automojo-testbase.git", branch = "main" }
 automojo-interop = { git = "https://github.com/automationmojo/automojo-interop.git", branch = "main" }
 automojo-waiting = { git = "https://github.com/automationmojo/automojo-waiting.git", branch = "main" }
