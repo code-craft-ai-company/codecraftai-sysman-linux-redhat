@@ -5,7 +5,6 @@
 # execution through the ICommandRunner protocol.
 
 from automojo.sysman.linux.redhat.runners.base import ICommandRunner
-from automojo.sysman.linux.redhat.runners.errors import SSHConnectionError
 from automojo.sysman.linux.redhat.runners.local import LocalCommandRunner, LocalRunnerConfig
 from automojo.sysman.linux.redhat.runners.models import (
     ExecutionContext,
@@ -22,7 +21,6 @@ __all__ = [
     "LocalRunnerConfig",
     "RunResult",
     "SSHCommandRunner",
-    "SSHConnectionError",
     "SSHErrorType",
     "SSHReliabilityMetrics",
     "SSHRunnerConfig",
