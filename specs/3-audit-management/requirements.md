@@ -10,10 +10,11 @@ audit-log search and reporting tools.
 A maintenance coordinator uses this feature to apply a declared audit posture to the
 target system, verify it, and extract findings from the audit log. All system commands
 (`auditctl`, `augenrules`, `ausearch`, `aureport`, `systemctl`, `service`) are executed
-through the `automojo-interfaces` command-runner abstraction. All reads and writes
-against `/etc/audit/auditd.conf`, `/etc/audit/audit.rules`, and files under
-`/etc/audit/rules.d/` use the `automojo-interfaces` file-operator abstraction. All
-mutating operations respect dry-run mode.
+through the command-runner abstraction (`automojo.sysman.linux.redhat.runners.base.ICommandRunner`).
+File reads and writes against `/etc/audit/auditd.conf`, `/etc/audit/audit.rules`, and
+files under `/etc/audit/rules.d/` are performed by routing `cat` / `tee` through the
+command runner (leveraging the runner's `stdin` channel for `tee`), so remote execution
+and dry-run apply uniformly.  All mutating operations respect dry-run mode.
 
 ---
 
