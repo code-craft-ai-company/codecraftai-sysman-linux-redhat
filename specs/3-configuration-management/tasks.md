@@ -1,194 +1,142 @@
-# Implementation Plan
+# Implementation Plan — Configuration Management
 
-- [ ] 1. Create the `configurationmanagement` module file
-  - Create `source/packages/automojo/sysman/linux/redhat/configurationmanagement.py`
-  - Add module-level docstring describing purpose and coordinator-driven design
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10_
+Checked items (`[x]`) are implemented and covered by tests.  Unchecked
+items (`[ ]`) identify remaining work.
 
-- [ ] 2. Define status enum and result dataclasses
-  - Implement `ConfigActionStatus` enum with values: `SUCCESS`, `FAILED`, `SKIPPED`,
-    `DRY_RUN`
-  - Implement `ConfigActionResult` dataclass with fields: `status`, `path`, `backup_path`,
-    `diff`, `exit_code`, `stdout`, `stderr`, `command`
-  - Implement `ConfigDiffResult` dataclass with fields: `path`, `has_diff`, `diff`
-  - Implement `ConfigValidationResult` dataclass with fields: `path`, `validator_id`,
-    `valid`, `exit_code`, `stdout`, `stderr`
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9_
+## Module and Models
 
-- [ ] 3. Define typed exceptions
-  - Implement `ConfigFileNotFoundError` with `path` attribute
-  - Implement `ConfigTemplateError` with `missing_variable` attribute
-  - Implement `ConfigValidatorNotFoundError` with `validator_id` attribute
-  - _Requirements: 2, 3, 4, 6, 7, 8_
+- [x] 1. Create the `configurationmanagement` module
+  - `source/packages/automojo/sysman/linux/redhat/configurationmanagement.py`
+    exists
 
-- [ ] 4. Implement `ConfigurationManagerConfig` dataclass
-  - Add `dry_run: bool = False` field
-  - Add `elevated: bool = False` field
-  - _Requirements: 1.7, 2.5, 3.5, 4.5, 7.6, 8.8, 9.6, 10_
+- [x] 2. Define `ConfigActionStatus` enum (SUCCESS / FAILED / SKIPPED /
+  DRY_RUN)
 
-- [ ] 5. Build `ValidatorRegistry`
-  - Define module-level `VALIDATORS` dict mapping identifier strings to command builder
-    callables for: `nginx`, `sshd`, `httpd`, `named`, `rsyslog`, `sudoers`
-  - Implement `ConfigurationManager.register_validator(identifier, builder)` class method
-    for runtime extension
-  - _Requirements: 6_
+- [x] 3. Define `ConfigurationManagerConfig` dataclass
+  - Fields: `dry_run`, `elevated`
 
-- [ ] 6. Implement `ConfigurationManager.__init__` and private `_read_file()`
-  - Accept `ICommandRunner` and `ConfigurationManagerConfig` as constructor arguments
-  - Implement `_read_file(path) -> str` using `cat <path>` via runner; return empty string
-    when cat exits non-zero (file not found)
-  - _Requirements: 1, 5_
+- [x] 4. Define `ConfigActionResult` dataclass
+  - Fields: `status`, `path`, `backup_path`, `diff`, `exit_code`, `stdout`,
+    `stderr`, `command`
 
-- [ ] 7. Implement private `_compute_diff()`
-  - Accept `path`, `current_content`, and `desired_content`
-  - Use `difflib.unified_diff` in pure Python to compute unified diff string
-  - Return `ConfigDiffResult` with `has_diff` set based on whether diff is non-empty
-  - _Requirements: 5_
+- [x] 5. Define `ConfigDiffResult` dataclass (path / has_diff / diff)
 
-- [ ] 8. Implement private `_write_file()`
-  - Accept `path`, `content`, optional `mode`, optional `owner`, optional `group`
-  - Read current file content via `_read_file()`; return `SKIPPED` if content identical
-  - Write via `tee <path>` with content as stdin; pass `elevated` flag
-  - After successful write: apply `chmod` if `mode` provided; apply `chown` if
-    `owner` or `group` provided
-  - Return appropriate `ConfigActionResult`
-  - _Requirements: 1_
+- [x] 6. Define `ConfigValidationResult` dataclass
+  - Fields: `path`, `validator_id`, `valid`, `exit_code`, `stdout`, `stderr`
 
-- [ ] 9. Implement `write()`
-  - Compute diff in dry-run mode and return `DRY_RUN` result with diff included
-  - Delegate to `_write_file()` for all other cases
-  - _Requirements: 1_
+- [x] 7. Define `ConfigTemplateError` (raised on unresolved template
+  identifiers) and `ConfigValidatorNotRegisteredError`
 
-- [ ] 10. Implement `write_template()`
-  - Accept template as string or file path; read from disk via runner if path provided
-  - Render using `string.Template.safe_substitute`; detect missing keys and raise
-    `ConfigTemplateError` before calling `_write_file()`
-  - Honour `dry_run` flag: return `DRY_RUN` result with rendered content
-  - Delegate to `_write_file()` for the actual write
-  - _Requirements: 2_
+- [x] 8. Define default validator registry (nginx, sshd, httpd, named,
+  rsyslog, sudoers)
 
-- [ ] 11. Implement `diff()`
-  - Call `_read_file()` for current content (empty string if file absent)
-  - Delegate to `_compute_diff()` and return `ConfigDiffResult`
-  - _Requirements: 5_
+## ConfigurationManager — Implemented
 
-- [ ] 12. Implement `backup()`
-  - Check file exists via `stat`; raise `ConfigFileNotFoundError` if not
-  - Generate backup path: `<filepath>.bak.<YYYYMMDDTHHMMSS>` from `datetime.utcnow()`
-  - Execute `cp -p <src> <dst>` via runner with `elevated` flag
-  - Return `ConfigActionResult` with `backup_path` populated
-  - Honour `dry_run` flag; return `DRY_RUN` with computed backup path
-  - _Requirements: 3_
+- [x] 9. Implement `__init__` accepting runner + optional config;
+  seed `_validators` with `_DEFAULT_VALIDATORS`
 
-- [ ] 13. Implement `restore()`
-  - Check backup file exists via `stat`; raise `ConfigFileNotFoundError` if not
-  - Derive original path by stripping `.bak.<timestamp>` suffix
-  - Execute `cp -p <backup> <original>` via runner with `elevated` flag
-  - Return `ConfigActionResult` with restored path
-  - Honour `dry_run` flag
-  - _Requirements: 4_
+- [x] 10. Implement `register_validator(id, command_builder)` for
+  extending the validator registry
 
-- [ ] 14. Implement `validate()`
-  - Look up `validator_id` in `VALIDATORS`; raise `ConfigValidatorNotFoundError` if absent
-  - Build command from registry callable and path
-  - Execute via runner without elevation (read-only)
-  - Map exit code 0 to `valid=True`; non-zero to `valid=False`
-  - Return `ConfigValidationResult`
-  - _Requirements: 6_
+- [x] 11. Implement `write(path, content, mode, owner, group)`
+  - Reads current via `cat`; computes unified diff
+  - Empty diff → `_ensure_metadata` with `SKIPPED` fall-through
+  - Dry-run: return DRY_RUN with diff
+  - Otherwise `tee <path>` with stdin, then `_apply_mode_and_owner`
 
-- [ ] 15. Implement `set_permissions()`
-  - Check file exists; raise `ConfigFileNotFoundError` if not
-  - Read current mode via `stat -c "%a" <path>`; return `SKIPPED` if already matches
-  - Execute `chmod <mode> <path>` via runner with `elevated` flag
-  - Honour `dry_run` flag
-  - _Requirements: 7_
+- [x] 12. Implement `write_template(path, template, variables, ...)`
+  - `string.Template.safe_substitute`; raises `ConfigTemplateError`
+    with the list of missing identifiers; delegates to `write`
 
-- [ ] 16. Implement `set_ownership()`
-  - Check file exists; raise `ConfigFileNotFoundError` if not
-  - Read current owner/group via `stat -c "%U %G" <path>`; return `SKIPPED` if matches
-  - Build `chown` argument from user and/or group (handle user-only, group-only, both cases)
-  - Execute via runner with `elevated` flag; honour `dry_run` flag
-  - _Requirements: 8_
+- [x] 13. Implement `backup(path)` — `cp -p <path> <path>.bak.<UTC>`;
+  timestamp format `%Y%m%dT%H%M%S`
 
-- [ ] 17. Implement `set_ini_key()`
-  - Read current file content via `_read_file()`
-  - Parse with `configparser`; create section if absent
-  - Set key to value; serialise back to string
-  - Compute diff; return `SKIPPED` if no change
-  - Write via `tee` with `elevated` flag; honour `dry_run` flag with diff in result
-  - _Requirements: 9_
+- [x] 14. Implement `restore(backup_path)` — strips trailing
+  `.bak.<timestamp>` suffix and runs `cp -p <backup> <original>`
 
-- [ ] 18. Implement `remove_ini_key()`
-  - Read current file content via `_read_file()`
-  - Parse with `configparser`; return `SKIPPED` if key or section absent
-  - Remove key; remove section if empty; serialise back to string
-  - Write via `tee` with `elevated` flag; honour `dry_run` flag
-  - _Requirements: 9_
+- [x] 15. Implement `diff(path, desired_content)` — returns
+  `ConfigDiffResult` with unified diff text
 
-- [ ] 19. Create test module
-  - Create `source/testroots/testbase/automojo/tests/sysman/linux/redhat/test_configurationmanagement.py`
-  - Implement `MockCommandRunner` keyed on command prefix to return configured `RunResult`
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10_
+- [x] 16. Implement `validate(path, validator_id)` — raises
+  `ConfigValidatorNotRegisteredError` on unknown id; dispatches registered
+  builder and maps exit_code to `valid`
 
-- [ ] 20. Write tests for `diff()` and `_compute_diff()`
-  - Test: identical content — `has_diff=False`, empty diff string
-  - Test: differing content — `has_diff=True`, non-empty unified diff
-  - Test: file absent — treated as empty; all desired lines shown as additions
-  - _Requirements: 5_
+- [x] 17. Implement `set_permissions(path, mode)` — `chmod <mode> <path>`
 
-- [ ] 21. Write tests for `write()`
-  - Test: new file — tee command issued with correct content, returns `SUCCESS`
-  - Test: existing file, same content — returns `SKIPPED`, no write issued
-  - Test: existing file, different content — write issued, returns `SUCCESS`
-  - Test: write with mode — chmod called after tee
-  - Test: write with owner/group — chown called after tee
-  - Test: write failure — returns `FAILED`
-  - Test: dry-run — returns `DRY_RUN` with diff, no tee issued
-  - _Requirements: 1_
+- [x] 18. Implement `set_ownership(path, user, group)` —
+  `chown <spec> <path>`; SKIPPED when both `user` and `group` are None;
+  spec is `user:group`, `user`, or `:group`
 
-- [ ] 22. Write tests for `write_template()`
-  - Test: template string with all variables — rendered and written, returns `SUCCESS`
-  - Test: template file path — file read then rendered and written
-  - Test: missing variable — raises `ConfigTemplateError` before any write
-  - Test: dry-run — returns `DRY_RUN` with rendered content, no write
-  - _Requirements: 2_
+- [x] 19. Implement `set_ini_key(path, section, key, value)` using
+  `configparser`; idempotent (SKIPPED when serialised content matches)
 
-- [ ] 23. Write tests for `backup()` and `restore()`
-  - Test backup: file exists — cp issued with timestamped path, returns `SUCCESS`
-    with `backup_path`
-  - Test backup: file absent — raises `ConfigFileNotFoundError`
-  - Test backup: dry-run — returns `DRY_RUN` with computed backup path
-  - Test restore: backup exists — cp to original path, returns `SUCCESS`
-  - Test restore: backup absent — raises `ConfigFileNotFoundError`
-  - Test restore: dry-run — returns `DRY_RUN`
-  - _Requirements: 3, 4_
+- [x] 20. Implement `remove_ini_key(path, section, key)` — SKIPPED when
+  section or key already absent
 
-- [ ] 24. Write tests for `validate()`
-  - Test: registered validator, exit 0 — returns `ConfigValidationResult` with `valid=True`
-  - Test: registered validator, non-zero exit — returns result with `valid=False` and stderr
-  - Test: unknown validator id — raises `ConfigValidatorNotFoundError`
-  - Test: validation runs even in dry-run mode
-  - _Requirements: 6_
+- [x] 21. Implement `_read_file` helper (cat-via-runner; empty on
+  non-zero exit) and `_apply_mode_and_owner` chmod+chown helper
 
-- [ ] 25. Write tests for `set_permissions()` and `set_ownership()`
-  - Test chmod: mode differs — chmod issued, returns `SUCCESS`
-  - Test chmod: mode already matches — returns `SKIPPED`
-  - Test chmod: file absent — raises `ConfigFileNotFoundError`
-  - Test chmod: dry-run — returns `DRY_RUN`
-  - Test chown: user and group — correct chown arg built
-  - Test chown: user only — `chown <user> <path>`
-  - Test chown: group only — `chown :<group> <path>`
-  - Test chown: already matches — returns `SKIPPED`
-  - Test chown: dry-run — returns `DRY_RUN`
-  - _Requirements: 7, 8_
+## ConfigurationManager — Gaps (specified but not implemented)
 
-- [ ] 26. Write tests for `set_ini_key()` and `remove_ini_key()`
-  - Test set: key absent — section and key created, file written
-  - Test set: section absent — section created then key added
-  - Test set: key already at target value — returns `SKIPPED`
-  - Test set: dry-run — returns `DRY_RUN` with diff
-  - Test remove: key present — key removed, file written
-  - Test remove: section empty after removal — section removed from file
-  - Test remove: key absent — returns `SKIPPED`
-  - Test remove: dry-run — returns `DRY_RUN`
-  - _Requirements: 9_
+- [ ] 22. JSON helpers (`set_json_key`, `remove_json_key`) matching the
+  INI counterparts
+
+- [ ] 23. YAML helpers — requires a YAML dependency (PyYAML); currently
+  no YAML-format support beyond opaque `write`
+
+- [ ] 24. Key=value/plain-text helpers (`set_kv_line`, `remove_kv_line`)
+  for conf files that are not strict INI (e.g. `/etc/sysctl.conf` style)
+
+- [ ] 25. Bulk-validate a directory of configs (iterate + register
+  format per file) with consolidated result
+
+- [ ] 26. `list_backups(path)` / `prune_backups(path, keep_last_n)` —
+  retention policy for the `.bak.*` files created by `backup`
+
+## Tests — Implemented
+
+- [x] 27. `test_write_skipped_when_content_matches`
+- [x] 28. `test_write_dispatches_tee_with_stdin`
+- [x] 29. `test_write_dry_run_produces_diff`
+- [x] 30. `test_write_template_renders_and_writes`
+- [x] 31. `test_write_template_raises_on_missing_variable`
+- [x] 32. `test_backup_produces_cp_command`
+- [x] 33. `test_restore_strips_backup_suffix`
+- [x] 34. `test_diff_reports_changes`
+- [x] 35. `test_validate_unknown_validator_raises`
+- [x] 36. `test_validate_runs_registered_command`
+- [x] 37. `test_set_permissions_dispatches_chmod`
+- [x] 38. `test_set_ownership_dispatches_chown`
+- [x] 39. `test_set_ini_key_writes_when_changed`
+- [x] 40. `test_set_ini_key_skipped_when_value_matches`
+- [x] 41. `test_remove_ini_key_removes_existing_key`
+
+## Tests — Gaps
+
+- [ ] 42. Test `remove_ini_key` SKIPPED paths (missing section, missing
+  key)
+
+- [ ] 43. Test `_apply_mode_and_owner` is invoked after successful write
+  (verify `chmod` / `chown` runner calls follow the `tee`)
+
+- [ ] 44. Test `set_ownership` with user-only and group-only specs
+  produces the correct `user`, `:group` chown spec
+
+- [ ] 45. Test dry-run short-circuits for `backup`, `restore`,
+  `set_permissions`, `set_ownership`
+
+- [ ] 46. Test `register_validator` extends the registry and is used
+  by a subsequent `validate` call
+
+## Known Issues
+
+- [ ] 47. Replace deprecated `datetime.utcnow()` in `backup` with
+  `datetime.now(timezone.utc)`
+
+## Follow-ups
+
+- [ ] 48. **automojo-* reuse check**: `automojo-configuration` exists
+  as a sibling package — evaluate whether its config parsing / diffing
+  helpers should be used here rather than re-implementing INI/JSON/YAML
+  handling.  Similarly check `automojo-dataprofiles` for config-shape
+  definitions.
