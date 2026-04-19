@@ -42,9 +42,10 @@ All system management features (package management, service management, etc.) de
           ▼                             ▼
 ┌──────────────────────┐      ┌──────────────────────┐
 │ LocalCommandRunner   │      │ SSHCommandRunner     │
-│ - subprocess.run()   │      │ - paramiko/fabric    │
-│ - sudo for elevation │      │ - connection pool    │
-│ - direct env/cwd     │      │ - keepalive          │
+│ - subprocess.run()   │      │ - wraps SshAgent     │
+│ - sudo -n            │      │   (automojo-interop) │
+│ - direct env/cwd     │      │ - env/cwd via shell  │
+│                      │      │ - sudo -n            │
 └──────────┬───────────┘      └──────────┬───────────┘
            │                             │
            │                             ▼
@@ -72,11 +73,12 @@ All system management features (package management, service management, etc.) de
 
 ### `ICommandRunner` (Protocol)
 
-**Location:** `automojo-interfaces` package
+**Location:** `automojo.sysman.linux.redhat.runners.base`
 
-The core abstraction that all runners implement.
+A `@runtime_checkable` Protocol that every runner implements.  Features depend on this protocol and therefore compose with any runner — local, SSH, or mock.
 
 ```python
+@runtime_checkable
 class ICommandRunner(Protocol):
     def run(
         self,
@@ -89,12 +91,15 @@ class ICommandRunner(Protocol):
         on_output: Callable[[str], None] | None = None,
         on_error: Callable[[str], None] | None = None,
         capture_output: bool = True,
+        stdin: str | None = None,
     ) -> RunResult: ...
-    
+
     def add_aspect(self, aspect: IExecutionAspect) -> None: ...
     def remove_aspect(self, aspect: IExecutionAspect) -> None: ...
-    def get_metrics(self) -> RunnerMetrics | None: ...
+    def get_metrics(self) -> SSHReliabilityMetrics | None: ...
 ```
+
+The `stdin` parameter lets callers pipe arbitrary bytes into the remote command (see Requirement 13).  `get_metrics` returns `None` for runners that do not track reliability metrics (e.g., `LocalCommandRunner`).
 
 ### `LocalCommandRunner`
 

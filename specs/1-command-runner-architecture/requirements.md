@@ -40,17 +40,20 @@ A maintenance coordinator instantiates a command runner (local or SSH) and injec
 
 ---
 
-### Requirement 2: SSH Connection Management
+### Requirement 2: SSH Transport via SshAgent
 
-**User Story:** As a maintenance coordinator, I want SSH connections to be managed reliably with automatic reconnection, so that transient network issues do not cause maintenance workflows to fail unnecessarily.
+**User Story:** As a maintenance coordinator, I want SSH connection concerns (credential handling, jump hosts, multi-user exec, PTY, reconnection) to be delegated to a dedicated SSH agent so that the runner does not reimplement transport logic.
 
 #### Acceptance Criteria
 
-1. WHEN an `SSHCommandRunner` is instantiated with connection parameters THE SYSTEM SHALL establish an SSH connection to the target host.
-2. WHEN a command is executed and the connection is closed THE SYSTEM SHALL attempt to reconnect before failing.
-3. WHEN a connection attempt fails THE SYSTEM SHALL retry up to a configured maximum number of times with exponential backoff.
-4. WHEN all connection attempts are exhausted THE SYSTEM SHALL raise an `SSHConnectionError` with details of all attempts.
-5. WHEN a connection is idle for longer than a configured keepalive interval THE SYSTEM SHALL send a keepalive packet to prevent connection timeout.
+1. WHEN an `SSHCommandRunner` is instantiated with `dry_run=False` THE SYSTEM SHALL lazily import the SSH dependencies (`automojo.interop.protocols.ssh.sshagent.SshAgent`, `automojo.interop.aspects.AspectsCmd`, `automojo.credentials.sshcredential.SshCredential`, `paramiko`) and construct an `SshAgent`.
+2. WHEN the caller supplies a pre-built `agent` in the config THE SYSTEM SHALL use that agent and SHALL NOT construct credentials from the remaining config fields.
+3. WHEN no pre-built agent is supplied THE SYSTEM SHALL build an `SshCredential` from the config's `username`, `password`, `key_filename`, and `credential_identifier` fields (defaulting `allow_agent=True`).
+4. WHEN `host` is not provided and no pre-built agent is supplied THE SYSTEM SHALL raise `ValueError`.
+5. WHEN `username` is not provided, no pre-built credential is supplied, and no pre-built agent is supplied THE SYSTEM SHALL raise `ValueError`.
+6. WHEN the SSH dependencies are not installed in the environment THE SYSTEM SHALL raise `ImportError` with an install-hint message.
+7. WHEN the runner is instantiated with `dry_run=True` THE SYSTEM SHALL NOT import SSH dependencies and SHALL NOT construct an agent.
+8. Retry-over-transient-failures and connection-keepalive policies are NOT the runner's responsibility — callers layer a `RetryAspect` or configure their own `AspectsCmd` via `SSHRunnerConfig.aspects` to shape those behaviours.
 
 ---
 
@@ -181,13 +184,56 @@ A maintenance coordinator instantiates a command runner (local or SSH) and injec
 
 ### Requirement 12: Error Classification for SSH Operations
 
-**User Story:** As a maintenance coordinator, I want SSH errors to be classified by type, so that I can distinguish between network issues, authentication failures, and command execution failures.
+**User Story:** As a maintenance coordinator, I want SSH errors to be classified by type, so that reliability metrics and diagnostics can distinguish between network issues, authentication failures, and command execution failures.
+
+The `SSHCommandRunner` captures errors into `RunResult` (with `exit_code=-1` and the error text in `stderr`) rather than raising typed connection exceptions.  The classification is recorded on `SSHReliabilityMetrics.last_error_type`.
 
 #### Acceptance Criteria
 
-1. WHEN an SSH connection fails due to network issues THE SYSTEM SHALL raise an `SSHConnectionError` with error type `NETWORK_ERROR`.
-2. WHEN an SSH connection fails due to authentication THE SYSTEM SHALL raise an `SSHConnectionError` with error type `AUTH_ERROR`.
-3. WHEN an SSH connection fails due to host key verification THE SYSTEM SHALL raise an `SSHConnectionError` with error type `HOST_KEY_ERROR`.
-4. WHEN a command execution fails over SSH THE SYSTEM SHALL return a `RunResult` with `success=False` and the actual exit code.
-5. WHEN an SSH channel times out THE SYSTEM SHALL return a `RunResult` with `timed_out=True` and error type `TIMEOUT_ERROR`.
+1. WHEN an SSH operation fails with a paramiko `AuthenticationException` THE SYSTEM SHALL set `last_error_type=AUTH_ERROR` on the metrics.
+2. WHEN an SSH operation fails with a paramiko `BadHostKeyException` THE SYSTEM SHALL set `last_error_type=HOST_KEY_ERROR` on the metrics.
+3. WHEN an SSH operation fails with a paramiko `ChannelException` THE SYSTEM SHALL set `last_error_type=CHANNEL_ERROR` on the metrics.
+4. WHEN an SSH operation fails with a paramiko `SSHException` that is not one of the more-specific types THE SYSTEM SHALL set `last_error_type=NETWORK_ERROR`.
+5. WHEN an SSH operation fails with `socket.timeout` or `TimeoutError` THE SYSTEM SHALL set `last_error_type=TIMEOUT_ERROR` and `RunResult.timed_out=True`.
+6. WHEN an SSH operation fails with `socket.error` (non-timeout) THE SYSTEM SHALL set `last_error_type=NETWORK_ERROR`.
+7. WHEN a command execution fails over SSH with a non-zero exit status (no exception) THE SYSTEM SHALL return a `RunResult` with the actual exit code and update `failure_count` but SHALL NOT set `last_error_type`.
+8. WHEN paramiko is unavailable at classification time THE SYSTEM SHALL fall back to string-based classification (`"host key"` → `HOST_KEY_ERROR`, `"timed out"`/`"timeout"` → `TIMEOUT_ERROR`, otherwise `UNKNOWN_ERROR`).
+
+---
+
+### Requirement 13: Stdin Delivery over SSH
+
+**User Story:** As a maintenance coordinator, I want to pipe arbitrary bytes into a remote command's stdin, so that write-through patterns like `sudo tee <file>` work reliably over SSH without shell-quoting hazards.
+
+#### Acceptance Criteria
+
+1. WHEN the caller supplies a non-None `stdin` parameter to `SSHCommandRunner.run` THE SYSTEM SHALL base64-encode the payload and invoke the command as `printf '%s' <encoded> | base64 -d | <command>`.
+2. WHEN the caller supplies `stdin=None` THE SYSTEM SHALL invoke the command directly without any stdin pipeline.
+3. WHEN `LocalCommandRunner.run` receives `stdin=<text>` THE SYSTEM SHALL pass it as the `input` keyword to `subprocess.run` so the child process receives it on stdin.
+
+---
+
+### Requirement 14: Execution Duration and Transport Labelling
+
+**User Story:** As a maintenance coordinator, I want every `RunResult` to carry the measured execution duration and the transport that produced it, so that reports, metrics, and diagnostics can attribute cost and origin precisely.
+
+#### Acceptance Criteria
+
+1. WHEN a command completes in either runner THE SYSTEM SHALL populate `RunResult.duration_ms` with the wall-clock execution time measured via `time.monotonic()`.
+2. WHEN a command is dispatched through `LocalCommandRunner` THE SYSTEM SHALL set `RunResult.transport="local"`.
+3. WHEN a command is dispatched through `SSHCommandRunner` THE SYSTEM SHALL set `RunResult.transport="ssh"`.
+4. WHEN a command is synthesised in dry-run mode THE SYSTEM SHALL still set the correct `transport` label for the runner that produced it.
+
+---
+
+### Requirement 15: Elevation Mechanics
+
+**User Story:** As a maintenance coordinator, I want elevation to use non-interactive `sudo -n`, so that the maintenance run fails fast if sudo would otherwise prompt for a password.
+
+#### Acceptance Criteria
+
+1. WHEN `elevated=True` is requested on `LocalCommandRunner` THE SYSTEM SHALL prepend `[sudo_path, "-n"]` to the argument vector before invoking `subprocess.run`.
+2. WHEN `elevated=True` is requested on `SSHCommandRunner` THE SYSTEM SHALL prepend `sudo_path` and `-n` to the command arguments in the shell line built for `SshAgent.run_cmd`.
+3. WHEN `elevated=False` THE SYSTEM SHALL not modify the argument vector.
+4. The default `sudo_path` for both runners is `/usr/bin/sudo`; callers may override it via `LocalRunnerConfig.sudo_path` or `SSHRunnerConfig.sudo_path`.
 

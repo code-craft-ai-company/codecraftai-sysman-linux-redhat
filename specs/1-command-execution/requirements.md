@@ -137,12 +137,16 @@ script, so that a hung process does not block the maintenance workflow indefinit
 #### Acceptance Criteria
 
 1. WHEN the coordinator provides a `timeout_seconds` value THE SYSTEM SHALL pass it to the
-   command runner.
-2. WHEN the command runner reports a timeout THE SYSTEM SHALL return a `CommandResult` with
-   `success=False`, `timed_out=True`, exit code `None`, and a descriptive message in
-   `stderr`.
-3. WHEN no `timeout_seconds` is provided THE SYSTEM SHALL not pass a timeout to the
-   command runner, deferring to the command runner's default behaviour.
+   command runner as the `timeout` keyword argument.
+2. WHEN the command runner reports a timeout (`RunResult.timed_out=True`) THE SYSTEM SHALL
+   return a `CommandResult` with `success=False`, `timed_out=True`, the exit code supplied
+   by the runner (typically a negative value signalling abnormal termination), and — when
+   the runner supplied an empty `stderr` — a descriptive default timeout message
+   (`"Command execution timed out"`) in `stderr`.
+3. WHEN the command runner reports a timeout AND has populated `stderr` THE SYSTEM SHALL
+   preserve the runner's `stderr` text unchanged.
+4. WHEN no `timeout_seconds` is provided THE SYSTEM SHALL pass `timeout=None` to the
+   command runner, deferring to the runner's default behaviour.
 
 ---
 

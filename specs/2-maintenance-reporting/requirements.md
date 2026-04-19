@@ -11,9 +11,11 @@ A maintenance coordinator builds up a report incrementally during a run by appen
 action records, then finalises and serialises the report at the end.  The feature does
 not decide *what* to report — it provides the data structures and serialisation
 primitives needed to record, query, and emit maintenance outcomes in a consistent,
-machine-readable and human-readable form.  No command execution or file system access is
-performed directly; all output is either returned as a string or written through the
-`automojo-interfaces` file-operator abstraction.
+machine-readable and human-readable form.  No command execution is performed.  File
+writes in `write_report` are performed directly via `os.makedirs` + `open()` with
+UTF-8 encoding; the file-operator abstraction is not used because this feature emits
+final artefacts rather than maintenance mutations (dry-run is still honoured at this
+layer).
 
 ---
 
@@ -30,11 +32,16 @@ action results throughout the run.
 1. WHEN the coordinator creates a `MaintenanceReport` THE SYSTEM SHALL record the current
    UTC timestamp as `started_at`.
 2. WHEN the coordinator provides a `run_id` THE SYSTEM SHALL store it on the report.
-3. WHEN the coordinator provides a `host` string THE SYSTEM SHALL store it on the report.
-4. WHEN the coordinator provides a `description` string THE SYSTEM SHALL store it on the
+3. WHEN the coordinator does not provide a `run_id` THE SYSTEM SHALL auto-generate one
+   via `uuid.uuid4()` rendered as a string.
+4. WHEN the coordinator provides a `host` string THE SYSTEM SHALL store it on the report.
+5. WHEN the coordinator does not provide a `host` string THE SYSTEM SHALL auto-discover
+   it via `socket.gethostname()`, falling back to the literal string `"unknown"` if the
+   call raises.
+6. WHEN the coordinator provides a `description` string THE SYSTEM SHALL store it on the
    report.
-5. WHEN the report is created the `actions` list SHALL be empty and `finished_at` SHALL
-   be `None`.
+7. WHEN the report is created the `actions` list SHALL be empty, `finished_at` SHALL be
+   `None`, and `overall_status` SHALL be `None`.
 
 ---
 
@@ -68,11 +75,16 @@ outcome.
 
 1. WHEN the coordinator calls `finalise` THE SYSTEM SHALL record the current UTC
    timestamp as `finished_at`.
-2. WHEN all actions have status `success` or `skipped` or `dry_run` THE SYSTEM SHALL set
-   the report's `overall_status` to `SUCCESS`.
-3. WHEN any action has status `failed` THE SYSTEM SHALL set `overall_status` to `FAILED`.
-4. WHEN the report has no actions THE SYSTEM SHALL set `overall_status` to `SUCCESS`.
-5. WHEN `finalise` is called more than once THE SYSTEM SHALL update `finished_at` and
+2. WHEN any action has status `failed` THE SYSTEM SHALL set `overall_status` to
+   `FAILED`.
+3. WHEN no action failed AND every action has status `dry_run` THE SYSTEM SHALL set
+   `overall_status` to `DRY_RUN`.
+4. WHEN no action failed, not every action is `dry_run`, AND every action has status
+   `skipped` THE SYSTEM SHALL set `overall_status` to `SKIPPED`.
+5. WHEN no action failed and at least one action has status `success` THE SYSTEM SHALL
+   set `overall_status` to `SUCCESS`.
+6. WHEN the report has no actions THE SYSTEM SHALL set `overall_status` to `SUCCESS`.
+7. WHEN `finalise` is called more than once THE SYSTEM SHALL update `finished_at` and
    recalculate `overall_status` based on the current action list.
 
 ---
@@ -139,14 +151,19 @@ file on disk, so that it is persisted for later review or archival.
 
 1. WHEN the coordinator provides a file path and format (`json` or `text`) THE SYSTEM
    SHALL serialise the report in the requested format and write it to the specified path
-   using the file operator.
-2. WHEN `format="json"` THE SYSTEM SHALL write the JSON serialisation.
-3. WHEN `format="text"` THE SYSTEM SHALL write the plain-text summary.
-4. WHEN the write succeeds THE SYSTEM SHALL return a `ReportWriteResult` with
+   using `open(path, "w", encoding="utf-8")`.
+2. WHEN the parent directory of `path` does not exist THE SYSTEM SHALL create it via
+   `os.makedirs(parent, exist_ok=True)` before writing.
+3. WHEN `format="json"` THE SYSTEM SHALL write the JSON serialisation.
+4. WHEN `format="text"` THE SYSTEM SHALL write the plain-text summary.
+5. WHEN `format` is neither `"json"` nor `"text"` THE SYSTEM SHALL return a
+   `ReportWriteResult` with `success=False`, the path, and `error="unsupported report
+   format: <format>"`, without attempting to write.
+6. WHEN the write succeeds THE SYSTEM SHALL return a `ReportWriteResult` with
    `success=True` and the resolved file path.
-5. WHEN the write fails THE SYSTEM SHALL return a `ReportWriteResult` with
-   `success=False` and the error message.
-6. WHEN dry-run mode is active THE SYSTEM SHALL NOT write any file and SHALL return a
+7. WHEN the write raises an exception THE SYSTEM SHALL catch it and return a
+   `ReportWriteResult` with `success=False` and `error=str(ex)`.
+8. WHEN dry-run mode is active THE SYSTEM SHALL NOT write any file and SHALL return a
    `ReportWriteResult` with `success=True`, `dry_run=True`, and the path that would have
    been written.
 

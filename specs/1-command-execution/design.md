@@ -436,40 +436,32 @@ assert result.success == True  # Synthetic success in dry-run
 
 ## Testing Strategy
 
-### Unit Testing
+### Unit Testing (Implemented)
 
-- All tests use a `MockCommandRunner` whose `.run()` return value is configured per test.
-- `working_dir` existence checks are tested with `tmp_path` (pytest fixture) for existing
-  directories and a known-bad path for the not-found case.
+Tests live in
+`source/testroots/testbase/automojo/tests/sysman/linux/redhat/test_commandexecution.py`
+and use the `automojo.testbase` assertion helpers.
+
+- A local `_MockRunner` dataclass stubs `ICommandRunner`, letting each test queue a
+  sequence of `RunResult` instances and inspect the call history.
+- `working_dir` existence checks are verified with a known-bad path for the not-found
+  case; the mock runner is asserted not to have been called.
 - Temp file creation and cleanup for `run_script()` is verified by inspecting the
-  `MockCommandRunner` call args (`args[0] == "bash"`, `args[1]` ends with `.sh`).
-- Sequence stop-on-failure is verified by counting runner invocations.
+  `MockRunner` call args (`args[0] == "bash"`, `args[1]` ends with `.sh`) and confirming
+  the file no longer exists after the call (both success and failure paths).
+- Sequence stop-on-failure is verified by counting runner invocations against the
+  provided spec list.
 - Dry-run for all three methods is verified by asserting the runner is never called.
-- Timeout handling uses a `MockCommandRunner` that returns `RunResult(timed_out=True)`.
-- Environment merging is verified by inspecting the `env` kwarg passed to the runner.
+- Timeout handling uses a `RunResult(timed_out=True)` and asserts the default timeout
+  message is injected when the runner supplies an empty `stderr`.
+- Environment merging is verified by patching `os.environ` and inspecting the `env`
+  kwarg passed to the runner.
 - No test requires a live system or root access.
 
-### Property-Based Testing
+### Property Validation
 
-The implementation uses the `hypothesis` library for property-based testing in Python. Each correctness property defined above will be implemented as a property-based test that:
-
-- Generates random but valid inputs (commands, arguments, configurations)
-- Executes the operation under test
-- Verifies the property holds across all generated inputs
-- Runs a minimum of 100 iterations per property test
-
-Property-based tests are tagged with comments referencing the specific correctness property they validate, using the format: `# Feature: command-execution, Property N: <property description>`
-
-**Property Test Coverage:**
-
-- Property 1: Success mapping tests generate random exit codes
-- Property 2: Dry-run safety tests verify no runner invocation
-- Property 3: Working directory validation tests generate valid/invalid paths
-- Property 4: Environment merging tests verify correct precedence
-- Properties 5-7: Sequence behavior tests verify execution flow
-- Property 8: Script cleanup tests verify file deletion
-- Property 9: Timeout tests verify propagation and handling
-- Property 10: Elevation tests verify flag propagation
-- Property 11: Output capture tests verify completeness
-
-Both unit tests and property-based tests are complementary: unit tests verify specific examples and edge cases, while property tests verify universal correctness across many inputs.
+The Correctness Properties defined above are validated by the unit tests rather than
+by generative (hypothesis-style) property testing.  Each property is covered by one or
+more targeted unit tests that exercise the relevant edge cases with hand-crafted
+inputs.  Generative property-based testing is a potential future enhancement but is
+not currently in scope.
