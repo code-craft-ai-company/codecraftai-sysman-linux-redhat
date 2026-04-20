@@ -78,6 +78,29 @@ Domain-specific operations on RHEL subsystems.  Each feature encodes the
 rules, invariants, and idempotent actions for a single subsystem, built on
 Layer 1 and Layer 2 primitives.
 
+### 3-acl-management
+
+Manages POSIX ACLs (`setfacl`/`getfacl`), ext*-family extended
+file attributes (`chattr`/`lsattr`), and file capabilities
+(`setcap`/`getcap`).  Directory-only guards for default ACLs and
+recursive `chattr`; canonical-form comparisons drive SKIPPED
+semantics.
+
+- [requirements.md](3-acl-management/requirements.md)
+- [design.md](3-acl-management/design.md)
+- [tasks.md](3-acl-management/tasks.md)
+
+### 3-audit-management
+
+Manages the Linux Audit subsystem (`auditd`): the daemon lifecycle, the
+active and persistent rule sets, the daemon configuration under
+`/etc/audit/`, and audit-log search and reporting tools (`auditctl`,
+`augenrules`, `ausearch`, `aureport`).
+
+- [requirements.md](3-audit-management/requirements.md)
+- [design.md](3-audit-management/design.md)
+- [tasks.md](3-audit-management/tasks.md)
+
 ### 3-authentication-management
 
 Manages the local authentication stack: `authselect` profiles and
@@ -90,17 +113,6 @@ password-quality policy (`pam_pwquality`), failed-login lockout
 - [requirements.md](3-authentication-management/requirements.md)
 - [design.md](3-authentication-management/design.md)
 - [tasks.md](3-authentication-management/tasks.md)
-
-### 3-audit-management
-
-Manages the Linux Audit subsystem (`auditd`): the daemon lifecycle, the
-active and persistent rule sets, the daemon configuration under
-`/etc/audit/`, and audit-log search and reporting tools (`auditctl`,
-`augenrules`, `ausearch`, `aureport`).
-
-- [requirements.md](3-audit-management/requirements.md)
-- [design.md](3-audit-management/design.md)
-- [tasks.md](3-audit-management/tasks.md)
 
 ### 3-backup-restore
 
@@ -122,6 +134,20 @@ GRUB2 configuration (`grubby`, `grub2-mkconfig`, `grub2-editenv`, `bootctl`).
 - [requirements.md](3-boot-management/requirements.md)
 - [design.md](3-boot-management/design.md)
 - [tasks.md](3-boot-management/tasks.md)
+
+### 3-certificate-issuance
+
+Issues X.509 certificates — complement to the trust-store surface
+in `3-certificate-trust-management`.  OpenSSL key / CSR /
+self-signed generation; certmonger enrolment with renewal
+tracking; ACME issuance via `certbot` (webroot / standalone /
+dns-\<plugin\>).  Passphrase material flows on stdin, never
+argv; mode-bit invariants enforced (keys 0600, certs 0644);
+temp OpenSSL configs always cleaned up.
+
+- [requirements.md](3-certificate-issuance/requirements.md)
+- [design.md](3-certificate-issuance/design.md)
+- [tasks.md](3-certificate-issuance/tasks.md)
 
 ### 3-certificate-trust-management
 
@@ -165,6 +191,18 @@ containers (Quadlet).
 - [design.md](3-container-management/design.md)
 - [tasks.md](3-container-management/tasks.md)
 
+### 3-dns-server-management
+
+Manages a local DNS server — auto-selects between BIND (`named`
++ `rndc`), Unbound (`unbound-control`), or dnsmasq backends.
+BIND zone drop-ins plus zone-data files; Unbound forward-zone /
+stub-zone blocks; dnsmasq `host-record=` / `server=` entries.
+`validate()` runs before every `reload()`.
+
+- [requirements.md](3-dns-server-management/requirements.md)
+- [design.md](3-dns-server-management/design.md)
+- [tasks.md](3-dns-server-management/tasks.md)
+
 ### 3-encryption-management
 
 Manages block-level encryption using LUKS (`cryptsetup`): header
@@ -194,6 +232,18 @@ usage, mounts and unmounts filesystems, and manages `/etc/fstab` entries.
 - [requirements.md](3-filesystem-management/requirements.md)
 - [design.md](3-filesystem-management/design.md)
 - [tasks.md](3-filesystem-management/tasks.md)
+
+### 3-filesystem-quotas
+
+Manages ext* and XFS disk quotas — user / group / XFS project
+block + inode limits, grace-period configuration, `quotaon`/`off`
+toggles, XFS project plumbing via atomic `/etc/projects` +
+`/etc/projid` edits.  Fstype dispatch chooses between the
+traditional `quota` tooling and `xfs_quota` automatically.
+
+- [requirements.md](3-filesystem-quotas/requirements.md)
+- [design.md](3-filesystem-quotas/design.md)
+- [tasks.md](3-filesystem-quotas/tasks.md)
 
 ### 3-firewall-management
 
@@ -281,6 +331,19 @@ journal data to reclaim disk space.
 - [design.md](3-log-management/design.md)
 - [tasks.md](3-log-management/tasks.md)
 
+### 3-mail-transport-management
+
+Wraps a local Postfix MTA: `main.cf` / `master.cf` directive
+management via `postconf`; lookup-table map CRUD with automatic
+`postmap` after content changes; `/etc/aliases` management with
+`newaliases` chaining; and full mail-queue lifecycle (list /
+flush / delete / requeue).  Service lifecycle delegated to
+`3-service-management`.
+
+- [requirements.md](3-mail-transport-management/requirements.md)
+- [design.md](3-mail-transport-management/design.md)
+- [tasks.md](3-mail-transport-management/tasks.md)
+
 ### 3-network-configuration
 
 Sets the system hostname, manages `/etc/hosts`, configures DNS resolution,
@@ -291,6 +354,18 @@ connections.
 - [design.md](3-network-configuration/design.md)
 - [tasks.md](3-network-configuration/tasks.md)
 
+### 3-nfs-server-management
+
+Manages a local NFS v3/v4 server.  `/etc/exports.d/` drop-in
+CRUD with automatic `exportfs -r` reload; NFSv4 idmap domain via
+`/etc/idmapd.conf`; `/etc/nfs.conf` multi-section directive
+management; server-stats via `nfsstat -s`.  Service lifecycle
+delegated.
+
+- [requirements.md](3-nfs-server-management/requirements.md)
+- [design.md](3-nfs-server-management/design.md)
+- [tasks.md](3-nfs-server-management/tasks.md)
+
 ### 3-package-management
 
 Installs, removes, updates, and queries RPM packages using `dnf` and
@@ -299,6 +374,20 @@ Installs, removes, updates, and queries RPM packages using `dnf` and
 - [requirements.md](3-package-management/requirements.md)
 - [design.md](3-package-management/design.md)
 - [tasks.md](3-package-management/tasks.md)
+
+### 3-precision-time-management
+
+Manages IEEE 1588 PTP (`ptp4l`, `phc2sys`, `pmc`).  Parallel to
+the Chrony/NTP surface in `3-network-configuration`; uses ptp4l's
+whitespace-separated `key value` config syntax (not INI `key =
+value`).  Preset helpers for domain / transport / delay-mechanism
+/ interfaces; `pmc` runtime queries that degrade to stub records
+when the daemon is down rather than raising.  `phc2sys` has an
+explicit ptp4l-dependency check.
+
+- [requirements.md](3-precision-time-management/requirements.md)
+- [design.md](3-precision-time-management/design.md)
+- [tasks.md](3-precision-time-management/tasks.md)
 
 ### 3-process-management
 
@@ -311,6 +400,19 @@ owner-scoped operations.  Does not manage systemd services — that's
 - [design.md](3-process-management/design.md)
 - [tasks.md](3-process-management/tasks.md)
 
+### 3-remote-log-forwarding
+
+Ships logs off-host — counterpart to `3-log-management`'s local
+surface.  rsyslog forward-rule drop-ins under `/etc/rsyslog.d/`
+with TLS + queue-on-disk support; `systemd-journal-upload`
+configuration; journald `ForwardTo*` directives; a non-raising
+collector probe for reachability + TLS verification.  Always
+`rsyslogd -N1`-validates before delegating a service reload.
+
+- [requirements.md](3-remote-log-forwarding/requirements.md)
+- [design.md](3-remote-log-forwarding/design.md)
+- [tasks.md](3-remote-log-forwarding/tasks.md)
+
 ### 3-repository-management
 
 Adds, removes, enables, disables, and refreshes `dnf`/`yum` software
@@ -319,6 +421,34 @@ repositories defined under `/etc/yum.repos.d/`.
 - [requirements.md](3-repository-management/requirements.md)
 - [design.md](3-repository-management/design.md)
 - [tasks.md](3-repository-management/tasks.md)
+
+### 3-resource-control-management
+
+Manages systemd-cgroup resource limits.  Transient via
+`systemctl set-property --runtime`; persistent via
+`<unit>.d/10-resource-control.conf` drop-in with aggregated
+changed/skipped-keys reporting; slice definition +
+attach-to-slice; transient scopes via `systemd-run`.  Cgroup
+introspection via `systemd-cgls`, `systemd-cgtop`, and
+`/sys/fs/cgroup` direct reads.  Delegates `daemon-reload` to
+`3-service-management`.
+
+- [requirements.md](3-resource-control-management/requirements.md)
+- [design.md](3-resource-control-management/design.md)
+- [tasks.md](3-resource-control-management/tasks.md)
+
+### 3-samba-server-management
+
+Wraps a local Samba SMB/CIFS server.  `smb.conf` global + share
+CRUD with block-boundary strip; `testparm` validation before
+every reload; Samba-user management via `smbpasswd` + `pdbedit`;
+AD join via `net ads` with password on stdin.  Passphrase
+material never on argv; `SambaActionResult.command` sanitised.
+Service lifecycle delegated.
+
+- [requirements.md](3-samba-server-management/requirements.md)
+- [design.md](3-samba-server-management/design.md)
+- [tasks.md](3-samba-server-management/tasks.md)
 
 ### 3-scheduled-tasks
 
@@ -405,9 +535,22 @@ profiles under `/etc/tuned/`.
 
 ### 3-user-group-management
 
-Creates, modifies, and deletes local users and groups.  Manages group
-membership, SSH authorized keys, account lock state, and password expiry.
+Creates, modifies, and deletes local users and groups.  Manages
+group membership, SSH authorized keys, account lock state, and
+password expiry.
 
 - [requirements.md](3-user-group-management/requirements.md)
 - [design.md](3-user-group-management/design.md)
 - [tasks.md](3-user-group-management/tasks.md)
+
+### 3-virtualization-management
+
+Wraps libvirt / KVM: domain lifecycle, `virt-install`, virtual
+networks, storage pools and volumes, and snapshots.  All `virsh`
+invocations thread `--connect` through a configurable URI;
+`define_domain` uses a temp-XML-file pattern with guaranteed
+cleanup.
+
+- [requirements.md](3-virtualization-management/requirements.md)
+- [design.md](3-virtualization-management/design.md)
+- [tasks.md](3-virtualization-management/tasks.md)

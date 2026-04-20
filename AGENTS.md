@@ -33,8 +33,8 @@ is prefixed with its architecture-layer number.
 
 # Features
 
-The package has 35 features organised into three architecture layers.
-32 have source-level implementations; 3 are specified-only (marked
+The package has 46 features organised into three architecture layers.
+32 have source-level implementations; 14 are specified-only (marked
 *spec only* below).  A full catalogue lives at
 [specs/feature-list.md](specs/feature-list.md).  Every feature folder
 contains `requirements.md`, `design.md`, and `tasks.md`; checked items
@@ -59,20 +59,25 @@ Gap analysis and proposed-feature rationale live at
   structures and serialisation primitives for recording and emitting
   maintenance-run outcomes.
 
-## Layer 3 — Business Logic (32)
+## Layer 3 — Business Logic (43)
 
 Domain operations on RHEL subsystems:
 
+- [3-acl-management](specs/3-acl-management/) — *spec only.* POSIX
+  ACLs, extended file attributes, file capabilities.
+- [3-audit-management](specs/3-audit-management/) — `auditd` daemon,
+  rules, and `aureport`/`ausearch` tools.
 - [3-authentication-management](specs/3-authentication-management/) —
   *spec only.* Local auth stack: `authselect`, PAM drop-ins,
   `pam_pwquality`, `pam_faillock`, `/etc/security/limits.d`, NSS
   ordering.
-- [3-audit-management](specs/3-audit-management/) — `auditd` daemon,
-  rules, and `aureport`/`ausearch` tools.
 - [3-backup-restore](specs/3-backup-restore/) — `tar`/`rsync` file-tree
   archives with manifests, checksums, restore, and retention.
 - [3-boot-management](specs/3-boot-management/) — boot target, kernel
   selection, kernel command line, GRUB2.
+- [3-certificate-issuance](specs/3-certificate-issuance/) —
+  *spec only.* Issue X.509 certificates (OpenSSL / certmonger /
+  ACME via certbot); complement to certificate-trust-management.
 - [3-certificate-trust-management](specs/3-certificate-trust-management/) —
   CA trust anchors under `/etc/pki/ca-trust/` and `update-ca-trust`.
 - [3-cockpit-management](specs/3-cockpit-management/) — Cockpit socket,
@@ -81,6 +86,9 @@ Domain operations on RHEL subsystems:
   write, diff, validate INI/JSON/YAML/plain-text config files.
 - [3-container-management](specs/3-container-management/) — Podman images,
   containers, registries, and Quadlet units.
+- [3-dns-server-management](specs/3-dns-server-management/) —
+  *spec only.* BIND / Unbound / dnsmasq wrapper with backend
+  auto-detect and validate-before-reload.
 - [3-encryption-management](specs/3-encryption-management/) —
   *spec only.* LUKS (`cryptsetup`), TPM2 / Clevis auto-unlock,
   `/etc/crypttab`.
@@ -89,6 +97,8 @@ Domain operations on RHEL subsystems:
   files.
 - [3-filesystem-management](specs/3-filesystem-management/) — directories,
   symlinks, disk usage, mount/unmount, `/etc/fstab`.
+- [3-filesystem-quotas](specs/3-filesystem-quotas/) — *spec only.*
+  ext*/XFS user/group/project quotas; fstype-dispatched tool family.
 - [3-firewall-management](specs/3-firewall-management/) — `firewalld`
   zones, services, ports, rich rules.
 - [3-hardware-inventory](specs/3-hardware-inventory/) — read-only
@@ -106,14 +116,32 @@ Domain operations on RHEL subsystems:
   timezone, keyboard, RTC via `localectl`/`timedatectl`.
 - [3-log-management](specs/3-log-management/) — `journalctl`, traditional
   log files, `logrotate` drop-ins, journal vacuum.
+- [3-mail-transport-management](specs/3-mail-transport-management/) —
+  *spec only.* Postfix MTA: `main.cf`/`master.cf`, maps,
+  `/etc/aliases`, mail queue.
 - [3-network-configuration](specs/3-network-configuration/) — hostname,
   `/etc/hosts`, DNS, NTP/Chrony, NetworkManager connections.
+- [3-nfs-server-management](specs/3-nfs-server-management/) —
+  *spec only.* `/etc/exports.d/` CRUD, NFSv4 idmapping,
+  `/etc/nfs.conf`, server stats.
 - [3-package-management](specs/3-package-management/) — RPM install,
   remove, update, query via `dnf` and `rpm`.
+- [3-precision-time-management](specs/3-precision-time-management/) —
+  *spec only.* PTP / IEEE 1588 (`ptp4l`, `phc2sys`, `pmc`);
+  parallel to Chrony/NTP.
 - [3-process-management](specs/3-process-management/) — enumerate,
   inspect, signal, reprioritise running processes.
+- [3-remote-log-forwarding](specs/3-remote-log-forwarding/) —
+  *spec only.* rsyslog forward rules (TLS + queued),
+  `systemd-journal-upload`, journald `ForwardTo*`.
 - [3-repository-management](specs/3-repository-management/) — `dnf`/`yum`
   repository definitions under `/etc/yum.repos.d/`.
+- [3-resource-control-management](specs/3-resource-control-management/) —
+  *spec only.* systemd-cgroup resource limits, slice definition,
+  transient scopes, cgroup introspection.
+- [3-samba-server-management](specs/3-samba-server-management/) —
+  *spec only.* `smb.conf` + share CRUD, Samba users, AD join via
+  `net ads`.
 - [3-scheduled-tasks](specs/3-scheduled-tasks/) — cron jobs under
   `/etc/cron.d/` and systemd timers.
 - [3-security-compliance](specs/3-security-compliance/) — coarse SELinux
@@ -133,6 +161,9 @@ Domain operations on RHEL subsystems:
   active profile, custom profiles under `/etc/tuned/`.
 - [3-user-group-management](specs/3-user-group-management/) — local users
   and groups, membership, SSH authorized keys, lock/expiry.
+- [3-virtualization-management](specs/3-virtualization-management/) —
+  *spec only.* libvirt / KVM: domains, `virt-install`,
+  networks, pools/volumes, snapshots.
 
 # Testing Conventions
 Use this section to describe the test framework that should be used for testing code in this repository.  You can instruct the Agent on how to write tests for this repository by using the
