@@ -78,6 +78,19 @@ Domain-specific operations on RHEL subsystems.  Each feature encodes the
 rules, invariants, and idempotent actions for a single subsystem, built on
 Layer 1 and Layer 2 primitives.
 
+### 3-authentication-management
+
+Manages the local authentication stack: `authselect` profiles and
+feature flags, direct PAM drop-ins under `/etc/pam.d/`,
+password-quality policy (`pam_pwquality`), failed-login lockout
+(`pam_faillock` + `faillock`), login resource limits
+(`/etc/security/limits.d/`), and NSS source ordering
+(`/etc/nsswitch.conf`).
+
+- [requirements.md](3-authentication-management/requirements.md)
+- [design.md](3-authentication-management/design.md)
+- [tasks.md](3-authentication-management/tasks.md)
+
 ### 3-audit-management
 
 Manages the Linux Audit subsystem (`auditd`): the daemon lifecycle, the
@@ -152,6 +165,18 @@ containers (Quadlet).
 - [design.md](3-container-management/design.md)
 - [tasks.md](3-container-management/tasks.md)
 
+### 3-encryption-management
+
+Manages block-level encryption using LUKS (`cryptsetup`): header
+query, format, open/close/resize, key-slot lifecycle (add / remove /
+rotate), TPM2 and Clevis auto-unlock enrolment, and `/etc/crypttab`
+entries.  Passphrase material routes through runner `stdin`, never
+argv; honours a last-slot safety rail before removing key slots.
+
+- [requirements.md](3-encryption-management/requirements.md)
+- [design.md](3-encryption-management/design.md)
+- [tasks.md](3-encryption-management/tasks.md)
+
 ### 3-environment-configuration
 
 Manages shell environment variables in `/etc/profile.d/`, `/etc/environment`,
@@ -189,6 +214,21 @@ interfaces, firmware, and OS release.  Read-only — no dry-run distinction.
 - [requirements.md](3-hardware-inventory/requirements.md)
 - [design.md](3-hardware-inventory/design.md)
 - [tasks.md](3-hardware-inventory/tasks.md)
+
+### 3-identity-management
+
+Integrates the system with enterprise directory services: domain
+discovery and join via `realm` / `adcli` (Active Directory and
+FreeIPA), SSSD configuration under `/etc/sssd/` and its drop-in
+directory, Kerberos client configuration (`/etc/krb5.conf` and
+`/etc/krb5.conf.d/`), and the Kerberos ticket lifecycle (`kinit`,
+`klist`, `kdestroy`).  Passphrase / OTP material flows through
+runner `stdin`, never argv; NSS ordering edits delegate to
+`3-authentication-management`.
+
+- [requirements.md](3-identity-management/requirements.md)
+- [design.md](3-identity-management/design.md)
+- [tasks.md](3-identity-management/tasks.md)
 
 ### 3-insights-management
 

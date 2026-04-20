@@ -33,11 +33,16 @@ is prefixed with its architecture-layer number.
 
 # Features
 
-The package has 32 features organised into three architecture layers.  A
-full catalogue with descriptions and spec links lives at
+The package has 35 features organised into three architecture layers.
+32 have source-level implementations; 3 are specified-only (marked
+*spec only* below).  A full catalogue lives at
 [specs/feature-list.md](specs/feature-list.md).  Every feature folder
-contains `requirements.md`, `design.md`, and `tasks.md`; checked items in
-`tasks.md` are already implemented.
+contains `requirements.md`, `design.md`, and `tasks.md`; checked items
+in `tasks.md` are already implemented.
+
+Gap analysis and proposed-feature rationale live at
+[specs/feature-gaps.md](specs/feature-gaps.md) and
+[specs/proposed-features.md](specs/proposed-features.md).
 
 ## Layer 1 — Infrastructure and Platform (2)
 
@@ -54,10 +59,14 @@ contains `requirements.md`, `design.md`, and `tasks.md`; checked items in
   structures and serialisation primitives for recording and emitting
   maintenance-run outcomes.
 
-## Layer 3 — Business Logic (29)
+## Layer 3 — Business Logic (32)
 
 Domain operations on RHEL subsystems:
 
+- [3-authentication-management](specs/3-authentication-management/) —
+  *spec only.* Local auth stack: `authselect`, PAM drop-ins,
+  `pam_pwquality`, `pam_faillock`, `/etc/security/limits.d`, NSS
+  ordering.
 - [3-audit-management](specs/3-audit-management/) — `auditd` daemon,
   rules, and `aureport`/`ausearch` tools.
 - [3-backup-restore](specs/3-backup-restore/) — `tar`/`rsync` file-tree
@@ -72,6 +81,9 @@ Domain operations on RHEL subsystems:
   write, diff, validate INI/JSON/YAML/plain-text config files.
 - [3-container-management](specs/3-container-management/) — Podman images,
   containers, registries, and Quadlet units.
+- [3-encryption-management](specs/3-encryption-management/) —
+  *spec only.* LUKS (`cryptsetup`), TPM2 / Clevis auto-unlock,
+  `/etc/crypttab`.
 - [3-environment-configuration](specs/3-environment-configuration/) —
   shell env vars in `/etc/profile.d/`, `/etc/environment`, and user rc
   files.
@@ -81,6 +93,9 @@ Domain operations on RHEL subsystems:
   zones, services, ports, rich rules.
 - [3-hardware-inventory](specs/3-hardware-inventory/) — read-only
   hardware/OS snapshot (DMI, CPU, memory, block/PCI/USB, NICs, firmware).
+- [3-identity-management](specs/3-identity-management/) —
+  *spec only.* Enterprise directory integration: `realm` / `adcli`
+  for AD & FreeIPA, SSSD config, Kerberos client + tickets.
 - [3-insights-management](specs/3-insights-management/) — Red Hat Insights
   client registration, uploads, configuration.
 - [3-kdump-management](specs/3-kdump-management/) — kernel crash-dump
