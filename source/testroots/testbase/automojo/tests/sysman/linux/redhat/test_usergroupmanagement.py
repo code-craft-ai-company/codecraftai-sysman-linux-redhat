@@ -401,3 +401,74 @@ def test_group_query_parses_members():
     testbase.assert_true(info is not None)
     testbase.assert_equal(info.members, ["alice", "bob"])
     return
+
+
+# ---------------------------------------------------------------------
+# set_password — Part C credential routing
+# ---------------------------------------------------------------------
+
+
+class _StubCredential:
+    """
+        Minimal duck-type of automojo-credentials' BasicCredential —
+        exposes a ``.password`` attribute.  Used in tests to avoid
+        requiring the real credential at test-collection time.
+    """
+
+    def __init__(self, *, username: str, password: str) -> None:
+        self.username = username
+        self.password = password
+        return
+
+
+def test_set_password_routes_password_on_stdin():
+    """
+        set_password() sends ``username:password\\n`` on the runner's
+        stdin channel — not in argv — so the password never appears
+        in process listings.
+    """
+    runner = _MockRunner()
+    um = UserManager(runner, UserGroupManagerConfig(elevated=True))
+    result = um.set_password(
+        "alice", _StubCredential(username="alice", password="s3cret!"),
+    )
+    testbase.assert_equal(result.status, ActionStatus.SUCCESS)
+    chpasswd_calls = [c for c in runner.calls if c["args"][0] == "chpasswd"]
+    testbase.assert_equal(len(chpasswd_calls), 1)
+    # Argv must be chpasswd with NO password on argv.
+    testbase.assert_equal(chpasswd_calls[0]["args"], ["chpasswd"])
+    testbase.assert_equal(chpasswd_calls[0]["stdin"], "alice:s3cret!\n")
+    # Result.command field is sanitised — only ['chpasswd'], no secrets.
+    testbase.assert_equal(result.command, ["chpasswd"])
+    return
+
+
+def test_set_password_dry_run_does_not_dispatch():
+    """
+        set_password() in dry-run returns DRY_RUN without invoking
+        the runner.  No password leaks anywhere.
+    """
+    runner = _MockRunner()
+    um = UserManager(runner, UserGroupManagerConfig(dry_run=True, elevated=True))
+    result = um.set_password(
+        "alice", _StubCredential(username="alice", password="s3cret!"),
+    )
+    testbase.assert_equal(result.status, ActionStatus.DRY_RUN)
+    testbase.assert_equal(runner.calls, [])
+    testbase.assert_equal(result.command, ["chpasswd"])
+    return
+
+
+def test_set_password_raises_without_credential():
+    """
+        set_password() raises ValueError when no credential is given.
+    """
+    runner = _MockRunner()
+    um = UserManager(runner, UserGroupManagerConfig())
+    raised = False
+    try:
+        um.set_password("alice", None)
+    except ValueError:
+        raised = True
+    testbase.assert_true(raised)
+    return

@@ -500,6 +500,56 @@ class UserManager(BaseFeatureManager):
         command = ["passwd", "--expire", username]
         return self._write_user(username=username, command=command)
 
+    def set_password(self, username: str, credential) -> UserActionResult:
+        """
+            Set the user's password via ``chpasswd``.  The password is
+            supplied through the runner's ``stdin`` channel so it never
+            appears on argv (Part C seam — credential material no
+            longer leaks into process listings).
+
+            :param username: Login name whose password to set.
+            :param credential: A credential object with a ``.password``
+                               attribute (e.g.
+                               :class:`automojo.credentials.basiccredential.BasicCredential`).
+                               The credential's ``.username`` is
+                               ignored — this method uses the explicit
+                               ``username`` argument.
+
+            The returned :class:`UserActionResult.command` field records
+            only ``['chpasswd']`` — never the password payload.
+        """
+        if credential is None:
+            raise ValueError(
+                "set_password requires a credential with .password; got None",
+            )
+        payload = "{}:{}\n".format(username, credential.password)
+        if self._config.dry_run:
+            return UserActionResult(
+                status=ActionStatus.DRY_RUN,
+                username=username,
+                command=["chpasswd"],
+            )
+        run_result = self._runner.run(
+            ["chpasswd"],
+            elevated=self._config.elevated,
+            stdin=payload,
+        )
+        # Use our own result construction (not _user_result) so we can
+        # scrub the `command` field back to the argv-only form without
+        # any runner-returned state that might include the stdin.
+        if run_result.exit_code == 0:
+            status = ActionStatus.SUCCESS
+        else:
+            status = ActionStatus.FAILED
+        return UserActionResult(
+            status=status,
+            username=username,
+            exit_code=run_result.exit_code,
+            stdout=run_result.stdout,
+            stderr=run_result.stderr,
+            command=["chpasswd"],
+        )
+
     def set_password_age(
         self,
         username: str,

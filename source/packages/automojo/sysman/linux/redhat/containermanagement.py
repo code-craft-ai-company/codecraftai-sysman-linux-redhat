@@ -121,6 +121,66 @@ class ContainerManager(BaseFeatureManager):
         command.append(name)
         return self._dispatch(command=command, name=name)
 
+    def registry_login(
+        self,
+        registry: str,
+        credential,
+    ) -> ContainerActionResult:
+        """
+            Authenticate against ``registry`` via ``podman login
+            --username <u> --password-stdin <registry>``.  The password
+            is supplied through the runner's ``stdin`` channel — it
+            never appears on argv.  (Part C credential-routing seam.)
+
+            :param registry: Registry host (e.g. ``quay.io``).
+            :param credential: Credential object with ``.username`` and
+                               ``.password`` attributes (for example
+                               :class:`automojo.credentials.basiccredential.BasicCredential`).
+
+            The returned :class:`ContainerActionResult.command` field
+            records only the argv — never the password payload.
+        """
+        if credential is None:
+            raise ValueError(
+                "registry_login requires a credential with .username/.password;"
+                " got None",
+            )
+        command = [
+            self._config.engine, "login",
+            "--username", credential.username,
+            "--password-stdin", registry,
+        ]
+        if self._config.dry_run:
+            return ContainerActionResult(
+                status=ContainerActionStatus.DRY_RUN,
+                name=registry, command=command,
+            )
+        run_result = self._runner.run(
+            command,
+            elevated=self._config.elevated,
+            stdin=credential.password,
+        )
+        status = (
+            ContainerActionStatus.SUCCESS
+            if run_result.exit_code == 0
+            else ContainerActionStatus.FAILED
+        )
+        return ContainerActionResult(
+            status=status, name=registry,
+            exit_code=run_result.exit_code,
+            stdout=run_result.stdout,
+            stderr=run_result.stderr,
+            command=list(command),      # caller-argv only — never stdin
+        )
+
+    def registry_logout(self, registry: str) -> ContainerActionResult:
+        """
+            Drop cached credentials for ``registry`` via
+            ``podman logout <registry>``.
+        """
+        command = [self._config.engine, "logout", registry]
+        return self._dispatch(command=command, name=registry)
+
     def list_containers(self, *, include_all: bool = True) -> list[ContainerInfo]:
         """
             List containers via ``podman ps --format=json``.

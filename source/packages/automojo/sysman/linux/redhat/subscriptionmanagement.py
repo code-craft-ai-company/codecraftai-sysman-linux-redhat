@@ -61,20 +61,41 @@ class SubscriptionManager(BaseFeatureManager):
         activation_key: Optional[str] = None,
         org: Optional[str] = None,
         auto_attach: bool = False,
+        credential=None,
     ) -> SubscriptionActionResult:
         """
             Register the host with Red Hat Subscription Management.
+
+            Authentication input precedence:
+
+            1. ``activation_key`` + ``org`` — activation-key path.
+            2. ``credential`` — credential object with ``.username`` /
+               ``.password``; password is supplied on the runner's
+               ``stdin`` channel so it never appears on argv.
+               **This is the recommended path.** (Part C credential
+               routing seam.)
+            3. ``username`` + ``password`` — legacy argv-based path,
+               retained for backward compatibility.  Emits the
+               password on argv and is vulnerable to process-listing
+               leaks; prefer ``credential`` when available.
         """
         command = ["subscription-manager", "register"]
+        stdin_payload: Optional[str] = None
         if activation_key is not None and org is not None:
             command.extend(["--activationkey", activation_key])
             command.extend(["--org", org])
+        elif credential is not None:
+            command.extend(["--username", credential.username])
+            stdin_payload = credential.password
         elif username is not None and password is not None:
             command.extend(["--username", username])
             command.extend(["--password", password])
         if auto_attach:
             command.append("--auto-attach")
-        return self._dispatch(command=command, detail="register", operation="register")
+        return self._dispatch(
+            command=command, detail="register", operation="register",
+            stdin=stdin_payload,
+        )
 
     def unregister(self) -> SubscriptionActionResult:
         """
