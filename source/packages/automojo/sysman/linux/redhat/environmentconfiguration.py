@@ -14,6 +14,7 @@ from automojo.sysman.linux.redhat.featurebase import (
     BaseFeatureManager,
     FeatureConfig,
 )
+from automojo.sysman.linux.redhat.runners.base import ICommandRunner
 
 
 # Backwards-compatible alias.
