@@ -26,8 +26,8 @@ Every feature supports dry-run simulation, command auditing, and test
 mocking uniformly.
 
 The codebase is organised into layers following the architecture model
-documented at [Architecture Layers](usersguide/architecture-layers.md)
-(brief version: [Architecture Layers (Brief)](usersguide/architecture-layers-brief.md)).
+documented at [Architecture Layers](userguide/architecture-layers.md)
+(brief version: [Architecture Layers (Brief)](userguide/architecture-layers-brief.md)).
 Feature specifications live under [specs/](specs/) and each feature folder
 is prefixed with its architecture-layer number.
 

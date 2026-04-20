@@ -309,11 +309,12 @@ versions of this package from these specs.  A guide is needed:
 - What's the copy/adapt process?
 - Which features make sense on Windows/macOS at all?
 
-### 6.4 `userguide/` vs `usersguide/` inconsistency
+### 6.4 `userguide/` vs `usersguide/` inconsistency — ✅ resolved
 
-Unresolved from the earlier PR — `userguide/` holds `.rst` standards
-docs; `usersguide/` holds the new `.md` architecture docs.  Pick one
-and migrate.
+Resolved: the two new `.md` architecture docs were moved into
+`userguide/` (the established folder) and the `usersguide/`
+directory was removed.  References in `AGENTS.md` and
+`specs/feature-list.md` updated accordingly.
 
 ---
 

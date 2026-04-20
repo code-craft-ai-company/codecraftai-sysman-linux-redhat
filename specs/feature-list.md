@@ -3,7 +3,7 @@
 This document enumerates the feature specifications for the
 `automojo-sysman-linux-redhat` package, organised according to the six-layer
 architecture model documented in
-[../usersguide/architecture-layers.md](../usersguide/architecture-layers.md).
+[../userguide/architecture-layers.md](../userguide/architecture-layers.md).
 
 The package is a library of primitives consumed by an external maintenance
 coordinator.  It has no public-facing service API, no presentation layer, and
