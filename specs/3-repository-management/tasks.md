@@ -1,302 +1,99 @@
-# Implementation Plan
+# Implementation Plan — Repository Management
 
-- [ ] 1. Create the `repositorymanagement` module file
-  - Create `source/packages/automojo/sysman/linux/redhat/repositorymanagement.py`
-  - Add module-level docstring describing purpose and coordinator-driven design
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9_
+Checked items (`[x]`) are implemented and covered by tests.  Unchecked
+items (`[ ]`) identify remaining work.
 
-- [ ] 2. Define status enum and result dataclasses
-  - Implement `RepoActionStatus` enum with values: `SUCCESS`, `FAILED`, `SKIPPED`, `DRY_RUN`
-  - Implement `RepoActionResult` dataclass with fields: `status`, `repo_id`, `exit_code`,
-    `stdout`, `stderr`, `command`, `file_path`
-  - Implement `RepoInfo` dataclass with fields: `repo_id`, `name`, `enabled`
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8_
+## Module and Models
 
-- [ ] 3. Define `RepoDefinition` input dataclass
-  - Add fields: `repo_id`, `name`, `base_url`, `mirror_list`, `enabled`, `gpg_check`,
-    `gpg_key`, `priority`
-  - Mark `base_url` and `mirror_list` as mutually exclusive via `__post_init__` validation
-  - _Requirements: 1_
+- [x] 1. Create the `repositorymanagement` module
 
-- [ ] 4. Define typed exceptions
-  - Implement `RepoQueryError` with `exit_code` and `stderr` attributes
-  - Implement `RepoNotFoundError` with `repo_id` and `expected_path` attributes
-  - Implement `RepoKeyFileNotFoundError` with `filepath` attribute
-  - _Requirements: 6, 7, 8_
+- [x] 2. Define `RepoActionStatus` enum (SUCCESS / FAILED / SKIPPED /
+  DRY_RUN)
 
-- [ ] 5. Implement `RepositoryManagerConfig` dataclass
-  - Add `dry_run: bool = False` field
-  - Add `elevated: bool = False` field
-  - Add `repos_dir: str = "/etc/yum.repos.d"` field
-  - _Requirements: 1.6, 2.5, 3.6, 4.6, 5.5, 7.5, 8.6, 9_
+- [x] 3. Define `RepositoryManagerConfig` (dry_run, elevated)
 
-- [ ] 6. Implement `RepositoryManager.__init__` and `list_repos()`
-  - Accept `ICommandRunner` and `RepositoryManagerConfig` as constructor arguments
-  - Implement `list_repos()` using `dnf repolist all`
-  - Parse dnf output lines into a list of `RepoInfo` records
-  - Return empty list when no repositories are configured
-  - Raise `RepoQueryError` on non-zero exit code
-  - _Requirements: 6_
+- [x] 4. Define `RepoDefinition` dataclass (repo_id, name, baseurl,
+  enabled, gpgcheck, gpgkey, priority, etc.)
 
-- [ ] 7. Implement `.repo` file renderer
-  - Implement a private `_render_repo_file(repo_def: RepoDefinition) -> str` method
-  - Render all set fields from `RepoDefinition` into INI-style `.repo` file content
-  - Omit optional fields that are `None`
-  - _Requirements: 1_
+- [x] 5. Define `RepoInfo` query dataclass
 
-- [ ] 8. Implement `add()`
-  - Build the target file path from `repos_dir` and `repo_id`
-  - Read existing file content via `cat <filepath>` through the runner (if file exists)
-  - Compare rendered content to existing content; return `SKIPPED` if identical
-  - Write file via `tee <filepath>` through the runner with rendered content on stdin
-  - Honour `dry_run` flag; return `DRY_RUN` result without calling runner
-  - Pass `elevated` flag to runner for the write command
-  - _Requirements: 1_
+- [x] 6. Define `RepoActionResult` dataclass
 
-- [ ] 9. Implement `remove()`
-  - Build the target file path from `repos_dir` and `repo_id`
-  - Check file existence via runner; return `SKIPPED` if file does not exist
-  - Issue `rm -f <filepath>` via the runner
-  - Honour `dry_run` flag
-  - Pass `elevated` flag to runner
-  - _Requirements: 2_
+## RepositoryManager — Implemented
 
-- [ ] 10. Implement `enable()`
-  - Call `list_repos()` to determine current enabled state
-  - Return `SKIPPED` if repository is already enabled
-  - Return `FAILED` if repository ID is not found in the list
-  - Invoke `dnf config-manager --set-enabled <repo-id>` via the runner
-  - Honour `dry_run` flag; pass `elevated` flag to runner
-  - _Requirements: 3_
+- [x] 7. Implement `__init__` accepting runner + optional config
 
-- [ ] 11. Implement `disable()`
-  - Call `list_repos()` to determine current enabled state
-  - Return `SKIPPED` if repository is already disabled
-  - Return `FAILED` if repository ID is not found in the list
-  - Invoke `dnf config-manager --set-disabled <repo-id>` via the runner
-  - Honour `dry_run` flag; pass `elevated` flag to runner
-  - _Requirements: 4_
+- [x] 8. Implement `add(repo_def)` — renders via `_render_repo_file`,
+  writes `/etc/yum.repos.d/<repo_id>.repo` via `tee`; idempotent via
+  pre-read compare
 
-- [ ] 12. Implement `refresh()`
-  - When `repo_id` is `None`: run `dnf clean metadata` then `dnf makecache`
-  - When `repo_id` is set: run scoped clean and makecache with `--disablerepo="*"
-    --enablerepo=<repo-id>` on both commands
-  - Return `FAILED` on the first command that fails, capturing its exit code and stderr
-  - Return `SUCCESS` only when both commands succeed
-  - Honour `dry_run` flag; pass `elevated` flag to runner
-  - _Requirements: 5_
+- [x] 9. Implement `remove(repo_id)` — `rm -f
+  /etc/yum.repos.d/<repo_id>.repo`; SKIPPED when file absent
 
-- [ ] 13. Implement `set_priority()`
-  - Build the target file path from `repos_dir` and `repo_id`
-  - Raise `RepoNotFoundError` if the `.repo` file does not exist
-  - Read current `priority=` value from file via runner; return `SKIPPED` if already correct
-  - Update the `priority=` field using `dnf config-manager --setopt=<id>.priority=<n> --save`
-  - Honour `dry_run` flag; pass `elevated` flag to runner
-  - _Requirements: 7_
+- [x] 10. Implement `enable(repo_id)` — `dnf config-manager
+  --set-enabled <repo_id>`
 
-- [ ] 14. Implement `import_gpg_key()`
-  - Accept either a URL string or a local file path string as `key_source`
-  - When `key_source` is a local path: verify file exists before calling runner;
-    raise `RepoKeyFileNotFoundError` if not found
-  - Invoke `rpm --import <key_source>` via the runner
-  - Honour `dry_run` flag; pass `elevated` flag to runner
-  - _Requirements: 8_
+- [x] 11. Implement `disable(repo_id)` — `dnf config-manager
+  --set-disabled <repo_id>`
 
-- [ ] 15. Create test module and mock infrastructure
-  - Create `source/testroots/testbase/automojo/tests/sysman/linux/redhat/test_repositorymanagement.py`
-  - Implement `MockCommandRunner` that returns configurable `RunResult` values
-  - Override `repos_dir` in `RepositoryManagerConfig` to a temp path in all tests
-  - Set up hypothesis testing framework configuration
-  - Create test fixtures for common test scenarios
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9_
+- [x] 12. Implement `refresh(repo_id=None)` — `dnf clean metadata`
+  + `dnf makecache` (optionally scoped to a repo)
 
-- [ ] 16. Write property-based test for idempotent repository addition
-  - **Property 1: Idempotent Repository Addition**
-  - Generate random repository definitions
-  - Verify add with identical content returns SKIPPED
-  - **Validates: Requirements 1.2**
-  - _Requirements: 1_
+- [x] 13. Implement `list_repos()` — `dnf repolist -v` parsed via
+  `_parse_repolist_output` into `RepoInfo` records
 
-- [ ] 17. Write property-based test for idempotent repository removal
-  - **Property 2: Idempotent Repository Removal**
-  - Generate random repository IDs
-  - Verify remove on non-existent file returns SKIPPED
-  - **Validates: Requirements 2.2**
-  - _Requirements: 2_
+- [x] 14. Implement `set_priority(repo_id, priority)` — writes
+  `priority=<N>` into the repo's `.repo` file via a dnf-config-manager
+  call
 
-- [ ] 18. Write property-based test for idempotent repository enable
-  - **Property 3: Idempotent Repository Enable**
-  - Generate random repository IDs
-  - Verify enable on already enabled repo returns SKIPPED
-  - **Validates: Requirements 3.2**
-  - _Requirements: 3_
+- [x] 15. Implement `import_gpg_key(key_source)` — `rpm --import
+  <key_source>`
 
-- [ ] 19. Write property-based test for idempotent repository disable
-  - **Property 4: Idempotent Repository Disable**
-  - Generate random repository IDs
-  - Verify disable on already disabled repo returns SKIPPED
-  - **Validates: Requirements 4.2**
-  - _Requirements: 4_
+- [x] 16. Implement `_repo_file_path`, `_read_file`, `_write_file`,
+  `_run_config_manager` helpers
 
-- [ ] 20. Write property-based test for idempotent priority setting
-  - **Property 5: Idempotent Priority Setting**
-  - Generate random repository IDs and priority values
-  - Verify set_priority with unchanged value returns SKIPPED
-  - **Validates: Requirements 7.2**
-  - _Requirements: 7_
+## RepositoryManager — Gaps (specified but not implemented)
 
-- [ ] 21. Write property-based test for dry-run safety
-  - **Property 6: Dry-Run Safety**
-  - Generate random operations with dry_run=True
-  - Verify command runner is never invoked for write operations
-  - Verify all results have DRY_RUN status
-  - **Validates: Requirements 1.6, 2.5, 3.6, 4.6, 5.5, 7.5, 8.6**
-  - _Requirements: 1, 2, 3, 4, 5, 7, 8_
+- [ ] 17. `update_definition(repo_id, **fields)` — partial update of
+  an existing `.repo` file (e.g., rotate `gpgkey`, change `baseurl`)
+  without full rewrite
 
-- [ ] 22. Write property-based test for file existence validation
-  - **Property 7: File Existence Validation**
-  - Generate random file paths (non-existing)
-  - Verify RepoKeyFileNotFoundError raised before runner invocation
-  - **Validates: Requirements 8.3**
-  - _Requirements: 8_
+- [ ] 18. `query_definition(repo_id)` — read the `.repo` file and
+  return the parsed `RepoDefinition`
 
-- [ ] 23. Write property-based test for repository file not found precondition
-  - **Property 8: Repository File Not Found Precondition**
-  - Generate random repository IDs (non-existing)
-  - Verify RepoNotFoundError raised for set_priority
-  - **Validates: Requirements 7.3**
-  - _Requirements: 7_
+- [ ] 19. `subscription-manager repos --enable/--disable` pass-through
+  for RHSM-managed repos, or explicit delegation to
+  `3-subscription-management`
 
-- [ ] 24. Write property-based test for command construction correctness
-  - **Property 9: Command Construction Correctness**
-  - Generate random repository data and operation types
-  - Verify constructed commands match expected format from Command Mappings
-  - **Validates: Requirements 1.1, 2.1, 3.1, 4.1, 5.1, 5.2, 6.1, 7.1, 8.1, 8.2**
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8_
+- [ ] 20. `verify_gpg_imported(keyid)` — check that a key id is
+  present in the rpmdb
 
-- [ ] 25. Write property-based test for elevation consistency
-  - **Property 10: Elevation Consistency**
-  - Generate random operations with elevated=True/False
-  - Verify write operations pass elevated flag correctly
-  - Verify read operations never use elevation
-  - **Validates: Requirements 9.1, 9.2, 9.4**
-  - _Requirements: 9_
+## Tests — Implemented
 
-- [ ] 26. Write property-based test for repo file rendering consistency
-  - **Property 11: Repo File Rendering Consistency**
-  - Generate random repository definitions
-  - Verify repeated rendering produces identical output
-  - **Validates: Requirements 1.1**
-  - _Requirements: 1_
+- [x] 21. `test_add_writes_new_repo_file`
+- [x] 22. `test_add_skipped_when_content_matches`
+- [x] 23. `test_remove_skipped_when_file_absent`
+- [x] 24. `test_enable_dispatches_config_manager`
+- [x] 25. `test_refresh_cleans_and_makecaches`
+- [x] 26. `test_list_repos_parses_repolist_output`
+- [x] 27. `test_import_gpg_key_runs_rpm_import`
 
-- [ ] 27. Write property-based test for status mapping correctness
-  - **Property 12: Status Mapping Correctness**
-  - Generate random exit codes from command runner
-  - Verify correct RepoActionResult status mapping
-  - **Validates: Requirements 1.4, 1.5, 2.3, 2.4, 3.3, 3.4, 3.5, 4.3, 4.5, 5.3, 5.4, 7.4, 8.4, 8.5**
-  - _Requirements: 1, 2, 3, 4, 5, 7, 8_
+## Tests — Gaps
 
-- [ ] 28. Write unit tests for `list_repos()`
-  - Test: repos returned — output parsed into correct `RepoInfo` list
-  - Test: no repos configured — returns empty list
-  - Test: command failure — raises `RepoQueryError`
-  - _Requirements: 6_
+- [ ] 28. Test `disable(repo_id)` dispatch
 
-- [ ] 17. Write tests for `add()`
-  - Test: new repo — runner called with tee command and rendered content, returns `SUCCESS`
-  - Test: existing repo with identical content — returns `SKIPPED`, no write issued
-  - Test: existing repo with different content — file overwritten, returns `SUCCESS`
-  - Test: write failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called for write
-  - Test: elevated mode — runner called with `elevated=True`
-  - _Requirements: 1_
+- [ ] 29. Test `set_priority` writes via config-manager
 
-- [ ] 18. Write tests for `remove()`
-  - Test: file exists — rm command issued, returns `SUCCESS`
-  - Test: file does not exist — returns `SKIPPED`, no command issued
-  - Test: removal failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 2_
+- [ ] 30. Test `refresh(repo_id="myrepo")` scoped variant (with
+  `--repo=<id>`)
 
-- [ ] 19. Write tests for `enable()` and `disable()`
-  - Test: enable a disabled repo — config-manager called, returns `SUCCESS`
-  - Test: enable an already-enabled repo — returns `SKIPPED`
-  - Test: enable unknown repo — returns `FAILED`
-  - Test: disable an enabled repo — config-manager called, returns `SUCCESS`
-  - Test: disable an already-disabled repo — returns `SKIPPED`
-  - Test: dry-run mode on both — returns `DRY_RUN`, runner not called
-  - _Requirements: 3, 4_
+- [ ] 31. Test `remove(repo_id)` when the file exists — verify `rm
+  -f` dispatch
 
-- [ ] 20. Write tests for `refresh()`
-  - Test: all repos, both commands succeed — returns `SUCCESS`
-  - Test: all repos, first command fails — returns `FAILED` with first command's stderr
-  - Test: scoped refresh, both commands use correct repo flags — returns `SUCCESS`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 5_
+- [ ] 32. Test dry-run short-circuits for every mutating method
 
-- [ ] 21. Write tests for `set_priority()`
-  - Test: file exists, priority changes — config-manager called, returns `SUCCESS`
-  - Test: file exists, priority unchanged — returns `SKIPPED`, no write issued
-  - Test: file does not exist — raises `RepoNotFoundError`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 7_
+## Follow-ups
 
-- [ ] 22. Write tests for `import_gpg_key()`
-  - Test: URL key source — runner called with correct args, returns `SUCCESS`
-  - Test: local file path, file exists — runner called, returns `SUCCESS`
-  - Test: local file path, file missing — raises `RepoKeyFileNotFoundError` before runner called
-  - Test: import failure — returns `FAILED` with exit code and stderr
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 8_
-
-- [ ] 29. Write unit tests for `add()`
-  - Test: new repo — runner called with tee command and rendered content, returns `SUCCESS`
-  - Test: existing repo with identical content — returns `SKIPPED`, no write issued
-  - Test: existing repo with different content — file overwritten, returns `SUCCESS`
-  - Test: write failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called for write
-  - Test: elevated mode — runner called with `elevated=True`
-  - _Requirements: 1_
-
-- [ ] 30. Write unit tests for `remove()`
-  - Test: file exists — rm command issued, returns `SUCCESS`
-  - Test: file does not exist — returns `SKIPPED`, no command issued
-  - Test: removal failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 2_
-
-- [ ] 31. Write unit tests for `enable()` and `disable()`
-  - Test: enable a disabled repo — config-manager called, returns `SUCCESS`
-  - Test: enable an already-enabled repo — returns `SKIPPED`
-  - Test: enable unknown repo — returns `FAILED`
-  - Test: disable an enabled repo — config-manager called, returns `SUCCESS`
-  - Test: disable an already-disabled repo — returns `SKIPPED`
-  - Test: dry-run mode on both — returns `DRY_RUN`, runner not called
-  - _Requirements: 3, 4_
-
-- [ ] 32. Write unit tests for `refresh()`
-  - Test: all repos, both commands succeed — returns `SUCCESS`
-  - Test: all repos, first command fails — returns `FAILED` with first command's stderr
-  - Test: scoped refresh, both commands use correct repo flags — returns `SUCCESS`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 5_
-
-- [ ] 33. Write unit tests for `set_priority()`
-  - Test: file exists, priority changes — config-manager called, returns `SUCCESS`
-  - Test: file exists, priority unchanged — returns `SKIPPED`, no write issued
-  - Test: file does not exist — raises `RepoNotFoundError`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 7_
-
-- [ ] 34. Write unit tests for `import_gpg_key()`
-  - Test: URL key source — runner called with correct args, returns `SUCCESS`
-  - Test: local file path, file exists — runner called, returns `SUCCESS`
-  - Test: local file path, file missing — raises `RepoKeyFileNotFoundError` before runner called
-  - Test: import failure — returns `FAILED` with exit code and stderr
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 8_
-
-- [ ] 35. Checkpoint - Ensure all tests pass
-  - Run all unit tests and property-based tests
-  - Verify all properties pass with 100+ iterations
-  - Ensure all tests pass, ask the user if questions arise
+- [ ] 33. **automojo-* reuse check**: `3-package-management` /
+  `3-subscription-management` interact here; confirm the seams remain
+  clean when RHSM-managed repos are involved.

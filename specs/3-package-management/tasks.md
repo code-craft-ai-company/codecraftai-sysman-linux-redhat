@@ -1,224 +1,114 @@
-# Implementation Plan
+# Implementation Plan — Package Management
 
-- [ ] 1. Create the `packagemanagement` module file
-  - Create `source/packages/automojo/sysman/linux/redhat/packagemanagement.py`
-  - Add module-level docstring describing purpose and coordinator-driven design
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10_
+Checked items (`[x]`) are implemented and covered by tests.  Unchecked
+items (`[ ]`) identify remaining work.
 
-- [ ] 2. Define status enum and result dataclasses
-  - Implement `PackageActionStatus` enum with values: `SUCCESS`, `FAILED`, `SKIPPED`, `DRY_RUN`
-  - Implement `PackageActionResult` dataclass with fields: `status`, `package_name`,
-    `version`, `exit_code`, `stdout`, `stderr`, `command`
-  - Implement `PackageInfo` dataclass with fields: `name`, `version`, `release`, `arch`
-  - Implement `PackageUpdateInfo` dataclass with fields: `name`, `installed_version`,
-    `available_version`, `arch`
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9_
+## Module and Models
 
-- [ ] 3. Define typed exceptions
-  - Implement `PackageQueryError` with `exit_code` and `stderr` attributes
-  - Implement `PackageFileNotFoundError` with `filepath` attribute
-  - _Requirements: 4, 5, 6_
+- [x] 1. Create the `packagemanagement` module
 
-- [ ] 4. Implement `PackageManagerConfig` dataclass
-  - Add `dry_run: bool = False` field
-  - Add `elevated: bool = False` field
-  - _Requirements: 1.6, 2.5, 3.6, 6.5, 7.5, 8.5, 9.5, 10_
+- [x] 2. Define `PackageActionStatus` enum (SUCCESS / FAILED / SKIPPED
+  / DRY_RUN)
 
-- [ ] 5. Implement `PackageManager.__init__` and `query()`
-  - Accept `ICommandRunner` and `PackageManagerConfig` as constructor arguments
-  - Implement `query(name)` using `rpm -q --queryformat` command
-  - Parse rpm output into `PackageInfo`; return `None` when rpm exits 1 (not installed)
-  - Raise `PackageQueryError` for any other non-zero exit code
-  - _Requirements: 4_
+- [x] 3. Define `PackageManagerConfig` (dry_run, elevated)
 
-- [ ] 6. Implement `install()`
-  - Call `query()` to check current state; return `SKIPPED` if already at target version
-  - Build `dnf install -y` command with optional version suffix
-  - Honour `dry_run` flag; return `DRY_RUN` result without calling runner
-  - Pass `elevated` flag to runner; parse result into `PackageActionResult`
-  - _Requirements: 1_
+- [x] 4. Define `PackageInfo`, `PackageUpdateInfo`,
+  `PackageActionResult` dataclasses
 
-- [ ] 7. Implement `remove()`
-  - Call `query()` to check current state; return `SKIPPED` if package is not installed
-  - Build `dnf remove -y` command
-  - Honour `dry_run` flag
-  - Pass `elevated` flag to runner; parse result into `PackageActionResult`
-  - _Requirements: 2_
+- [x] 5. Define `PackageQueryError` and `PackageFileNotFoundError`
+  exceptions
 
-- [ ] 8. Implement `update()`
-  - Call `query()` to check current state; return `SKIPPED` if already at target version
-  - Build `dnf update -y` or `dnf install -y <name>-<version>` command as appropriate
-  - Honour `dry_run` flag
-  - Pass `elevated` flag to runner; parse result into `PackageActionResult`
-  - _Requirements: 3_
+## PackageManager — Implemented
 
-- [ ] 9. Implement `list_updates()`
-  - Build `dnf check-update` command
-  - Treat exit codes `0` and `100` as success; raise `PackageQueryError` for all others
-  - Parse dnf output lines into a list of `PackageUpdateInfo` records
-  - _Requirements: 5_
+- [x] 6. Implement `__init__` accepting runner + optional config;
+  expose `runner` + `config` properties
 
-- [ ] 10. Implement `install_local()`
-  - Validate that `filepath` exists on disk before calling runner; raise
-    `PackageFileNotFoundError` if not found
-  - Build `dnf install -y <filepath>` command
-  - Honour `dry_run` flag
-  - Pass `elevated` flag to runner; parse result into `PackageActionResult`
-  - _Requirements: 6_
+- [x] 7. Implement `install(name, version=None)` — `dnf install -y
+  <name>[-version]`; SKIPPED when already installed at requested
+  version; honours dry-run
 
-- [ ] 11. Implement `hold()` and `release_hold()`
-  - For `hold()`: query versionlock list to detect existing hold; return `SKIPPED` if present
-  - Build `dnf versionlock add <name>` command
-  - For `release_hold()`: return `SKIPPED` if no hold exists
-  - Build `dnf versionlock delete <name>` command
-  - Honour `dry_run` flag on both methods
-  - Pass `elevated` flag to runner on both methods
-  - _Requirements: 7, 8_
+- [x] 8. Implement `remove(name)` — `dnf remove -y <name>`; SKIPPED
+  when not installed
 
-- [ ] 12. Implement `group_install()` and `group_remove()`
-  - Build `dnf groupinstall -y "<group>"` and `dnf groupremove -y "<group>"` commands
-  - Honour `dry_run` flag on both methods
-  - Pass `elevated` flag to runner on both methods
-  - Map runner result to `PackageActionResult`
-  - _Requirements: 9_
+- [x] 9. Implement `update(name, version=None)` — `dnf update -y
+  <name>[-version]`
 
-- [ ] 13. Create test module and mock infrastructure
-  - Create `source/testroots/testbase/automojo/tests/sysman/linux/redhat/test_packagemanagement.py`
-  - Implement `MockCommandRunner` that returns configurable `RunResult` values
-  - Set up hypothesis testing framework configuration
-  - Create test fixtures for common test scenarios
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10_
+- [x] 10. Implement `query(name)` — `rpm -q --queryformat <fmt>
+  <name>`; returns `Optional[PackageInfo]`; raises
+  `PackageQueryError` on unexpected rpm exit codes
 
-- [ ] 14. Write property-based test for idempotent install operations
-  - **Property 1: Idempotent Install Operations**
-  - Generate random package names and versions
-  - Verify repeated install calls return SKIPPED on subsequent calls
-  - **Validates: Requirements 1.3**
-  - _Requirements: 1_
+- [x] 11. Implement `list_updates()` — `dnf check-update`; exit
+  code 0 → no updates; 100 → parse list; other → raise
+  `PackageQueryError`
 
-- [ ] 15. Write property-based test for idempotent remove operations
-  - **Property 2: Idempotent Remove Operations**
-  - Generate random package names
-  - Verify remove on non-installed package returns SKIPPED
-  - **Validates: Requirements 2.2**
-  - _Requirements: 2_
+- [x] 12. Implement `install_local(filepath)` — raises
+  `PackageFileNotFoundError` when file absent; otherwise `dnf install
+  -y <filepath>`
 
-- [ ] 16. Write property-based test for query consistency
-  - **Property 3: Query Consistency**
-  - Generate random package info
-  - Verify repeated query calls return equivalent results
-  - **Validates: Requirements 4.2**
-  - _Requirements: 4_
+- [x] 13. Implement `hold(name)` / `release_hold(name)` via
+  `dnf versionlock add/delete`; idempotent via `_is_held` check
 
-- [ ] 17. Write property-based test for dry-run safety
-  - **Property 4: Dry-Run Safety**
-  - Generate random operations with dry_run=True
-  - Verify command runner is never invoked for write operations
-  - Verify all results have DRY_RUN status
-  - **Validates: Requirements 1.6, 2.5, 3.6, 7.5, 8.5, 9.5**
-  - _Requirements: 1, 2, 3, 7, 8, 9_
+- [x] 14. Implement `group_install(group_name)` — `dnf group install
+  -y <group>`
 
-- [ ] 18. Write property-based test for command construction correctness
-  - **Property 5: Command Construction Correctness**
-  - Generate random package names, versions, and operation types
-  - Verify constructed commands match expected format from Command Mappings
-  - **Validates: Requirements 1.1, 1.2, 2.1, 3.1, 3.2, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1, 9.2**
-  - _Requirements: 1, 2, 3, 4, 5, 6, 7, 8, 9_
+- [x] 15. Implement `group_remove(group_name)` — `dnf group remove
+  -y <group>`
 
-- [ ] 19. Write property-based test for elevation consistency
-  - **Property 6: Elevation Consistency**
-  - Generate random operations with elevated=True/False
-  - Verify write operations pass elevated flag correctly
-  - Verify read operations never use elevation
-  - **Validates: Requirements 10.1, 10.2**
-  - _Requirements: 10_
+- [x] 16. Implement `_is_held`, `_parse_query_output`,
+  `_parse_check_update_output`, `_result_from_run` helpers
 
-- [ ] 20. Write property-based test for file existence validation
-  - **Property 7: File Existence Validation**
-  - Generate random file paths (existing and non-existing)
-  - Verify PackageFileNotFoundError raised before runner invocation
-  - **Validates: Requirements 6.2**
-  - _Requirements: 6_
+## PackageManager — Gaps (specified but not implemented)
 
-- [ ] 21. Write property-based test for status mapping correctness
-  - **Property 8: Status Mapping Correctness**
-  - Generate random exit codes from command runner
-  - Verify correct PackageActionResult status mapping
-  - **Validates: Requirements 1.4, 1.5, 2.3, 2.4, 3.4, 3.5**
-  - _Requirements: 1, 2, 3_
+- [ ] 17. `list_installed(filter=None)` — enumerate installed RPMs
+  (potentially filtered by name glob)
 
-- [ ] 22. Write property-based test for update list exit code handling
-  - **Property 9: Update List Exit Code Handling**
-  - Generate exit codes 0, 100, and other values
-  - Verify 0 and 100 treated as success, others raise PackageQueryError
-  - **Validates: Requirements 5.4, 5.5**
-  - _Requirements: 5_
+- [ ] 18. `verify(name)` — `rpm --verify <name>` with structured
+  output (which files differ, what changed)
 
-- [ ] 23. Write property-based test for hold idempotency
-  - **Property 10: Hold Idempotency**
-  - Generate random package names with existing/non-existing holds
-  - Verify hold() and release_hold() return SKIPPED appropriately
-  - **Validates: Requirements 7.2, 8.2**
-  - _Requirements: 7, 8_
+- [ ] 19. `list_files(name)` — `rpm -ql <name>` into a list
 
-- [ ] 24. Write unit tests for `query()`
-  - Test: package installed — returns populated `PackageInfo`
-  - Test: package not installed (rpm exits 1) — returns `None`
-  - Test: unexpected rpm exit code — raises `PackageQueryError`
-  - _Requirements: 4_
+- [ ] 20. `owner_of_file(path)` — `rpm -qf <path>` for reverse
+  lookup
 
-- [ ] 25. Write unit tests for `install()`
-  - Test: package not installed — runner called with correct args, returns `SUCCESS`
-  - Test: package already installed at requested version — returns `SKIPPED`, runner not called
-  - Test: install failure — returns `FAILED` with exit code and stderr
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - Test: elevated mode — runner called with `elevated=True`
-  - _Requirements: 1_
+- [ ] 21. `clean_cache()` — `dnf clean all` wrapper
 
-- [ ] 26. Write unit tests for `remove()`
-  - Test: package installed — runner called, returns `SUCCESS`
-  - Test: package not installed — returns `SKIPPED`, runner not called
-  - Test: remove failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 2_
+- [ ] 22. Transaction history — `dnf history list/info` / `undo`
 
-- [ ] 27. Write unit tests for `update()`
-  - Test: newer version available — runner called, returns `SUCCESS` with new version
-  - Test: already at target version — returns `SKIPPED`, runner not called
-  - Test: update failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 3_
+## Tests — Implemented
 
-- [ ] 28. Write unit tests for `list_updates()`
-  - Test: exit code 100 with output — returns populated `PackageUpdateInfo` list
-  - Test: exit code 0 (no updates) — returns empty list
-  - Test: unexpected exit code — raises `PackageQueryError`
-  - _Requirements: 5_
+- [x] 23. `test_install_when_not_present_invokes_dnf`
+- [x] 24. `test_install_skipped_when_already_installed`
+- [x] 25. `test_install_at_specific_version`
+- [x] 26. `test_install_dry_run_does_not_write`
+- [x] 27. `test_remove_when_installed`
+- [x] 28. `test_remove_skipped_when_not_installed`
+- [x] 29. `test_query_returns_info_when_installed`
+- [x] 30. `test_query_returns_none_when_not_installed`
+- [x] 31. `test_query_raises_on_unexpected_error`
+- [x] 32. `test_list_updates_no_updates_when_exit_code_zero`
+- [x] 33. `test_list_updates_parsed_from_exit_code_100`
+- [x] 34. `test_list_updates_unexpected_exit_code_raises`
+- [x] 35. `test_install_local_missing_file_raises`
+- [x] 36. `test_install_local_invokes_dnf_install_with_filepath`
+- [x] 37. `test_hold_when_none_applies`
+- [x] 38. `test_hold_skipped_when_already_held`
+- [x] 39. `test_release_hold_skipped_when_not_held`
+- [x] 40. `test_group_install`
+- [x] 41. `test_group_remove_dry_run`
 
-- [ ] 29. Write unit tests for `install_local()`
-  - Test: valid file path — runner called with correct args, returns `SUCCESS`
-  - Test: non-existent file path — raises `PackageFileNotFoundError` before runner is called
-  - Test: install failure — returns `FAILED`
-  - Test: dry-run mode — returns `DRY_RUN`, runner not called
-  - _Requirements: 6_
+## Tests — Gaps
 
-- [ ] 30. Write unit tests for `hold()` and `release_hold()`
-  - Test: hold applied — runner called, returns `SUCCESS`
-  - Test: hold already exists — returns `SKIPPED`, runner not called
-  - Test: release hold — runner called, returns `SUCCESS`
-  - Test: no hold to release — returns `SKIPPED`
-  - Test: dry-run mode on both — returns `DRY_RUN`, runner not called
-  - _Requirements: 7, 8_
+- [ ] 42. Test `update(name, version=None)` dispatch + version-pinned
+  variant
 
-- [ ] 31. Write unit tests for `group_install()` and `group_remove()`
-  - Test: group install success — runner called with quoted group name, returns `SUCCESS`
-  - Test: group install failure (unknown group) — returns `FAILED` with stderr
-  - Test: group remove success — runner called, returns `SUCCESS`
-  - Test: dry-run mode on both — returns `DRY_RUN`, runner not called
-  - _Requirements: 9_
+- [ ] 43. Test `release_hold` dispatch when held — currently only
+  covers SKIPPED path
 
-- [ ] 32. Checkpoint - Ensure all tests pass
-  - Run all unit tests and property-based tests
-  - Verify all properties pass with 100+ iterations
-  - Ensure all tests pass, ask the user if questions arise
+- [ ] 44. Test failure mapping for each mutating method (runner
+  non-zero exit → status FAILED with exit_code/stderr preserved)
 
+## Follow-ups
+
+- [ ] 45. **automojo-* reuse check**: `3-repository-management` manages
+  the repo definitions; ensure this feature's `install_local` and
+  group ops do not accidentally duplicate that surface.
