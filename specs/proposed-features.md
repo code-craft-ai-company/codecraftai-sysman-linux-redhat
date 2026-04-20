@@ -257,11 +257,18 @@ decision is explicit.
 
 ## Part B — Library-Appropriate Cross-Cutting Work
 
+**Status (as of the current PR):** B.1a, B.1b, B.2, B.3, B.4, B.5
+are complete.  B.6 is partially addressed by the base-class tests;
+per-feature dry-run + failure-mapping spot tests are tracked as
+gaps in each feature's `tasks.md`.
+
+
+
 These are legitimate library concerns — not new features, but
 refactors or infrastructure that would improve the existing 32
 features without crossing into higher-layer territory.
 
-### B.1 Shared feature base (Layer 3 refactor)
+### B.1 Shared feature base (Layer 3 refactor) — ✅ landed
 
 Currently every Layer 3 feature defines its own identical
 `<Feature>ActionStatus` enum, `<Feature>Config` dataclass (with
@@ -284,7 +291,7 @@ consume a single `ActionResult` shape.
 
 ---
 
-### B.2 Auto-wired maintenance reporting
+### B.2 Auto-wired maintenance reporting — ✅ landed
 
 `2-maintenance-reporting` defines `ActionRecord` but features do not
 emit records.  Callers currently have to translate every
@@ -297,7 +304,7 @@ the outcome.  Backward-compatible (defaults to `None`).
 
 ---
 
-### B.3 Feature registry (`FeatureRegistry`)
+### B.3 Feature registry (`FeatureRegistry`) — ✅ landed
 
 A small registry module keyed by feature name (`"package-management"`)
 that maps to the manager class.  Enables programmatic enumeration and
@@ -309,7 +316,7 @@ Single-file, no external dependencies, stays within library scope.
 
 ---
 
-### B.4 `LocalCommandRunner` reliability metrics
+### B.4 `LocalCommandRunner` reliability metrics — ✅ landed
 
 Parity with `SSHCommandRunner`.  `LocalCommandRunner.get_metrics()`
 currently returns `None`.  Lift the metrics bookkeeping into the
@@ -319,7 +326,7 @@ play.
 
 ---
 
-### B.5 `datetime.utcnow()` migration
+### B.5 `datetime.utcnow()` migration — ✅ landed
 
 Sweep the package, replace every `datetime.utcnow()` with
 `datetime.now(timezone.utc)`.  Known offenders:
@@ -329,7 +336,18 @@ generator).  Probably others.
 
 ---
 
-### B.6 Dry-run and failure-mapping test sweep
+### B.6 Dry-run and failure-mapping test sweep — 🟡 partial
+
+Base-class tests in `test_featurebase.py` exercise the dry-run
+short-circuit and the failure-mapping (non-zero exit →
+`FAILED`) branches once for every feature that uses the base
+`_dispatch`.  For features that still own their own dispatch
+logic (scheduled-tasks, environment-configuration,
+filesystem-management, repository-management,
+user-group-management, configuration-management,
+package-management, security-compliance), per-feature dry-run
+and failure tests remain as `[ ]` entries in each feature's
+`tasks.md`.
 
 Add the two missing tests per mutating method across all 32
 features:
