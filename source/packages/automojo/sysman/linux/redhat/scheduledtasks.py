@@ -10,7 +10,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    BaseFeatureManager,
+    FeatureConfig,
+)
 
 
 class TaskType(Enum):
@@ -22,17 +25,14 @@ class TaskType(Enum):
 
 
 @dataclass
-class ScheduledTaskConfig:
+class ScheduledTaskConfig(FeatureConfig):
     """
-        Configuration for :class:`ScheduledTaskManager`.
+        Configuration for :class:`ScheduledTaskManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands or writes execute.
-        :param elevated: When True, write commands run elevated.
         :param cron_dir: Directory for cron drop-in files.
         :param unit_dir: Directory for systemd unit files.
     """
-    dry_run: bool = False
-    elevated: bool = False
     cron_dir: str = "/etc/cron.d"
     unit_dir: str = "/etc/systemd/system"
 
@@ -81,7 +81,12 @@ class ScheduledTaskInfo:
 @dataclass
 class ScheduledTaskResult:
     """
-        Outcome of a scheduled task mutation.
+        Outcome of a scheduled task mutation.  NOTE: this feature
+        uses a non-standard result shape (``success`` / ``name`` /
+        ``dry_run`` / ``error``) for historical compatibility; it
+        does NOT subclass :class:`FeatureActionResult`.  See
+        `specs/3-scheduled-tasks/tasks.md` for a future-normalisation
+        task.
     """
     success: bool
     name: str
@@ -98,32 +103,20 @@ class ScheduledTaskQueryError(Exception):
 _VALID_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\-_]*$")
 
 
-class ScheduledTaskManager:
+class ScheduledTaskManager(BaseFeatureManager):
     """
         Facade for cron and systemd timer management.
+
+        This feature uses its own :class:`ScheduledTaskResult` shape
+        and therefore does not go through the base class's
+        ``_dispatch`` / ``_wrap_result`` helpers.  It still inherits
+        the standard ``__init__`` / ``config`` / ``runner`` surface
+        and can be passed a :class:`MaintenanceReport` for symmetry,
+        although auto-reporting from :meth:`_emit_record` is not
+        wired in from this manager's methods (future work).
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[ScheduledTaskConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = ScheduledTaskConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ScheduledTaskConfig = config
-        return
-
-    @property
-    def config(self) -> ScheduledTaskConfig:
-        """
-            The active :class:`ScheduledTaskConfig`.
-        """
-        return self._config
+    feature_name = "scheduled-tasks"
 
     def add_cron_job(self, entry: CronJobEntry) -> ScheduledTaskResult:
         """
