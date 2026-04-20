@@ -7,33 +7,26 @@ import configparser
 import io
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 
 
-class RepoActionStatus(Enum):
-    """
-        Outcome status for repository management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+RepoActionStatus = ActionStatus
 
 
 @dataclass
-class RepositoryManagerConfig:
+class RepositoryManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`RepositoryManager`.
+        Configuration for :class:`RepositoryManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands or writes execute.
-        :param elevated: When True, write operations run elevated.
         :param repos_dir: Directory containing ``.repo`` files.
     """
-    dry_run: bool = False
-    elevated: bool = False
     repos_dir: str = "/etc/yum.repos.d"
 
 
@@ -85,32 +78,16 @@ class RepoActionResult:
     file_path: Optional[str] = None
 
 
-class RepositoryManager:
+class RepositoryManager(BaseFeatureManager):
     """
         Facade for dnf repository management through the command runner.
+        Uses its own :class:`RepoActionResult` (``repo_id`` required,
+        ``file_path`` extra) so does not leverage the base class's
+        ``_dispatch`` helper; inherits only the standard ``__init__``
+        / ``config`` / ``runner`` surface.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[RepositoryManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner used for all operations.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = RepositoryManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: RepositoryManagerConfig = config
-        return
-
-    @property
-    def config(self) -> RepositoryManagerConfig:
-        """
-            The active :class:`RepositoryManagerConfig`.
-        """
-        return self._config
+    feature_name = "repository-management"
 
     def add(self, repo_def: RepoDefinition) -> RepoActionResult:
         """

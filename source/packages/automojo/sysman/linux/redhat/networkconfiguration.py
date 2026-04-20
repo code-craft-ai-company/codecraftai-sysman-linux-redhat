@@ -4,52 +4,36 @@
 # NetworkManager connections through the ICommandRunner abstraction.
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class NetworkActionStatus(Enum):
-    """
-        Outcome status for network configuration actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+NetworkActionStatus = ActionStatus
 
 
 @dataclass
-class NetworkManagerConfig:
+class NetworkManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`NetworkConfigurator`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
-        :param hosts_path: Path to the hosts file.
-        :param resolv_conf_path: Path to the resolver config.
-        :param chrony_conf_path: Path to the Chrony config.
+        Configuration for :class:`NetworkConfigurator`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
     hosts_path: str = "/etc/hosts"
     resolv_conf_path: str = "/etc/resolv.conf"
     chrony_conf_path: str = "/etc/chrony.conf"
 
 
 @dataclass
-class NetworkActionResult:
+class NetworkActionResult(FeatureActionResult):
     """
-        Outcome of a network configuration action.
+        Outcome of a network configuration action.  Adds ``diff``.
     """
-    status: NetworkActionStatus
-    detail: Optional[str] = None
     diff: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
 @dataclass
@@ -106,32 +90,13 @@ class NmConnectionInfo:
     state: str
 
 
-class NetworkConfigurator:
+class NetworkConfigurator(BaseFeatureManager):
     """
         Facade for network configuration through the command runner.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[NetworkManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = NetworkManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: NetworkManagerConfig = config
-        return
-
-    @property
-    def config(self) -> NetworkManagerConfig:
-        """
-            The active :class:`NetworkManagerConfig`.
-        """
-        return self._config
+    result_class = NetworkActionResult
+    feature_name = "network-configuration"
 
     def set_hostname(self, hostname: str) -> NetworkActionResult:
         """

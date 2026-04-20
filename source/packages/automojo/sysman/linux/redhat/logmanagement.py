@@ -7,32 +7,26 @@ import os
 import re
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class LogActionStatus(Enum):
-    """
-        Outcome status for log management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+LogActionStatus = ActionStatus
 
 
 @dataclass
-class LogManagerConfig:
+class LogManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`LogManager`.
-
-        :param dry_run: When True, no side-effectful commands execute.
-        :param elevated: When True, write commands run elevated.
+        Configuration for :class:`LogManager`.  Inherits ``dry_run``
+        and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -70,16 +64,12 @@ class JournalDiskUsage:
 
 
 @dataclass
-class LogActionResult:
+class LogActionResult(FeatureActionResult):
     """
-        Outcome of a log management action.
+        Outcome of a log management action.  No feature-specific
+        extras beyond the base fields.
     """
-    status: LogActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
 @dataclass
@@ -149,32 +139,13 @@ _SIZE_MULTIPLIERS = {
 }
 
 
-class LogManager:
+class LogManager(BaseFeatureManager):
     """
         Facade for log management across journalctl, log files, and logrotate.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[LogManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = LogManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: LogManagerConfig = config
-        return
-
-    @property
-    def config(self) -> LogManagerConfig:
-        """
-            The active :class:`LogManagerConfig`.
-        """
-        return self._config
+    result_class = LogActionResult
+    feature_name = "log-management"
 
     def query_journal(self, params: JournalQueryParams) -> JournalQueryResult:
         """
