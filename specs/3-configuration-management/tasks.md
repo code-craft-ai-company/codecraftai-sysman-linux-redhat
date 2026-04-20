@@ -130,8 +130,8 @@ items (`[ ]`) identify remaining work.
 
 ## Known Issues
 
-- [ ] 47. Replace deprecated `datetime.utcnow()` in `backup` with
-  `datetime.now(timezone.utc)`
+- [x] 47. Replace deprecated `datetime.utcnow()` in `backup` with
+  `datetime.now(timezone.utc)` — migrated as part of the Part B.5 sweep
 
 ## Follow-ups
 

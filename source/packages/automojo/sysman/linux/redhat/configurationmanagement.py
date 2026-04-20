@@ -11,7 +11,7 @@ import io
 import os
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from string import Template
 from typing import Callable, Optional
@@ -245,7 +245,7 @@ class ConfigurationManager:
         """
             Create a timestamped copy of ``path``.
         """
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
         backup_path = "{}.bak.{}".format(path, timestamp)
         command = ["cp", "-p", path, backup_path]
 

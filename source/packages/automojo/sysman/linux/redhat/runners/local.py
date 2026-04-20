@@ -48,6 +48,7 @@ class LocalCommandRunner:
 
         self._config: LocalRunnerConfig = config
         self._aspects: list["IExecutionAspect"] = []
+        self._metrics: SSHReliabilityMetrics = SSHReliabilityMetrics()
         return
 
     @property
@@ -83,11 +84,23 @@ class LocalCommandRunner:
 
     def get_metrics(self) -> Optional[SSHReliabilityMetrics]:
         """
-            Local runners do not track reliability metrics.
+            Return the accumulated execution metrics for this runner.
 
-            :returns: Always None.
+            The ``SSHReliabilityMetrics`` shape is shared with
+            :class:`SSHCommandRunner`; for a local runner, the
+            ``connection_error_count`` and ``last_error_type`` fields
+            remain at their defaults since they describe SSH-specific
+            failure modes.  Every other field is populated from
+            subprocess executions.
         """
-        return None
+        return self._metrics
+
+    def reset_metrics(self) -> None:
+        """
+            Reset all execution counters and timing state.
+        """
+        self._metrics = SSHReliabilityMetrics()
+        return
 
     def run(
         self,
@@ -152,8 +165,44 @@ class LocalCommandRunner:
         end_monotonic = time.monotonic()
 
         result.duration_ms = (end_monotonic - start_monotonic) * 1000.0
+        self._update_metrics(result=result)
         final_result = self._apply_after_aspects(context=context, result=result)
         return final_result
+
+    def _update_metrics(self, *, result: RunResult) -> None:
+        """
+            Update execution metrics with the outcome of a single
+            subprocess invocation.  Mirrors the SSH runner's metric
+            semantics; the SSH-specific ``connection_error_count`` and
+            ``last_error_type`` fields are not touched here.
+        """
+        if result.exit_code == 0 and not result.timed_out:
+            self._metrics.success_count += 1
+        else:
+            self._metrics.failure_count += 1
+
+        if result.timed_out:
+            self._metrics.timeout_count += 1
+
+        if len(result.stderr) > 0 and result.exit_code != 0:
+            self._metrics.last_error = result.stderr
+
+        if result.duration_ms is not None:
+            self._metrics.total_duration_ms += result.duration_ms
+            if self._metrics.min_duration_ms is None:
+                self._metrics.min_duration_ms = result.duration_ms
+            elif result.duration_ms < self._metrics.min_duration_ms:
+                self._metrics.min_duration_ms = result.duration_ms
+            if self._metrics.max_duration_ms is None:
+                self._metrics.max_duration_ms = result.duration_ms
+            elif result.duration_ms > self._metrics.max_duration_ms:
+                self._metrics.max_duration_ms = result.duration_ms
+            total_count = self._metrics.success_count + self._metrics.failure_count
+            if total_count > 0:
+                self._metrics.avg_duration_ms = (
+                    self._metrics.total_duration_ms / total_count
+                )
+        return
 
     def _apply_before_aspects(self, *, context: ExecutionContext) -> None:
         """

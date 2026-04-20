@@ -210,12 +210,91 @@ def test_aspect_before_raises_aborts_execution():
     return
 
 
-def test_get_metrics_returns_none():
+def test_get_metrics_returns_initial_metrics():
     """
-        Local runners do not track reliability metrics.
+        Local runners track execution metrics (parity with SSHCommandRunner).
+        A freshly-constructed runner has zeroed counters.
     """
     runner = LocalCommandRunner(LocalRunnerConfig())
-    testbase.assert_equal(runner.get_metrics(), None)
+    metrics = runner.get_metrics()
+    testbase.assert_true(metrics is not None)
+    testbase.assert_equal(metrics.success_count, 0)
+    testbase.assert_equal(metrics.failure_count, 0)
+    testbase.assert_equal(metrics.timeout_count, 0)
+    testbase.assert_equal(metrics.total_duration_ms, 0.0)
+    testbase.assert_equal(metrics.min_duration_ms, None)
+    testbase.assert_equal(metrics.max_duration_ms, None)
+    return
+
+
+def test_metrics_increment_on_successful_run():
+    """
+        A successful run increments success_count and populates
+        duration statistics.
+    """
+    runner = LocalCommandRunner(LocalRunnerConfig())
+    completed = subprocess.CompletedProcess(
+        args=["echo"], returncode=0, stdout="ok", stderr=""
+    )
+    with mock.patch("subprocess.run", return_value=completed):
+        runner.run(["echo"])
+    metrics = runner.get_metrics()
+    testbase.assert_equal(metrics.success_count, 1)
+    testbase.assert_equal(metrics.failure_count, 0)
+    testbase.assert_true(metrics.min_duration_ms is not None)
+    testbase.assert_true(metrics.max_duration_ms is not None)
+    testbase.assert_true(metrics.avg_duration_ms is not None)
+    return
+
+
+def test_metrics_increment_on_failed_run():
+    """
+        A non-zero-exit run increments failure_count and captures
+        stderr as last_error.
+    """
+    runner = LocalCommandRunner(LocalRunnerConfig())
+    completed = subprocess.CompletedProcess(
+        args=["false"], returncode=1, stdout="", stderr="nope"
+    )
+    with mock.patch("subprocess.run", return_value=completed):
+        runner.run(["false"])
+    metrics = runner.get_metrics()
+    testbase.assert_equal(metrics.success_count, 0)
+    testbase.assert_equal(metrics.failure_count, 1)
+    testbase.assert_equal(metrics.last_error, "nope")
+    return
+
+
+def test_metrics_increment_on_timeout():
+    """
+        A timeout increments both failure_count and timeout_count.
+    """
+    runner = LocalCommandRunner(LocalRunnerConfig())
+    with mock.patch(
+        "subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd=["sleep"], timeout=1),
+    ):
+        runner.run(["sleep", "10"], timeout=1.0)
+    metrics = runner.get_metrics()
+    testbase.assert_equal(metrics.timeout_count, 1)
+    testbase.assert_equal(metrics.failure_count, 1)
+    return
+
+
+def test_reset_metrics_clears_counters():
+    """
+        reset_metrics() returns the runner to its initial state.
+    """
+    runner = LocalCommandRunner(LocalRunnerConfig())
+    completed = subprocess.CompletedProcess(
+        args=["echo"], returncode=0, stdout="ok", stderr=""
+    )
+    with mock.patch("subprocess.run", return_value=completed):
+        runner.run(["echo"])
+    runner.reset_metrics()
+    metrics = runner.get_metrics()
+    testbase.assert_equal(metrics.success_count, 0)
+    testbase.assert_equal(metrics.total_duration_ms, 0.0)
     return
 
 

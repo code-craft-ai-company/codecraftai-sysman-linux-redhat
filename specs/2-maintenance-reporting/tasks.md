@@ -177,9 +177,8 @@ items (`[ ]`) identify remaining work.
 
 ## Known Issues
 
-- [ ] 35. Replace deprecated `datetime.utcnow()` with
+- [x] 35. Replace deprecated `datetime.utcnow()` with
   `datetime.now(timezone.utc)`
-  - `datetime.utcnow()` is deprecated in Python 3.12+; current minimum is
-    3.10 but callers on newer interpreters will see deprecation warnings
-  - Affects `ActionRecord.__post_init__`, `MaintenanceReport.__init__`,
-    and `MaintenanceReport.finalise`
+  - `datetime.utcnow()` was deprecated in Python 3.12+; migrated in
+    `ActionRecord.__post_init__`, `MaintenanceReport.__init__`, and
+    `MaintenanceReport.finalise` as part of the Part B.5 sweep
