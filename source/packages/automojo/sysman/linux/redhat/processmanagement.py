@@ -6,32 +6,27 @@
 import time
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class ProcessActionStatus(Enum):
-    """
-        Outcome status for process management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible alias.
+ProcessActionStatus = ActionStatus
 
 
 @dataclass
-class ProcessManagerConfig:
+class ProcessManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`ProcessManager`.
-
-        :param dry_run: When True, no mutating commands execute.
-        :param elevated: When True, mutating commands run elevated.
+        Configuration for :class:`ProcessManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -61,19 +56,15 @@ class CpuAffinity:
 
 
 @dataclass
-class ProcessActionResult:
+class ProcessActionResult(FeatureActionResult):
     """
-        Outcome of a process management action.
+        Outcome of a process management action.  Extends
+        :class:`FeatureActionResult` with process-specific fields.
     """
-    status: ProcessActionStatus
     pid: Optional[int] = None
     pattern: Optional[str] = None
     matched_count: Optional[int] = None
     resulting_value: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
 @dataclass
@@ -90,32 +81,13 @@ class ProcessWaitResult:
     waited_seconds: float
 
 
-class ProcessManager:
+class ProcessManager(BaseFeatureManager):
     """
         Facade for process management through the command runner.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[ProcessManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for all operations.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = ProcessManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ProcessManagerConfig = config
-        return
-
-    @property
-    def config(self) -> ProcessManagerConfig:
-        """
-            The active :class:`ProcessManagerConfig`.
-        """
-        return self._config
+    result_class = ProcessActionResult
+    feature_name = "process-management"
 
     def list_processes(
         self,
@@ -183,22 +155,12 @@ class ProcessManager:
             Deliver a POSIX signal to a single PID.
         """
         command = ["kill", "-{}".format(signal), str(pid)]
-        if self._config.dry_run:
-            return ProcessActionResult(
-                status=ProcessActionStatus.DRY_RUN,
-                pid=pid, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = ProcessActionStatus.SUCCESS if run_result.exit_code == 0 else ProcessActionStatus.FAILED
-        result = ProcessActionResult(
-            status=status,
+        return self._dispatch(
+            command=command,
+            detail=str(pid),
+            operation="signal_pid",
             pid=pid,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
         )
-        return result
 
     def signal_by_pattern(
         self,
@@ -256,18 +218,12 @@ class ProcessManager:
             Change a process's CPU nice value using ``renice``.
         """
         command = ["renice", str(nice_value), "-p", str(pid)]
-        if self._config.dry_run:
-            return ProcessActionResult(
-                status=ProcessActionStatus.DRY_RUN,
-                pid=pid, command=command,
-                resulting_value=str(nice_value),
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = ProcessActionStatus.SUCCESS if run_result.exit_code == 0 else ProcessActionStatus.FAILED
-        return ProcessActionResult(
-            status=status, pid=pid, resulting_value=str(nice_value),
-            exit_code=run_result.exit_code, stdout=run_result.stdout,
-            stderr=run_result.stderr, command=list(run_result.command),
+        return self._dispatch(
+            command=command,
+            detail=str(pid),
+            operation="renice",
+            pid=pid,
+            resulting_value=str(nice_value),
         )
 
     def ionice(
@@ -285,19 +241,12 @@ class ProcessManager:
             "-n", str(priority),
             "-p", str(pid),
         ]
-        if self._config.dry_run:
-            return ProcessActionResult(
-                status=ProcessActionStatus.DRY_RUN,
-                pid=pid, command=command,
-                resulting_value="{}/{}".format(io_class, priority),
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = ProcessActionStatus.SUCCESS if run_result.exit_code == 0 else ProcessActionStatus.FAILED
-        return ProcessActionResult(
-            status=status, pid=pid,
+        return self._dispatch(
+            command=command,
+            detail=str(pid),
+            operation="ionice",
+            pid=pid,
             resulting_value="{}/{}".format(io_class, priority),
-            exit_code=run_result.exit_code, stdout=run_result.stdout,
-            stderr=run_result.stderr, command=list(run_result.command),
         )
 
     def get_cpu_affinity(self, pid: int) -> Optional[CpuAffinity]:
@@ -336,19 +285,12 @@ class ProcessManager:
             command = ["taskset", "-p", mask, str(pid)]
         else:
             command = ["taskset", "-cp", cpu_list, str(pid)]
-        if self._config.dry_run:
-            return ProcessActionResult(
-                status=ProcessActionStatus.DRY_RUN,
-                pid=pid, command=command,
-                resulting_value=mask if mask is not None else cpu_list,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = ProcessActionStatus.SUCCESS if run_result.exit_code == 0 else ProcessActionStatus.FAILED
-        return ProcessActionResult(
-            status=status, pid=pid,
+        return self._dispatch(
+            command=command,
+            detail=str(pid),
+            operation="set_cpu_affinity",
+            pid=pid,
             resulting_value=mask if mask is not None else cpu_list,
-            exit_code=run_result.exit_code, stdout=run_result.stdout,
-            stderr=run_result.stderr, command=list(run_result.command),
         )
 
 

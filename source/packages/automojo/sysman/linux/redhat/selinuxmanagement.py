@@ -4,32 +4,27 @@
 # and semodule through the ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class SELinuxActionStatus(Enum):
-    """
-        Outcome status for SELinux management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible alias.
+SELinuxActionStatus = ActionStatus
 
 
 @dataclass
-class SELinuxManagerConfig:
+class SELinuxManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`SELinuxManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
+        Configuration for :class:`SELinuxManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -65,44 +60,21 @@ class SELinuxPortRule:
 
 
 @dataclass
-class SELinuxActionResult:
+class SELinuxActionResult(FeatureActionResult):
     """
-        Outcome of an SELinux management action.
+        Outcome of an SELinux management action.  No feature-specific
+        extras beyond the base fields.
     """
-    status: SELinuxActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
-class SELinuxManager:
+class SELinuxManager(BaseFeatureManager):
     """
         Facade for SELinux configuration through the command runner.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[SELinuxManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = SELinuxManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: SELinuxManagerConfig = config
-        return
-
-    @property
-    def config(self) -> SELinuxManagerConfig:
-        """
-            The active :class:`SELinuxManagerConfig`.
-        """
-        return self._config
+    result_class = SELinuxActionResult
+    feature_name = "selinux-management"
 
     def query_context(self, path: str) -> Optional[SELinuxContext]:
         """
@@ -147,7 +119,7 @@ class SELinuxManager:
         if role is not None:
             command.extend(["-r", role])
         command.extend(["-t", type_, path])
-        return self._dispatch(command=command, detail=path)
+        return self._dispatch(command=command, detail=path, operation="set_context")
 
     def restore_context(
         self,
@@ -165,7 +137,7 @@ class SELinuxManager:
         if force:
             command.append("-F")
         command.append(path)
-        return self._dispatch(command=command, detail=path)
+        return self._dispatch(command=command, detail=path, operation="restore_context")
 
     def get_boolean(self, name: str) -> bool:
         """
@@ -199,7 +171,7 @@ class SELinuxManager:
             command.append("-P")
         command.append(name)
         command.append("on" if value else "off")
-        return self._dispatch(command=command, detail=name)
+        return self._dispatch(command=command, detail=name, operation="set_boolean")
 
     def list_booleans(self) -> list[SELinuxBoolean]:
         """
@@ -232,7 +204,11 @@ class SELinuxManager:
         command = [
             "semanage", "port", "-a", "-t", type_, "-p", protocol, str(port),
         ]
-        return self._dispatch(command=command, detail="{}/{}".format(port, protocol))
+        return self._dispatch(
+            command=command,
+            detail="{}/{}".format(port, protocol),
+            operation="add_port_context",
+        )
 
     def remove_port_context(
         self,
@@ -245,7 +221,11 @@ class SELinuxManager:
         command = [
             "semanage", "port", "-d", "-p", protocol, str(port),
         ]
-        return self._dispatch(command=command, detail="{}/{}".format(port, protocol))
+        return self._dispatch(
+            command=command,
+            detail="{}/{}".format(port, protocol),
+            operation="remove_port_context",
+        )
 
     def list_port_contexts(
         self,
@@ -286,27 +266,3 @@ class SELinuxManager:
                     port=port, protocol=tokens[1], type=tokens[0],
                 ))
         return rules
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> SELinuxActionResult:
-        """
-            Dispatch a command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return SELinuxActionResult(
-                status=SELinuxActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = SELinuxActionStatus.SUCCESS if run_result.exit_code == 0 else SELinuxActionStatus.FAILED
-        return SELinuxActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
