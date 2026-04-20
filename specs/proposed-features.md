@@ -363,22 +363,23 @@ identified in every `tasks.md`.
 
 ---
 
-## Part C — Integration Seams to Wire
+## Part C — Integration Seams to Wire ✅ COMPLETE
 
-Not new features — existing features that should compose.
+Not new features — existing features that should compose.  All ten
+seams landed; see commits `4d3ecd7`, `abf6efb`, `19100ef`, `3bda624`.
 
-| Consumer | Delegates to | Outcome |
-|---|---|---|
-| `3-kdump-management` | `3-boot-management` for `crashkernel=` | Already specified; finish wiring |
-| `3-cockpit-management` | `3-firewall-management` for cockpit service / port | Remove direct `firewall-cmd` calls |
-| `3-scheduled-tasks` | `3-service-management` for `.timer` enable/disable/daemon-reload | Pick up SKIPPED semantics |
-| `3-ssh-server-configuration` | `3-service-management` for `sshd` reload | Pick up SKIPPED semantics |
-| `3-tuned-management` | `3-service-management` for `tuned.service` lifecycle | Pick up SKIPPED semantics |
-| `3-kdump-management` | `3-service-management` for `kdump.service` lifecycle | Pick up SKIPPED semantics |
-| `3-security-compliance.run_compliance_suite()` (to build) | `3-selinux-management`, `3-ssh-server-configuration`, `3-firewall-management`, `3-audit-management` | Compose existing features into a real compliance-report aggregator — stays within Layer 3 (domain operation), not a Layer-4 orchestrator |
-| `3-subscription-management` | `automojo-credentials` for password handling | Stops putting passwords on argv |
-| `3-container-management` | `automojo-credentials` for registry login | Same reason |
-| `3-user-group-management` | `automojo-credentials` for password setting (future) | Same reason |
+| Consumer | Delegates to | Outcome | Status |
+|---|---|---|---|
+| `3-kdump-management` | `3-boot-management` for `crashkernel=` | Wired via `BootManager.add_kernel_param` / `remove_kernel_param` | ✅ |
+| `3-cockpit-management` | `3-firewall-management` for cockpit service / port | Now calls `FirewallManager.add_service("cockpit", zone)`; no direct `firewall-cmd` | ✅ |
+| `3-scheduled-tasks` | `3-service-management` for `.timer` enable/disable/daemon-reload | `add_systemd_timer` / `remove_systemd_timer` delegate via `ServiceManager`; SKIPPED semantics inherited | ✅ |
+| `3-ssh-server-configuration` | `3-service-management` for `sshd` reload | `reload_config` now delegates `ServiceManager.reload("sshd")` | ✅ |
+| `3-tuned-management` | `3-service-management` for `tuned.service` lifecycle | `TunedManager.enable` / `disable` / `is_active` delegate through `ServiceManager`; SKIPPED semantics inherited | ✅ |
+| `3-kdump-management` | `3-service-management` for `kdump.service` lifecycle | `KdumpManager.enable` / `disable` / `query_status` delegate through `ServiceManager` | ✅ |
+| `3-security-compliance.run_compliance_suite()` (to build) | `3-selinux-management`, `3-ssh-server-configuration`, `3-firewall-management`, `3-audit-management` | New `run_compliance_suite()` aggregator returns `ComplianceReport` with per-category findings; injectable sibling managers for test composition | ✅ |
+| `3-subscription-management` | `automojo-credentials` for password handling | `SubscriptionManager.register(credential=...)` routes password through runner `stdin`; `--password` never on argv | ✅ |
+| `3-container-management` | `automojo-credentials` for registry login | New `ContainerManager.registry_login(registry, credential)` uses `podman login --password-stdin`; `registry_logout()` added for symmetry | ✅ |
+| `3-user-group-management` | `automojo-credentials` for password setting | New `UserManager.set_password(username, credential)` uses `chpasswd` with `<user>:<pw>` on stdin | ✅ |
 
 ---
 
