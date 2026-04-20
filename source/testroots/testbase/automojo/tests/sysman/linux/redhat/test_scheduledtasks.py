@@ -105,7 +105,9 @@ def test_add_cron_job_skipped_when_content_matches():
 
 def test_add_systemd_timer_writes_units():
     """
-        add_systemd_timer() writes both .service and .timer files and enables.
+        add_systemd_timer() writes both .service and .timer files and
+        delegates lifecycle to ServiceManager (Part C seam): a
+        daemon-reload followed by enable + start for the timer unit.
     """
     runner = _MockRunner()
     runner.results[("cat", "/etc/systemd/system/app.service")] = RunResult(
@@ -113,6 +115,14 @@ def test_add_systemd_timer_writes_units():
     )
     runner.results[("cat", "/etc/systemd/system/app.timer")] = RunResult(
         exit_code=1, stdout="", stderr="", command=["cat"],
+    )
+    # ServiceManager.enable() / .start() each query state first; seed
+    # responses so they're not SKIPPED.
+    runner.results[("systemctl", "is-active", "app.timer")] = RunResult(
+        exit_code=0, stdout="inactive\n", stderr="", command=["systemctl"],
+    )
+    runner.results[("systemctl", "is-enabled", "app.timer")] = RunResult(
+        exit_code=0, stdout="disabled\n", stderr="", command=["systemctl"],
     )
     mgr = ScheduledTaskManager(runner, ScheduledTaskConfig(elevated=True))
     result = mgr.add_systemd_timer(SystemdTimerEntry(
@@ -127,8 +137,21 @@ def test_add_systemd_timer_writes_units():
     paths = [c["args"][1] for c in tee_calls]
     testbase.assert_true("/etc/systemd/system/app.service" in paths)
     testbase.assert_true("/etc/systemd/system/app.timer" in paths)
-    enable_calls = [c for c in runner.calls if c["args"][:2] == ["systemctl", "enable"]]
+    enable_calls = [
+        c for c in runner.calls
+        if c["args"][:3] == ["systemctl", "enable", "app.timer"]
+    ]
     testbase.assert_equal(len(enable_calls), 1)
+    start_calls = [
+        c for c in runner.calls
+        if c["args"][:3] == ["systemctl", "start", "app.timer"]
+    ]
+    testbase.assert_equal(len(start_calls), 1)
+    daemon_reload_calls = [
+        c for c in runner.calls
+        if c["args"][:2] == ["systemctl", "daemon-reload"]
+    ]
+    testbase.assert_equal(len(daemon_reload_calls), 1)
     return
 
 
