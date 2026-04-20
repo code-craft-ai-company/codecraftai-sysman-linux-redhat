@@ -99,6 +99,66 @@ def test_set_profile_dispatches_command():
     return
 
 
+def test_enable_delegates_to_service_manager():
+    """
+        enable() delegates ``tuned.service`` activation to
+        :class:`ServiceManager`, which pre-queries is-active/is-enabled
+        and issues ``systemctl enable`` then ``systemctl start``.
+    """
+    runner = _MockRunner()
+    runner.results[("systemctl", "is-active", "tuned.service")] = RunResult(
+        exit_code=3, stdout="inactive\n", stderr="", command=["systemctl"],
+    )
+    runner.results[("systemctl", "is-enabled", "tuned.service")] = RunResult(
+        exit_code=1, stdout="disabled\n", stderr="", command=["systemctl"],
+    )
+    mgr = TunedManager(runner, TunedManagerConfig(elevated=True))
+    result = mgr.enable()
+    testbase.assert_equal(result.status, TunedActionStatus.SUCCESS)
+    issued = [c["args"] for c in runner.calls]
+    testbase.assert_true(["systemctl", "enable", "tuned.service"] in issued)
+    testbase.assert_true(["systemctl", "start", "tuned.service"] in issued)
+    return
+
+
+def test_disable_delegates_to_service_manager():
+    """
+        disable() delegates to :class:`ServiceManager` which issues
+        ``systemctl stop`` then ``systemctl disable``.
+    """
+    runner = _MockRunner()
+    runner.results[("systemctl", "is-active", "tuned.service")] = RunResult(
+        exit_code=0, stdout="active\n", stderr="", command=["systemctl"],
+    )
+    runner.results[("systemctl", "is-enabled", "tuned.service")] = RunResult(
+        exit_code=0, stdout="enabled\n", stderr="", command=["systemctl"],
+    )
+    mgr = TunedManager(runner, TunedManagerConfig(elevated=True))
+    result = mgr.disable()
+    testbase.assert_equal(result.status, TunedActionStatus.SUCCESS)
+    issued = [c["args"] for c in runner.calls]
+    testbase.assert_true(["systemctl", "stop", "tuned.service"] in issued)
+    testbase.assert_true(["systemctl", "disable", "tuned.service"] in issued)
+    return
+
+
+def test_is_active_reads_service_manager_query():
+    """
+        is_active() returns True exactly when ServiceManager.query
+        reports active_state == "active" for tuned.service.
+    """
+    runner = _MockRunner()
+    runner.results[("systemctl", "is-active", "tuned.service")] = RunResult(
+        exit_code=0, stdout="active\n", stderr="", command=["systemctl"],
+    )
+    runner.results[("systemctl", "is-enabled", "tuned.service")] = RunResult(
+        exit_code=0, stdout="enabled\n", stderr="", command=["systemctl"],
+    )
+    mgr = TunedManager(runner, TunedManagerConfig())
+    testbase.assert_true(mgr.is_active())
+    return
+
+
 def test_list_profiles_parses_list_output():
     """
         list_profiles() extracts profile names from ``tuned-adm list`` output.

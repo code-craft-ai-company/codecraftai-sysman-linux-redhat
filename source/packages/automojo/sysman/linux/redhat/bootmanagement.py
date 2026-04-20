@@ -4,45 +4,36 @@
 # through the ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class BootActionStatus(Enum):
-    """
-        Outcome status for boot management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
-
-
-@dataclass
-class BootManagerConfig:
-    """
-        Configuration for :class:`BootManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
-    """
-    dry_run: bool = False
-    elevated: bool = False
+# Backwards-compatible alias.
+BootActionStatus = ActionStatus
 
 
 @dataclass
-class BootActionResult:
+class BootManagerConfig(FeatureConfig):
     """
-        Outcome of a boot management action.
+        Configuration for :class:`BootManager`.  Inherits ``dry_run``
+        and ``elevated`` from :class:`FeatureConfig`.
     """
-    status: BootActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
+
+
+@dataclass
+class BootActionResult(FeatureActionResult):
+    """
+        Outcome of a boot management action.  No feature-specific
+        extras beyond the base fields.
+    """
+    pass
 
 
 @dataclass
@@ -54,32 +45,13 @@ class BootEntry:
     title: str
 
 
-class BootManager:
+class BootManager(BaseFeatureManager):
     """
         Facade for grub2 and default kernel management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[BootManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = BootManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: BootManagerConfig = config
-        return
-
-    @property
-    def config(self) -> BootManagerConfig:
-        """
-            The active :class:`BootManagerConfig`.
-        """
-        return self._config
+    result_class = BootActionResult
+    feature_name = "boot-management"
 
     def list_entries(self) -> list[BootEntry]:
         """
@@ -117,7 +89,7 @@ class BootManager:
             Set the default grub entry via ``grub2-set-default``.
         """
         command = ["grub2-set-default", str(index)]
-        return self._dispatch(command=command, detail=str(index))
+        return self._dispatch(command=command, detail=str(index), operation="set_default")
 
     def get_default(self) -> Optional[int]:
         """
@@ -143,7 +115,7 @@ class BootManager:
             Rebuild the grub configuration via ``grub2-mkconfig``.
         """
         command = ["grub2-mkconfig", "-o", path]
-        return self._dispatch(command=command, detail=path)
+        return self._dispatch(command=command, detail=path, operation="regenerate_config")
 
     def add_kernel_param(self, param: str) -> BootActionResult:
         """
@@ -152,7 +124,7 @@ class BootManager:
         command = [
             "grubby", "--update-kernel=ALL", "--args={}".format(param),
         ]
-        return self._dispatch(command=command, detail=param)
+        return self._dispatch(command=command, detail=param, operation="add_kernel_param")
 
     def remove_kernel_param(self, param: str) -> BootActionResult:
         """
@@ -161,28 +133,4 @@ class BootManager:
         command = [
             "grubby", "--update-kernel=ALL", "--remove-args={}".format(param),
         ]
-        return self._dispatch(command=command, detail=param)
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> BootActionResult:
-        """
-            Dispatch a boot management command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return BootActionResult(
-                status=BootActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = BootActionStatus.SUCCESS if run_result.exit_code == 0 else BootActionStatus.FAILED
-        return BootActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
+        return self._dispatch(command=command, detail=param, operation="remove_kernel_param")

@@ -1,100 +1,132 @@
 # automojo.sysman.linux.redhat.cockpitmanagement
 #
-# CockpitManager wraps the cockpit.socket service and port configuration
-# through the ICommandRunner abstraction.  It delegates service state
-# transitions to systemctl and firewalld service membership to firewall-cmd.
+# CockpitManager wraps the cockpit.socket service and firewall
+# integration.  Service-lifecycle calls delegate to ServiceManager
+# (Part C seam); firewall calls delegate to FirewallManager (Part C
+# seam).  Direct systemctl / firewall-cmd calls are no longer spelled
+# here.
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class CockpitActionStatus(Enum):
+CockpitActionStatus = ActionStatus
+
+
+def _as_cockpit_result(base_result: FeatureActionResult) -> "CockpitActionResult":
     """
-        Outcome status for cockpit management actions.
+        Convert a :class:`FeatureActionResult` produced by a delegated
+        :class:`ServiceManager` or :class:`FirewallManager` call into a
+        :class:`CockpitActionResult`.
     """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+    return CockpitActionResult(
+        status=base_result.status,
+        detail=base_result.detail,
+        exit_code=base_result.exit_code,
+        stdout=base_result.stdout,
+        stderr=base_result.stderr,
+        command=base_result.command,
+    )
 
 
 @dataclass
-class CockpitManagerConfig:
+class CockpitManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`CockpitManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
+        Configuration for :class:`CockpitManager`.  Inherits ``dry_run``
+        and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
-class CockpitActionResult:
+class CockpitActionResult(FeatureActionResult):
     """
         Outcome of a cockpit management action.
     """
-    status: CockpitActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
-class CockpitManager:
+class CockpitManager(BaseFeatureManager):
     """
-        Facade for the cockpit web console.
+        Facade for the cockpit web console.  Delegates systemctl +
+        firewall-cmd calls to the canonical managers.
     """
+
+    result_class = CockpitActionResult
+    feature_name = "cockpit-management"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[CockpitManagerConfig] = None,
+        *,
+        service_manager=None,
+        firewall_manager=None,
+        report=None,
     ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = CockpitManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: CockpitManagerConfig = config
+        super().__init__(runner=runner, config=config, report=report)
+        if service_manager is None:
+            from automojo.sysman.linux.redhat.servicemanagement import (
+                ServiceManager,
+                ServiceManagerConfig,
+            )
+            service_manager = ServiceManager(
+                runner,
+                ServiceManagerConfig(
+                    dry_run=self._config.dry_run,
+                    elevated=self._config.elevated,
+                ),
+            )
+        if firewall_manager is None:
+            from automojo.sysman.linux.redhat.firewallmanagement import (
+                FirewallManager,
+                FirewallManagerConfig,
+            )
+            firewall_manager = FirewallManager(
+                runner,
+                FirewallManagerConfig(
+                    dry_run=self._config.dry_run,
+                    elevated=self._config.elevated,
+                ),
+            )
+        self._service_manager = service_manager
+        self._firewall_manager = firewall_manager
         return
-
-    @property
-    def config(self) -> CockpitManagerConfig:
-        """
-            The active :class:`CockpitManagerConfig`.
-        """
-        return self._config
 
     def enable(self) -> CockpitActionResult:
         """
             Enable and start the ``cockpit.socket`` unit.
         """
-        command = ["systemctl", "enable", "--now", "cockpit.socket"]
-        return self._dispatch(command=command, detail="cockpit.socket")
+        enable_res = self._service_manager.enable("cockpit.socket")
+        if enable_res.status == ActionStatus.FAILED:
+            return _as_cockpit_result(enable_res)
+        start_res = self._service_manager.start("cockpit.socket")
+        return _as_cockpit_result(start_res)
 
     def disable(self) -> CockpitActionResult:
         """
             Disable and stop the ``cockpit.socket`` unit.
         """
-        command = ["systemctl", "disable", "--now", "cockpit.socket"]
-        return self._dispatch(command=command, detail="cockpit.socket")
+        stop_res = self._service_manager.stop("cockpit.socket")
+        if stop_res.status == ActionStatus.FAILED:
+            return _as_cockpit_result(stop_res)
+        disable_res = self._service_manager.disable("cockpit.socket")
+        return _as_cockpit_result(disable_res)
 
     def is_active(self) -> bool:
         """
-            Return True when cockpit.socket is reported as active by systemctl.
+            Return True when cockpit.socket is reported as active by
+            :class:`ServiceManager`.
         """
-        run_result = self._runner.run(
-            ["systemctl", "is-active", "cockpit.socket"], elevated=False,
-        )
-        return run_result.stdout.strip() == "active"
+        info = self._service_manager.query("cockpit.socket")
+        return info.active_state == "active"
 
     def open_firewall(
         self,
@@ -102,13 +134,11 @@ class CockpitManager:
         zone: str = "public",
     ) -> CockpitActionResult:
         """
-            Permit cockpit traffic through firewalld by adding the service.
+            Permit cockpit traffic through firewalld by adding the
+            ``cockpit`` service to ``zone``.
         """
-        command = [
-            "firewall-cmd", "--zone={}".format(zone),
-            "--add-service=cockpit", "--permanent",
-        ]
-        return self._dispatch(command=command, detail="cockpit firewall")
+        fw_res = self._firewall_manager.add_service("cockpit", zone)
+        return _as_cockpit_result(fw_res)
 
     def close_firewall(
         self,
@@ -118,32 +148,5 @@ class CockpitManager:
         """
             Remove the cockpit service from ``zone`` in firewalld.
         """
-        command = [
-            "firewall-cmd", "--zone={}".format(zone),
-            "--remove-service=cockpit", "--permanent",
-        ]
-        return self._dispatch(command=command, detail="cockpit firewall")
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> CockpitActionResult:
-        """
-            Dispatch a cockpit management command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return CockpitActionResult(
-                status=CockpitActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = CockpitActionStatus.SUCCESS if run_result.exit_code == 0 else CockpitActionStatus.FAILED
-        return CockpitActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
+        fw_res = self._firewall_manager.remove_service("cockpit", zone)
+        return _as_cockpit_result(fw_res)

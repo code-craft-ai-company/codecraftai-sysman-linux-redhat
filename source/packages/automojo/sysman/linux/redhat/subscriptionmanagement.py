@@ -4,45 +4,36 @@
 # abstraction to register hosts, attach subscriptions, and manage repos.
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class SubscriptionActionStatus(Enum):
-    """
-        Outcome status for subscription manager actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
-
-
-@dataclass
-class SubscriptionManagerConfig:
-    """
-        Configuration for :class:`SubscriptionManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, subscription-manager runs elevated.
-    """
-    dry_run: bool = False
-    elevated: bool = False
+# Backwards-compatible alias.
+SubscriptionActionStatus = ActionStatus
 
 
 @dataclass
-class SubscriptionActionResult:
+class SubscriptionManagerConfig(FeatureConfig):
     """
-        Outcome of a subscription-manager action.
+        Configuration for :class:`SubscriptionManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    status: SubscriptionActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
+
+
+@dataclass
+class SubscriptionActionResult(FeatureActionResult):
+    """
+        Outcome of a subscription-manager action.  No feature-specific
+        extras beyond the base fields.
+    """
+    pass
 
 
 @dataclass
@@ -54,32 +45,13 @@ class SubscriptionStatus:
     details: list[str] = field(default_factory=list)
 
 
-class SubscriptionManager:
+class SubscriptionManager(BaseFeatureManager):
     """
         Facade for subscription-manager operations.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[SubscriptionManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = SubscriptionManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: SubscriptionManagerConfig = config
-        return
-
-    @property
-    def config(self) -> SubscriptionManagerConfig:
-        """
-            The active :class:`SubscriptionManagerConfig`.
-        """
-        return self._config
+    result_class = SubscriptionActionResult
+    feature_name = "subscription-management"
 
     def register(
         self,
@@ -89,27 +61,48 @@ class SubscriptionManager:
         activation_key: Optional[str] = None,
         org: Optional[str] = None,
         auto_attach: bool = False,
+        credential=None,
     ) -> SubscriptionActionResult:
         """
             Register the host with Red Hat Subscription Management.
+
+            Authentication input precedence:
+
+            1. ``activation_key`` + ``org`` — activation-key path.
+            2. ``credential`` — credential object with ``.username`` /
+               ``.password``; password is supplied on the runner's
+               ``stdin`` channel so it never appears on argv.
+               **This is the recommended path.** (Part C credential
+               routing seam.)
+            3. ``username`` + ``password`` — legacy argv-based path,
+               retained for backward compatibility.  Emits the
+               password on argv and is vulnerable to process-listing
+               leaks; prefer ``credential`` when available.
         """
         command = ["subscription-manager", "register"]
+        stdin_payload: Optional[str] = None
         if activation_key is not None and org is not None:
             command.extend(["--activationkey", activation_key])
             command.extend(["--org", org])
+        elif credential is not None:
+            command.extend(["--username", credential.username])
+            stdin_payload = credential.password
         elif username is not None and password is not None:
             command.extend(["--username", username])
             command.extend(["--password", password])
         if auto_attach:
             command.append("--auto-attach")
-        return self._dispatch(command=command, detail="register")
+        return self._dispatch(
+            command=command, detail="register", operation="register",
+            stdin=stdin_payload,
+        )
 
     def unregister(self) -> SubscriptionActionResult:
         """
             Unregister the host.
         """
         command = ["subscription-manager", "unregister"]
-        return self._dispatch(command=command, detail="unregister")
+        return self._dispatch(command=command, detail="unregister", operation="unregister")
 
     def attach(
         self,
@@ -125,28 +118,28 @@ class SubscriptionManager:
             command.extend(["--pool", pool])
         if auto:
             command.append("--auto")
-        return self._dispatch(command=command, detail="attach")
+        return self._dispatch(command=command, detail="attach", operation="attach")
 
     def refresh(self) -> SubscriptionActionResult:
         """
             Refresh subscription entitlement data.
         """
         command = ["subscription-manager", "refresh"]
-        return self._dispatch(command=command, detail="refresh")
+        return self._dispatch(command=command, detail="refresh", operation="refresh")
 
     def enable_repo(self, repo_id: str) -> SubscriptionActionResult:
         """
             Enable a Red Hat repository via subscription-manager.
         """
         command = ["subscription-manager", "repos", "--enable", repo_id]
-        return self._dispatch(command=command, detail=repo_id)
+        return self._dispatch(command=command, detail=repo_id, operation="enable_repo")
 
     def disable_repo(self, repo_id: str) -> SubscriptionActionResult:
         """
             Disable a Red Hat repository via subscription-manager.
         """
         command = ["subscription-manager", "repos", "--disable", repo_id]
-        return self._dispatch(command=command, detail=repo_id)
+        return self._dispatch(command=command, detail=repo_id, operation="disable_repo")
 
     def status(self) -> SubscriptionStatus:
         """
@@ -166,27 +159,3 @@ class SubscriptionManager:
                 details.append(line)
         status = SubscriptionStatus(overall=overall, details=details)
         return status
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> SubscriptionActionResult:
-        """
-            Dispatch a subscription-manager command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return SubscriptionActionResult(
-                status=SubscriptionActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = SubscriptionActionStatus.SUCCESS if run_result.exit_code == 0 else SubscriptionActionStatus.FAILED
-        return SubscriptionActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )

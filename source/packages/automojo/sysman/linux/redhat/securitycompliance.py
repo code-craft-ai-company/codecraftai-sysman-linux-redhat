@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    BaseFeatureManager,
+    FeatureConfig,
+)
 
 
 class SELinuxMode(Enum):
@@ -21,16 +24,13 @@ class SELinuxMode(Enum):
 
 
 @dataclass
-class SecurityComplianceConfig:
+class SecurityComplianceConfig(FeatureConfig):
     """
-        Configuration for :class:`SecurityComplianceManager`.
+        Configuration for :class:`SecurityComplianceManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no mutating commands execute.
-        :param elevated: When True, mutating commands run elevated.
         :param ssh_config_path: Path to the sshd configuration file.
     """
-    dry_run: bool = False
-    elevated: bool = False
     ssh_config_path: str = "/etc/ssh/sshd_config"
 
 
@@ -92,32 +92,122 @@ class ComplianceActionResult:
     error: Optional[str] = None
 
 
-class SecurityComplianceManager:
+@dataclass
+class ComplianceFinding:
     """
-        Facade for security compliance checks and remediations.
+        A single item in a composed :class:`ComplianceReport`.
+
+        :param category: ``"selinux"``, ``"ssh"``, ``"firewall"``,
+                         ``"audit"``, ``"file-permissions"``, ...
+        :param subject: Identifier of the audited thing (setting name,
+                        file path, zone name, ...).
+        :param compliant: ``True`` when the subject matches the baseline.
+        :param expected: Expected value or state (string form).
+        :param actual: Observed value or state (or ``None`` when the
+                       subject could not be queried).
+        :param detail: Optional human-readable description.
     """
+    category: str
+    subject: str
+    compliant: bool
+    expected: Optional[str] = None
+    actual: Optional[str] = None
+    detail: Optional[str] = None
+
+
+@dataclass
+class ComplianceReport:
+    """
+        Aggregated compliance posture produced by
+        :meth:`SecurityComplianceManager.run_compliance_suite`.
+
+        Composes findings across SELinux, SSH hardening, file
+        permissions, firewalld posture, and audit rules — each
+        produced by the feature-specific manager that owns that
+        surface.
+    """
+    findings: list[ComplianceFinding] = field(default_factory=list)
+    selinux_status: Optional[SELinuxStatus] = None
+    ssh_findings: list["SSHConfigFinding"] = field(default_factory=list)
+    file_permission_results: list["FilePermissionResult"] = field(default_factory=list)
+    world_writable_files: list[str] = field(default_factory=list)
+    suid_sgid_files: list[str] = field(default_factory=list)
+    firewall_default_zone: Optional[str] = None
+    firewall_running: Optional[bool] = None
+    audit_rules_sample: list[str] = field(default_factory=list)
+    overall_compliant: bool = True
+
+    def summary(self) -> dict:
+        """
+            Return a compact dict with count-based roll-ups suitable
+            for inclusion in a :class:`MaintenanceReport`'s
+            ``detail`` field or as a structured log entry.
+        """
+        passed = sum(1 for f in self.findings if f.compliant)
+        failed = sum(1 for f in self.findings if not f.compliant)
+        rtnval = {
+            "findings_total": len(self.findings),
+            "findings_passed": passed,
+            "findings_failed": failed,
+            "selinux_mode": (
+                self.selinux_status.mode.value if self.selinux_status is not None else None
+            ),
+            "firewall_running": self.firewall_running,
+            "world_writable_count": len(self.world_writable_files),
+            "suid_sgid_count": len(self.suid_sgid_files),
+            "overall_compliant": self.overall_compliant,
+        }
+        return rtnval
+
+
+class SecurityComplianceManager(BaseFeatureManager):
+    """
+        Facade for security compliance checks and remediations.  Uses
+        its own :class:`ComplianceActionResult` shape
+        (``success``/``detail``/``dry_run``/``error``) so does not use
+        the base class's ``_dispatch`` helper.
+
+        The :meth:`run_compliance_suite` aggregator composes findings
+        from sibling managers (:class:`SELinuxManager`,
+        :class:`SshServerConfigurator`, :class:`FirewallManager`,
+        :class:`AuditManager`) — wired in via constructor kwargs.
+    """
+
+    feature_name = "security-compliance"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[SecurityComplianceConfig] = None,
+        *,
+        selinux_manager=None,
+        ssh_configurator=None,
+        firewall_manager=None,
+        audit_manager=None,
+        report=None,
     ) -> None:
         """
             :param runner: Command runner.
             :param config: Manager configuration.
+            :param selinux_manager: Optional pre-built
+                :class:`SELinuxManager` used by
+                :meth:`run_compliance_suite`.  When None, one is
+                constructed lazily in the aggregator.
+            :param ssh_configurator: Optional pre-built
+                :class:`SshServerConfigurator`.
+            :param firewall_manager: Optional pre-built
+                :class:`FirewallManager`.
+            :param audit_manager: Optional pre-built
+                :class:`AuditManager`.
+            :param report: Optional :class:`MaintenanceReport` for
+                auto-emitting action records.
         """
-        if config is None:
-            config = SecurityComplianceConfig()
-        self._runner: ICommandRunner = runner
-        self._config: SecurityComplianceConfig = config
+        super().__init__(runner=runner, config=config, report=report)
+        self._selinux_manager = selinux_manager
+        self._ssh_configurator = ssh_configurator
+        self._firewall_manager = firewall_manager
+        self._audit_manager = audit_manager
         return
-
-    @property
-    def config(self) -> SecurityComplianceConfig:
-        """
-            The active :class:`SecurityComplianceConfig`.
-        """
-        return self._config
 
     def check_selinux(self) -> SELinuxStatus:
         """
@@ -355,6 +445,266 @@ class SecurityComplianceManager:
         if run_result.exit_code != 0:
             return ""
         return run_result.stdout
+
+    # ------------------------------------------------------------------
+    # Part C — compliance aggregator
+    # ------------------------------------------------------------------
+
+    def run_compliance_suite(
+        self,
+        *,
+        file_permission_checks: Optional[list[FilePermissionCheck]] = None,
+        ssh_baseline: Optional[dict[str, str]] = None,
+        world_writable_search_paths: Optional[list[str]] = None,
+        suid_sgid_search_paths: Optional[list[str]] = None,
+        expected_firewall_services: Optional[dict[str, list[str]]] = None,
+        expected_selinux_mode: SELinuxMode = SELinuxMode.ENFORCING,
+        include_audit_rules: bool = True,
+    ) -> ComplianceReport:
+        """
+            Compose a full compliance snapshot by running every check
+            this feature and its sibling managers expose, rolling the
+            results into a single :class:`ComplianceReport`.
+
+            Sibling managers are constructed lazily from this manager's
+            runner when they were not injected at construction time.
+
+            :param file_permission_checks: File-permission checks to
+                run (via :meth:`check_file_permissions`).  Empty list
+                or None skips this category.
+            :param ssh_baseline: sshd baseline overrides; when None the
+                module default is used.
+            :param world_writable_search_paths: Paths to scan for
+                world-writable files.  None or empty skips the scan.
+            :param suid_sgid_search_paths: Paths to scan for SUID/SGID
+                binaries.  None or empty skips the scan.
+            :param expected_firewall_services: Mapping of zone name to
+                expected service-name list.  For each zone we query
+                the :class:`FirewallManager` and raise a finding per
+                service that is missing.  None skips firewall audit.
+            :param expected_selinux_mode: Target SELinux mode; a
+                finding is raised when the observed mode differs.
+            :param include_audit_rules: When True, include the
+                currently-active auditd rule list as a sample on the
+                report (read-only, never fails).
+
+            :returns: :class:`ComplianceReport` with per-category
+                fields populated and ``overall_compliant`` reflecting
+                the aggregate pass/fail state.
+        """
+        report = ComplianceReport()
+
+        # --- SELinux posture ------------------------------------------
+        selinux_status = self.check_selinux()
+        report.selinux_status = selinux_status
+        selinux_compliant = selinux_status.mode == expected_selinux_mode
+        report.findings.append(ComplianceFinding(
+            category="selinux",
+            subject="mode",
+            compliant=selinux_compliant,
+            expected=expected_selinux_mode.value,
+            actual=selinux_status.mode.value,
+        ))
+
+        # --- SSH hardening --------------------------------------------
+        ssh_findings = self.check_ssh_config(baseline=ssh_baseline)
+        report.ssh_findings = list(ssh_findings)
+        for finding in ssh_findings:
+            report.findings.append(ComplianceFinding(
+                category="ssh",
+                subject=finding.setting,
+                compliant=finding.compliant,
+                expected=finding.expected,
+                actual=finding.actual,
+            ))
+
+        # --- File permissions ----------------------------------------
+        if file_permission_checks is not None and len(file_permission_checks) > 0:
+            perm_results = self.check_file_permissions(
+                checks=file_permission_checks,
+            )
+            report.file_permission_results = list(perm_results)
+            for result in perm_results:
+                actual = "{}|{}|{}".format(
+                    result.actual_mode or "?",
+                    result.actual_owner or "?",
+                    result.actual_group or "?",
+                )
+                expected = "{}|{}|{}".format(
+                    result.expected_mode,
+                    result.expected_owner,
+                    result.expected_group,
+                )
+                report.findings.append(ComplianceFinding(
+                    category="file-permissions",
+                    subject=result.path,
+                    compliant=result.compliant,
+                    expected=expected,
+                    actual=actual,
+                    detail=result.error,
+                ))
+
+        # --- World-writable discovery ---------------------------------
+        if (
+            world_writable_search_paths is not None
+            and len(world_writable_search_paths) > 0
+        ):
+            ww_files = self.find_world_writable_files(
+                search_paths=world_writable_search_paths,
+            )
+            report.world_writable_files = list(ww_files)
+            report.findings.append(ComplianceFinding(
+                category="file-permissions",
+                subject="world-writable",
+                compliant=len(ww_files) == 0,
+                expected="0 files",
+                actual="{} files".format(len(ww_files)),
+            ))
+
+        # --- SUID / SGID discovery -----------------------------------
+        if (
+            suid_sgid_search_paths is not None
+            and len(suid_sgid_search_paths) > 0
+        ):
+            suid = self.find_suid_sgid_files(
+                search_paths=suid_sgid_search_paths,
+            )
+            report.suid_sgid_files = list(suid)
+            # SUID/SGID isn't pass/fail on its own — record as a
+            # finding that's always "compliant" (informational) when
+            # any are found, so the caller can review the list.
+            report.findings.append(ComplianceFinding(
+                category="file-permissions",
+                subject="suid-sgid-count",
+                compliant=True,
+                expected="informational",
+                actual="{} files".format(len(suid)),
+            ))
+
+        # --- Firewall posture ----------------------------------------
+        if expected_firewall_services is not None:
+            fw = self._resolve_firewall_manager()
+            state = fw.query_state()
+            report.firewall_running = state.running
+            report.firewall_default_zone = state.default_zone
+            report.findings.append(ComplianceFinding(
+                category="firewall",
+                subject="daemon-running",
+                compliant=state.running,
+                expected="running",
+                actual="running" if state.running else "stopped",
+            ))
+            for zone_name, expected_services in expected_firewall_services.items():
+                zone_info = fw.query_zone(zone_name)
+                have = set(zone_info.services)
+                for service_name in expected_services:
+                    report.findings.append(ComplianceFinding(
+                        category="firewall",
+                        subject="zone={}:service={}".format(zone_name, service_name),
+                        compliant=service_name in have,
+                        expected="present",
+                        actual="present" if service_name in have else "absent",
+                    ))
+
+        # --- Audit rules (informational) ------------------------------
+        if include_audit_rules:
+            audit = self._resolve_audit_manager()
+            try:
+                rules = audit.list_rules()
+            except Exception:
+                rules = []
+            report.audit_rules_sample = list(rules)
+
+        # --- Aggregate pass/fail -------------------------------------
+        overall = True
+        for finding in report.findings:
+            if not finding.compliant:
+                overall = False
+                break
+        report.overall_compliant = overall
+
+        return report
+
+    def _resolve_selinux_manager(self):
+        """
+            Return the injected SELinuxManager or construct one from
+            this manager's runner and dry_run/elevated posture.
+        """
+        if self._selinux_manager is not None:
+            return self._selinux_manager
+        from automojo.sysman.linux.redhat.selinuxmanagement import (
+            SELinuxManager,
+            SELinuxManagerConfig,
+        )
+        mgr = SELinuxManager(
+            self._runner,
+            SELinuxManagerConfig(
+                dry_run=self._config.dry_run,
+                elevated=self._config.elevated,
+            ),
+        )
+        self._selinux_manager = mgr
+        return mgr
+
+    def _resolve_ssh_configurator(self):
+        """
+            Return the injected SshServerConfigurator or construct one.
+        """
+        if self._ssh_configurator is not None:
+            return self._ssh_configurator
+        from automojo.sysman.linux.redhat.sshserverconfiguration import (
+            SshServerConfigurator,
+            SshServerConfig,
+        )
+        mgr = SshServerConfigurator(
+            self._runner,
+            SshServerConfig(
+                dry_run=self._config.dry_run,
+                elevated=self._config.elevated,
+            ),
+        )
+        self._ssh_configurator = mgr
+        return mgr
+
+    def _resolve_firewall_manager(self):
+        """
+            Return the injected FirewallManager or construct one.
+        """
+        if self._firewall_manager is not None:
+            return self._firewall_manager
+        from automojo.sysman.linux.redhat.firewallmanagement import (
+            FirewallManager,
+            FirewallManagerConfig,
+        )
+        mgr = FirewallManager(
+            self._runner,
+            FirewallManagerConfig(
+                dry_run=self._config.dry_run,
+                elevated=self._config.elevated,
+            ),
+        )
+        self._firewall_manager = mgr
+        return mgr
+
+    def _resolve_audit_manager(self):
+        """
+            Return the injected AuditManager or construct one.
+        """
+        if self._audit_manager is not None:
+            return self._audit_manager
+        from automojo.sysman.linux.redhat.auditmanagement import (
+            AuditManager,
+            AuditManagerConfig,
+        )
+        mgr = AuditManager(
+            self._runner,
+            AuditManagerConfig(
+                dry_run=self._config.dry_run,
+                elevated=self._config.elevated,
+            ),
+        )
+        self._audit_manager = mgr
+        return mgr
 
 
 def _default_ssh_baseline() -> dict[str, str]:

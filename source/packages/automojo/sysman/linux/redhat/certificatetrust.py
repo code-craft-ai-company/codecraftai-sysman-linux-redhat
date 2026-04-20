@@ -4,75 +4,44 @@
 # through the ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class TrustActionStatus(Enum):
-    """
-        Outcome status for CA trust management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+TrustActionStatus = ActionStatus
 
 
 @dataclass
-class CertificateTrustConfig:
+class CertificateTrustConfig(FeatureConfig):
     """
-        Configuration for :class:`CertificateTrustManager`.
+        Configuration for :class:`CertificateTrustManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
         :param anchors_dir: Directory containing trust anchor files.
     """
-    dry_run: bool = False
-    elevated: bool = False
     anchors_dir: str = "/etc/pki/ca-trust/source/anchors"
 
 
 @dataclass
-class TrustActionResult:
+class TrustActionResult(FeatureActionResult):
     """
-        Outcome of a trust store action.
+        Outcome of a trust store action.  No feature-specific extras.
     """
-    status: TrustActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
-class CertificateTrustManager:
+class CertificateTrustManager(BaseFeatureManager):
     """
         Facade for the RHEL system-wide CA trust store.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[CertificateTrustConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = CertificateTrustConfig()
-        self._runner: ICommandRunner = runner
-        self._config: CertificateTrustConfig = config
-        return
-
-    @property
-    def config(self) -> CertificateTrustConfig:
-        """
-            The active :class:`CertificateTrustConfig`.
-        """
-        return self._config
+    result_class = TrustActionResult
+    feature_name = "certificate-trust-management"
 
     def add_anchor(
         self,
@@ -105,16 +74,11 @@ class CertificateTrustManager:
                 stderr=write_result.stderr,
                 command=list(write_result.command),
             )
-        refresh_result = self._runner.run(
-            ["update-ca-trust", "extract"], elevated=self._config.elevated,
-        )
-        status = TrustActionStatus.SUCCESS if refresh_result.exit_code == 0 else TrustActionStatus.FAILED
-        return TrustActionResult(
-            status=status, detail=path,
-            exit_code=refresh_result.exit_code,
-            stdout=refresh_result.stdout,
-            stderr=refresh_result.stderr,
-            command=list(refresh_result.command),
+        # Chain the refresh; emit only the refresh's result as before.
+        return self._dispatch(
+            command=["update-ca-trust", "extract"],
+            detail=path,
+            operation="add_anchor",
         )
 
     def remove_anchor(self, name: str) -> TrustActionResult:
@@ -133,35 +97,19 @@ class CertificateTrustManager:
                 command=["rm", "-f", path],
             )
         self._runner.run(["rm", "-f", path], elevated=self._config.elevated)
-        refresh_result = self._runner.run(
-            ["update-ca-trust", "extract"], elevated=self._config.elevated,
-        )
-        status = TrustActionStatus.SUCCESS if refresh_result.exit_code == 0 else TrustActionStatus.FAILED
-        return TrustActionResult(
-            status=status, detail=path,
-            exit_code=refresh_result.exit_code,
-            stdout=refresh_result.stdout,
-            stderr=refresh_result.stderr,
-            command=list(refresh_result.command),
+        return self._dispatch(
+            command=["update-ca-trust", "extract"],
+            detail=path,
+            operation="remove_anchor",
         )
 
     def refresh(self) -> TrustActionResult:
         """
             Run ``update-ca-trust extract`` directly.
         """
-        command = ["update-ca-trust", "extract"]
-        if self._config.dry_run:
-            return TrustActionResult(
-                status=TrustActionStatus.DRY_RUN, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = TrustActionStatus.SUCCESS if run_result.exit_code == 0 else TrustActionStatus.FAILED
-        return TrustActionResult(
-            status=status,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
+        return self._dispatch(
+            command=["update-ca-trust", "extract"],
+            operation="refresh",
         )
 
     def _read(self, *, path: str) -> str:

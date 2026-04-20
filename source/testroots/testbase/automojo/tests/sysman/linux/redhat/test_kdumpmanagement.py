@@ -52,19 +52,40 @@ def test_query_status_reports_active_and_enabled():
     return
 
 
-def test_enable_runs_systemctl_enable_now():
+def test_enable_delegates_to_service_manager():
     """
-        enable() runs ``systemctl enable --now kdump.service``.
+        enable() now delegates to ServiceManager: it issues
+        ``systemctl enable kdump.service`` followed by ``systemctl
+        start kdump.service`` (Part C seam — replaces the previous
+        single ``systemctl enable --now`` call).
     """
-    runner = _MockRunner(default_result=RunResult(
+    runner = _MockRunner()
+    # ServiceManager.enable() queries is-active / is-enabled first; seed
+    # responses so SKIPPED is not triggered.
+    runner.results[("systemctl", "is-active", "kdump.service")] = RunResult(
+        exit_code=0, stdout="inactive\n", stderr="", command=["systemctl"],
+    )
+    runner.results[("systemctl", "is-enabled", "kdump.service")] = RunResult(
+        exit_code=0, stdout="disabled\n", stderr="", command=["systemctl"],
+    )
+    runner.default_result = RunResult(
         exit_code=0, stdout="", stderr="", command=["systemctl"],
-    ))
+    )
     mgr = KdumpManager(runner, KdumpManagerConfig(elevated=True))
     result = mgr.enable()
     testbase.assert_equal(result.status, KdumpActionStatus.SUCCESS)
+    mutation_calls = [
+        c for c in runner.calls
+        if c["args"][:2] in (["systemctl", "enable"], ["systemctl", "start"])
+    ]
+    testbase.assert_equal(len(mutation_calls), 2)
     testbase.assert_equal(
-        runner.calls[-1]["args"],
-        ["systemctl", "enable", "--now", "kdump.service"],
+        mutation_calls[0]["args"],
+        ["systemctl", "enable", "kdump.service"],
+    )
+    testbase.assert_equal(
+        mutation_calls[1]["args"],
+        ["systemctl", "start", "kdump.service"],
     )
     return
 

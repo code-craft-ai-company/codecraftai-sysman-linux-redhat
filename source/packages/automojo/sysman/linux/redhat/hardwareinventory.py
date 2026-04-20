@@ -9,18 +9,20 @@ import json
 from dataclasses import dataclass, field
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    BaseFeatureManager,
+    FeatureConfig,
+)
 
 
 @dataclass
-class HardwareInventoryConfig:
+class HardwareInventoryConfig(FeatureConfig):
     """
-        Configuration for :class:`HardwareInventoryManager`.
-
-        :param elevated: When True, queries that require root (such as
-                         ``dmidecode``) are dispatched elevated.
+        Configuration for :class:`HardwareInventoryManager`.  Inherits
+        ``dry_run`` (unused here, this feature is read-only) and
+        ``elevated`` from :class:`FeatureConfig`.
     """
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -156,32 +158,15 @@ class HardwareSnapshot:
     warnings: list[str] = field(default_factory=list)
 
 
-class HardwareInventoryManager:
+class HardwareInventoryManager(BaseFeatureManager):
     """
-        Read-only facade for hardware inventory queries.
+        Read-only facade for hardware inventory queries.  Has no
+        ActionResult at all since it never mutates state; inherits
+        the standard ``__init__`` / ``config`` / ``runner`` surface
+        for uniformity with the rest of the package.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[HardwareInventoryConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Inventory configuration.
-        """
-        if config is None:
-            config = HardwareInventoryConfig()
-        self._runner: ICommandRunner = runner
-        self._config: HardwareInventoryConfig = config
-        return
-
-    @property
-    def config(self) -> HardwareInventoryConfig:
-        """
-            The active :class:`HardwareInventoryConfig`.
-        """
-        return self._config
+    feature_name = "hardware-inventory"
 
     def get_dmi_identity(self) -> DmiIdentity:
         """

@@ -10,7 +10,7 @@ import socket
 import uuid
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -48,7 +48,7 @@ class ActionRecord:
 
     def __post_init__(self) -> None:
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
+            self.timestamp = datetime.now(timezone.utc)
         return
 
 
@@ -118,7 +118,7 @@ class MaintenanceReport:
         self._run_id: str = run_id
         self._host: str = host
         self._description: Optional[str] = description
-        self._started_at: datetime = datetime.utcnow()
+        self._started_at: datetime = datetime.now(timezone.utc)
         self._finished_at: Optional[datetime] = None
         self._overall_status: Optional[ActionStatus] = None
         self._actions: list[ActionRecord] = []
@@ -192,7 +192,7 @@ class MaintenanceReport:
         """
             Set ``finished_at`` and compute ``overall_status``.
         """
-        self._finished_at = datetime.utcnow()
+        self._finished_at = datetime.now(timezone.utc)
         self._overall_status = _compute_overall_status(actions=self._actions)
         return
 

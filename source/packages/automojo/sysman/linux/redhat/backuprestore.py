@@ -7,17 +7,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class BackupActionStatus(Enum):
-    """
-        Outcome status for backup and restore actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+BackupActionStatus = ActionStatus
 
 
 class Compression(Enum):
@@ -31,26 +29,18 @@ class Compression(Enum):
 
 
 @dataclass
-class BackupManagerConfig:
+class BackupManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`BackupRestoreManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
+        Configuration for :class:`BackupRestoreManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
 class BackupSpec:
     """
         Specification for a tar-based backup.
-
-        :param source_paths: Paths to include in the archive.
-        :param archive_path: Destination tarball path.
-        :param compression: Compression format to apply.
-        :param exclude_patterns: Optional list of --exclude patterns.
     """
     source_paths: list[str]
     archive_path: str
@@ -59,44 +49,20 @@ class BackupSpec:
 
 
 @dataclass
-class BackupActionResult:
+class BackupActionResult(FeatureActionResult):
     """
-        Outcome of a backup or restore action.
+        Outcome of a backup or restore action.  Adds ``archive_path``.
     """
-    status: BackupActionStatus
     archive_path: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
-class BackupRestoreManager:
+class BackupRestoreManager(BaseFeatureManager):
     """
         Facade for backup and restore operations.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[BackupManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = BackupManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: BackupManagerConfig = config
-        return
-
-    @property
-    def config(self) -> BackupManagerConfig:
-        """
-            The active :class:`BackupManagerConfig`.
-        """
-        return self._config
+    result_class = BackupActionResult
+    feature_name = "backup-restore"
 
     def create_archive(self, spec: BackupSpec) -> BackupActionResult:
         """

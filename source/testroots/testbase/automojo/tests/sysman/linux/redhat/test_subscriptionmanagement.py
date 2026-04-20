@@ -33,7 +33,7 @@ class _MockRunner:
         capture_output: bool = True,
         stdin: Optional[str] = None,
     ) -> RunResult:
-        self.calls.append({"args": list(args)})
+        self.calls.append({"args": list(args), "stdin": stdin})
         key = tuple(args)
         if key in self.results:
             return self.results[key]
@@ -113,4 +113,98 @@ def test_status_parses_overall_status():
     sm = SubscriptionManager(runner, SubscriptionManagerConfig())
     status = sm.status()
     testbase.assert_equal(status.overall, "Current")
+    return
+
+
+# ---------------------------------------------------------------------
+# register(credential=...) — Part C credential routing
+# ---------------------------------------------------------------------
+
+
+class _StubCredential:
+    """
+        Minimal duck-type of automojo-credentials' BasicCredential.
+    """
+
+    def __init__(self, *, username: str, password: str) -> None:
+        self.username = username
+        self.password = password
+        return
+
+
+def test_register_credential_path_puts_password_on_stdin():
+    """
+        Preferred credential path: password travels on runner's stdin
+        and NEVER appears on argv.
+    """
+    runner = _MockRunner(default_result=RunResult(
+        exit_code=0, stdout="", stderr="", command=["subscription-manager"],
+    ))
+    sm = SubscriptionManager(runner, SubscriptionManagerConfig(elevated=True))
+    result = sm.register(
+        credential=_StubCredential(username="alice", password="s3cret"),
+    )
+    testbase.assert_equal(result.status, SubscriptionActionStatus.SUCCESS)
+    reg_calls = [
+        c for c in runner.calls
+        if c["args"][:2] == ["subscription-manager", "register"]
+    ]
+    testbase.assert_equal(len(reg_calls), 1)
+    argv = reg_calls[0]["args"]
+    testbase.assert_true("--username" in argv)
+    testbase.assert_true("alice" in argv)
+    testbase.assert_true("--password" not in argv)
+    testbase.assert_true("s3cret" not in argv)
+    testbase.assert_equal(reg_calls[0].get("stdin"), "s3cret")
+    return
+
+
+def test_register_legacy_username_password_still_works():
+    """
+        Backward-compatibility: the old username/password argv-path
+        continues to work when no credential is supplied.
+    """
+    runner = _MockRunner(default_result=RunResult(
+        exit_code=0, stdout="", stderr="", command=["subscription-manager"],
+    ))
+    sm = SubscriptionManager(runner, SubscriptionManagerConfig(elevated=True))
+    result = sm.register(username="alice", password="s3cret")
+    testbase.assert_equal(result.status, SubscriptionActionStatus.SUCCESS)
+    reg_calls = [
+        c for c in runner.calls
+        if c["args"][:2] == ["subscription-manager", "register"]
+    ]
+    argv = reg_calls[0]["args"]
+    # Legacy path: argv DOES contain the password (deliberately left
+    # intact for backward compat).
+    testbase.assert_true("--password" in argv)
+    testbase.assert_true("s3cret" in argv)
+    testbase.assert_equal(reg_calls[0].get("stdin"), None)
+    return
+
+
+def test_register_activation_key_path_overrides_credential():
+    """
+        Activation-key path takes precedence over a supplied credential.
+    """
+    runner = _MockRunner(default_result=RunResult(
+        exit_code=0, stdout="", stderr="", command=["subscription-manager"],
+    ))
+    sm = SubscriptionManager(runner, SubscriptionManagerConfig(elevated=True))
+    sm.register(
+        activation_key="AK-1234",
+        org="example-org",
+        credential=_StubCredential(username="alice", password="s3cret"),
+    )
+    reg_calls = [
+        c for c in runner.calls
+        if c["args"][:2] == ["subscription-manager", "register"]
+    ]
+    argv = reg_calls[0]["args"]
+    testbase.assert_true("--activationkey" in argv)
+    testbase.assert_true("AK-1234" in argv)
+    testbase.assert_true("--org" in argv)
+    testbase.assert_true("example-org" in argv)
+    testbase.assert_true("--username" not in argv)
+    testbase.assert_true("s3cret" not in argv)
     return

@@ -4,46 +4,34 @@
 # abstraction.
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class FirewallActionStatus(Enum):
-    """
-        Outcome status for firewall management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
-
-
-@dataclass
-class FirewallManagerConfig:
-    """
-        Configuration for :class:`FirewallManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
-    """
-    dry_run: bool = False
-    elevated: bool = False
+FirewallActionStatus = ActionStatus
 
 
 @dataclass
-class FirewallActionResult:
+class FirewallManagerConfig(FeatureConfig):
     """
-        Outcome of a firewall management action.
+        Configuration for :class:`FirewallManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    status: FirewallActionStatus
+    pass
+
+
+@dataclass
+class FirewallActionResult(FeatureActionResult):
+    """
+        Outcome of a firewall management action.  Adds `zone`.
+    """
     zone: Optional[str] = None
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
 @dataclass
@@ -72,32 +60,13 @@ class FirewallState:
     default_zone: str
 
 
-class FirewallManager:
+class FirewallManager(BaseFeatureManager):
     """
         Facade for firewalld management through the command runner.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[FirewallManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for all operations.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = FirewallManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: FirewallManagerConfig = config
-        return
-
-    @property
-    def config(self) -> FirewallManagerConfig:
-        """
-            The active :class:`FirewallManagerConfig`.
-        """
-        return self._config
+    result_class = FirewallActionResult
+    feature_name = "firewall-management"
 
     def add_service(self, service: str, zone: str) -> FirewallActionResult:
         """
@@ -105,18 +74,20 @@ class FirewallManager:
         """
         info = self.query_zone(zone)
         if service in info.services:
-            skipped = FirewallActionResult(
+            return FirewallActionResult(
                 status=FirewallActionStatus.SKIPPED,
                 zone=zone, detail=service,
             )
-            return skipped
         command = [
             "firewall-cmd",
             "--zone={}".format(zone),
             "--add-service={}".format(service),
             "--permanent",
         ]
-        return self._dispatch(command=command, zone=zone, detail=service)
+        return self._dispatch(
+            command=command, zone=zone, detail=service,
+            operation="add_service",
+        )
 
     def remove_service(self, service: str, zone: str) -> FirewallActionResult:
         """
@@ -124,18 +95,20 @@ class FirewallManager:
         """
         info = self.query_zone(zone)
         if service not in info.services:
-            skipped = FirewallActionResult(
+            return FirewallActionResult(
                 status=FirewallActionStatus.SKIPPED,
                 zone=zone, detail=service,
             )
-            return skipped
         command = [
             "firewall-cmd",
             "--zone={}".format(zone),
             "--remove-service={}".format(service),
             "--permanent",
         ]
-        return self._dispatch(command=command, zone=zone, detail=service)
+        return self._dispatch(
+            command=command, zone=zone, detail=service,
+            operation="remove_service",
+        )
 
     def add_port(
         self,
@@ -159,7 +132,10 @@ class FirewallManager:
             "--add-port={}".format(port_spec),
             "--permanent",
         ]
-        return self._dispatch(command=command, zone=zone, detail=port_spec)
+        return self._dispatch(
+            command=command, zone=zone, detail=port_spec,
+            operation="add_port",
+        )
 
     def remove_port(
         self,
@@ -183,7 +159,10 @@ class FirewallManager:
             "--remove-port={}".format(port_spec),
             "--permanent",
         ]
-        return self._dispatch(command=command, zone=zone, detail=port_spec)
+        return self._dispatch(
+            command=command, zone=zone, detail=port_spec,
+            operation="remove_port",
+        )
 
     def add_rich_rule(self, rule: str, zone: str) -> FirewallActionResult:
         """
@@ -201,7 +180,10 @@ class FirewallManager:
             "--add-rich-rule={}".format(rule),
             "--permanent",
         ]
-        return self._dispatch(command=command, zone=zone, detail=rule)
+        return self._dispatch(
+            command=command, zone=zone, detail=rule,
+            operation="add_rich_rule",
+        )
 
     def remove_rich_rule(self, rule: str, zone: str) -> FirewallActionResult:
         """
@@ -219,7 +201,10 @@ class FirewallManager:
             "--remove-rich-rule={}".format(rule),
             "--permanent",
         ]
-        return self._dispatch(command=command, zone=zone, detail=rule)
+        return self._dispatch(
+            command=command, zone=zone, detail=rule,
+            operation="remove_rich_rule",
+        )
 
     def set_default_zone(self, zone: str) -> FirewallActionResult:
         """
@@ -234,14 +219,20 @@ class FirewallManager:
         command = [
             "firewall-cmd", "--set-default-zone={}".format(zone),
         ]
-        return self._dispatch(command=command, zone=zone, detail=zone)
+        return self._dispatch(
+            command=command, zone=zone, detail=zone,
+            operation="set_default_zone",
+        )
 
     def reload(self) -> FirewallActionResult:
         """
             Apply permanent changes to the running firewall.
         """
         command = ["firewall-cmd", "--reload"]
-        return self._dispatch(command=command, zone=None, detail=None)
+        return self._dispatch(
+            command=command, zone=None, detail=None,
+            operation="reload",
+        )
 
     def query_state(self) -> FirewallState:
         """
@@ -289,34 +280,6 @@ class FirewallManager:
         for z in zones:
             z.is_default = state.default_zone == z.zone
         return zones
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        zone: Optional[str],
-        detail: Optional[str],
-    ) -> FirewallActionResult:
-        """
-            Dispatch a firewall-cmd command honouring dry-run.
-        """
-        if self._config.dry_run:
-            dry = FirewallActionResult(
-                status=FirewallActionStatus.DRY_RUN,
-                zone=zone, detail=detail, command=command,
-            )
-            return dry
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = FirewallActionStatus.SUCCESS if run_result.exit_code == 0 else FirewallActionStatus.FAILED
-        result = FirewallActionResult(
-            status=status,
-            zone=zone, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
-        return result
 
 
 def _parse_zone_block(*, stdout: str, zone: str) -> ZoneInfo:

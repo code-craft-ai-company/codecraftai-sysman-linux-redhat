@@ -10,7 +10,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 
 
 class TaskType(Enum):
@@ -22,17 +26,14 @@ class TaskType(Enum):
 
 
 @dataclass
-class ScheduledTaskConfig:
+class ScheduledTaskConfig(FeatureConfig):
     """
-        Configuration for :class:`ScheduledTaskManager`.
+        Configuration for :class:`ScheduledTaskManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands or writes execute.
-        :param elevated: When True, write commands run elevated.
         :param cron_dir: Directory for cron drop-in files.
         :param unit_dir: Directory for systemd unit files.
     """
-    dry_run: bool = False
-    elevated: bool = False
     cron_dir: str = "/etc/cron.d"
     unit_dir: str = "/etc/systemd/system"
 
@@ -81,7 +82,12 @@ class ScheduledTaskInfo:
 @dataclass
 class ScheduledTaskResult:
     """
-        Outcome of a scheduled task mutation.
+        Outcome of a scheduled task mutation.  NOTE: this feature
+        uses a non-standard result shape (``success`` / ``name`` /
+        ``dry_run`` / ``error``) for historical compatibility; it
+        does NOT subclass :class:`FeatureActionResult`.  See
+        `specs/3-scheduled-tasks/tasks.md` for a future-normalisation
+        task.
     """
     success: bool
     name: str
@@ -98,32 +104,43 @@ class ScheduledTaskQueryError(Exception):
 _VALID_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\-_]*$")
 
 
-class ScheduledTaskManager:
+class ScheduledTaskManager(BaseFeatureManager):
     """
         Facade for cron and systemd timer management.
+
+        This feature uses its own :class:`ScheduledTaskResult` shape
+        and therefore does not go through the base class's
+        ``_dispatch`` / ``_wrap_result`` helpers.  Systemd-timer
+        lifecycle calls delegate to :class:`ServiceManager` (Part C
+        seam); direct ``systemctl`` invocations are no longer spelled
+        here.
     """
+
+    feature_name = "scheduled-tasks"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[ScheduledTaskConfig] = None,
+        *,
+        service_manager=None,
+        report=None,
     ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = ScheduledTaskConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ScheduledTaskConfig = config
+        super().__init__(runner=runner, config=config, report=report)
+        if service_manager is None:
+            from automojo.sysman.linux.redhat.servicemanagement import (
+                ServiceManager,
+                ServiceManagerConfig,
+            )
+            service_manager = ServiceManager(
+                runner,
+                ServiceManagerConfig(
+                    dry_run=self._config.dry_run,
+                    elevated=self._config.elevated,
+                ),
+            )
+        self._service_manager = service_manager
         return
-
-    @property
-    def config(self) -> ScheduledTaskConfig:
-        """
-            The active :class:`ScheduledTaskConfig`.
-        """
-        return self._config
 
     def add_cron_job(self, entry: CronJobEntry) -> ScheduledTaskResult:
         """
@@ -219,27 +236,32 @@ class ScheduledTaskManager:
                     success=False, name=entry.name,
                     error=timer_result.stderr,
                 )
-            self._runner.run(
-                ["systemctl", "daemon-reload"],
-                elevated=self._config.elevated,
-            )
+            # Part C: systemctl daemon-reload via ServiceManager.
+            self._service_manager.daemon_reload()
 
         if entry.enabled:
-            enable_result = self._runner.run(
-                ["systemctl", "enable", "--now", "{}.timer".format(entry.name)],
-                elevated=self._config.elevated,
-            )
-            if enable_result.exit_code != 0:
+            # Part C: systemctl enable --now <timer> via ServiceManager
+            # as an enable + start sequence.
+            timer_unit = "{}.timer".format(entry.name)
+            enable_result = self._service_manager.enable(timer_unit)
+            if enable_result.status == ActionStatus.FAILED:
                 return ScheduledTaskResult(
                     success=False, name=entry.name,
                     error=enable_result.stderr,
+                )
+            start_result = self._service_manager.start(timer_unit)
+            if start_result.status == ActionStatus.FAILED:
+                return ScheduledTaskResult(
+                    success=False, name=entry.name,
+                    error=start_result.stderr,
                 )
 
         return ScheduledTaskResult(success=True, name=entry.name)
 
     def remove_systemd_timer(self, name: str) -> ScheduledTaskResult:
         """
-            Delete a systemd timer + service pair.
+            Delete a systemd timer + service pair.  Systemctl calls
+            delegate to :class:`ServiceManager` (Part C seam).
         """
         _ensure_valid_name(name)
         timer_unit = "{}.timer".format(name)
@@ -248,18 +270,15 @@ class ScheduledTaskManager:
         service_path = os.path.join(self._config.unit_dir, service_unit)
         if self._config.dry_run:
             return ScheduledTaskResult(success=True, name=name, dry_run=True)
-        self._runner.run(
-            ["systemctl", "disable", "--now", timer_unit],
-            elevated=self._config.elevated,
-        )
+        # Part C: stop + disable via ServiceManager (replaces
+        # systemctl disable --now <timer>).
+        self._service_manager.stop(timer_unit)
+        self._service_manager.disable(timer_unit)
         self._runner.run(
             ["rm", "-f", timer_path, service_path],
             elevated=self._config.elevated,
         )
-        self._runner.run(
-            ["systemctl", "daemon-reload"],
-            elevated=self._config.elevated,
-        )
+        self._service_manager.daemon_reload()
         return ScheduledTaskResult(success=True, name=name)
 
     def query_cron(self, name: str) -> Optional[ScheduledTaskInfo]:

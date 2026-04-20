@@ -24,7 +24,7 @@ class _MockRunner:
 
     def run(self, args, *, elevated=False, cwd=None, env=None, timeout=None,
             on_output=None, on_error=None, capture_output=True, stdin=None):
-        self.calls.append({"args": list(args)})
+        self.calls.append({"args": list(args), "stdin": stdin})
         key = tuple(args)
         if key in self.results:
             return self.results[key]
@@ -101,4 +101,92 @@ def test_list_containers_parses_json_output():
     testbase.assert_equal(len(containers), 1)
     testbase.assert_equal(containers[0].name, "app01")
     testbase.assert_equal(containers[0].state, "running")
+    return
+
+
+# ---------------------------------------------------------------------
+# registry_login — Part C credential routing
+# ---------------------------------------------------------------------
+
+
+class _StubCredential:
+    """
+        Minimal duck-type of automojo-credentials' BasicCredential.
+    """
+
+    def __init__(self, *, username: str, password: str) -> None:
+        self.username = username
+        self.password = password
+        return
+
+
+def test_registry_login_sends_password_on_stdin():
+    """
+        registry_login() sends the password on the runner's stdin
+        channel; argv contains only the username, registry, and the
+        ``--password-stdin`` flag (never the password itself).
+    """
+    runner = _MockRunner()
+    mgr = ContainerManager(runner, ContainerManagerConfig())
+    result = mgr.registry_login(
+        "quay.io", _StubCredential(username="user", password="s3cret"),
+    )
+    testbase.assert_equal(result.status, ContainerActionStatus.SUCCESS)
+    login_calls = [c for c in runner.calls if c["args"][:2] == ["podman", "login"]]
+    testbase.assert_equal(len(login_calls), 1)
+    argv = login_calls[0]["args"]
+    testbase.assert_true("--username" in argv)
+    testbase.assert_true("user" in argv)
+    testbase.assert_true("--password-stdin" in argv)
+    testbase.assert_true("quay.io" in argv)
+    # Critical: the password must NEVER appear in argv.
+    testbase.assert_true("s3cret" not in argv)
+    # stdin carries the password.
+    testbase.assert_equal(login_calls[0]["stdin"], "s3cret")
+    # Result.command must not carry the password either.
+    testbase.assert_true("s3cret" not in (result.command or []))
+    return
+
+
+def test_registry_login_dry_run_does_not_dispatch():
+    """
+        registry_login() in dry-run returns DRY_RUN without calling
+        the runner.
+    """
+    runner = _MockRunner()
+    mgr = ContainerManager(runner, ContainerManagerConfig(dry_run=True))
+    result = mgr.registry_login(
+        "quay.io", _StubCredential(username="user", password="s3cret"),
+    )
+    testbase.assert_equal(result.status, ContainerActionStatus.DRY_RUN)
+    testbase.assert_equal(runner.calls, [])
+    return
+
+
+def test_registry_login_requires_credential():
+    """
+        registry_login() raises ValueError when credential is None.
+    """
+    runner = _MockRunner()
+    mgr = ContainerManager(runner, ContainerManagerConfig())
+    raised = False
+    try:
+        mgr.registry_login("quay.io", None)
+    except ValueError:
+        raised = True
+    testbase.assert_true(raised)
+    return
+
+
+def test_registry_logout_dispatches_podman_logout():
+    """
+        registry_logout() dispatches ``podman logout <registry>``.
+    """
+    runner = _MockRunner()
+    mgr = ContainerManager(runner, ContainerManagerConfig())
+    result = mgr.registry_logout("quay.io")
+    testbase.assert_equal(result.status, ContainerActionStatus.SUCCESS)
+    logout_calls = [c for c in runner.calls if c["args"][:2] == ["podman", "logout"]]
+    testbase.assert_equal(len(logout_calls), 1)
+    testbase.assert_equal(logout_calls[0]["args"][2], "quay.io")
     return

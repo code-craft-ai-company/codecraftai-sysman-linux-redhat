@@ -7,45 +7,35 @@
 import json
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class StorageActionStatus(Enum):
-    """
-        Outcome status for storage management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
-
-
-@dataclass
-class StorageManagerConfig:
-    """
-        Configuration for :class:`StorageManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
-    """
-    dry_run: bool = False
-    elevated: bool = False
+StorageActionStatus = ActionStatus
 
 
 @dataclass
-class StorageActionResult:
+class StorageManagerConfig(FeatureConfig):
     """
-        Outcome of a storage management action.
+        Configuration for :class:`StorageManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    status: StorageActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
+
+
+@dataclass
+class StorageActionResult(FeatureActionResult):
+    """
+        Outcome of a storage management action.  No feature-specific
+        extras beyond the base fields.
+    """
+    pass
 
 
 @dataclass
@@ -90,32 +80,13 @@ class LogicalVolume:
     size_bytes: int
 
 
-class StorageManager:
+class StorageManager(BaseFeatureManager):
     """
         Facade for partition, filesystem, and LVM operations.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[StorageManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = StorageManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: StorageManagerConfig = config
-        return
-
-    @property
-    def config(self) -> StorageManagerConfig:
-        """
-            The active :class:`StorageManagerConfig`.
-        """
-        return self._config
+    result_class = StorageActionResult
+    feature_name = "storage-management"
 
     def list_block_devices(
         self,

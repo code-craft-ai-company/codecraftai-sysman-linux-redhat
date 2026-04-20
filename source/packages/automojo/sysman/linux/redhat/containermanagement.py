@@ -6,33 +6,27 @@
 import json
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class ContainerActionStatus(Enum):
-    """
-        Outcome status for container management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+ContainerActionStatus = ActionStatus
 
 
 @dataclass
-class ContainerManagerConfig:
+class ContainerManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`ContainerManager`.
+        Configuration for :class:`ContainerManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, podman commands run elevated.
         :param engine: Container engine binary to invoke.
     """
-    dry_run: bool = False
-    elevated: bool = False
     engine: str = "podman"
 
 
@@ -59,16 +53,11 @@ class ContainerSpec:
 
 
 @dataclass
-class ContainerActionResult:
+class ContainerActionResult(FeatureActionResult):
     """
-        Outcome of a container management action.
+        Outcome of a container management action.  Adds ``name``.
     """
-    status: ContainerActionStatus
     name: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
 @dataclass
@@ -82,32 +71,13 @@ class ContainerInfo:
     state: str
 
 
-class ContainerManager:
+class ContainerManager(BaseFeatureManager):
     """
         Facade for podman container management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[ContainerManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = ContainerManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ContainerManagerConfig = config
-        return
-
-    @property
-    def config(self) -> ContainerManagerConfig:
-        """
-            The active :class:`ContainerManagerConfig`.
-        """
-        return self._config
+    result_class = ContainerActionResult
+    feature_name = "container-management"
 
     def pull_image(self, image: str) -> ContainerActionResult:
         """
@@ -150,6 +120,66 @@ class ContainerManager:
             command.append("-f")
         command.append(name)
         return self._dispatch(command=command, name=name)
+
+    def registry_login(
+        self,
+        registry: str,
+        credential,
+    ) -> ContainerActionResult:
+        """
+            Authenticate against ``registry`` via ``podman login
+            --username <u> --password-stdin <registry>``.  The password
+            is supplied through the runner's ``stdin`` channel — it
+            never appears on argv.  (Part C credential-routing seam.)
+
+            :param registry: Registry host (e.g. ``quay.io``).
+            :param credential: Credential object with ``.username`` and
+                               ``.password`` attributes (for example
+                               :class:`automojo.credentials.basiccredential.BasicCredential`).
+
+            The returned :class:`ContainerActionResult.command` field
+            records only the argv — never the password payload.
+        """
+        if credential is None:
+            raise ValueError(
+                "registry_login requires a credential with .username/.password;"
+                " got None",
+            )
+        command = [
+            self._config.engine, "login",
+            "--username", credential.username,
+            "--password-stdin", registry,
+        ]
+        if self._config.dry_run:
+            return ContainerActionResult(
+                status=ContainerActionStatus.DRY_RUN,
+                name=registry, command=command,
+            )
+        run_result = self._runner.run(
+            command,
+            elevated=self._config.elevated,
+            stdin=credential.password,
+        )
+        status = (
+            ContainerActionStatus.SUCCESS
+            if run_result.exit_code == 0
+            else ContainerActionStatus.FAILED
+        )
+        return ContainerActionResult(
+            status=status, name=registry,
+            exit_code=run_result.exit_code,
+            stdout=run_result.stdout,
+            stderr=run_result.stderr,
+            command=list(command),      # caller-argv only — never stdin
+        )
+
+    def registry_logout(self, registry: str) -> ContainerActionResult:
+        """
+            Drop cached credentials for ``registry`` via
+            ``podman logout <registry>``.
+        """
+        command = [self._config.engine, "logout", registry]
+        return self._dispatch(command=command, name=registry)
 
     def list_containers(self, *, include_all: bool = True) -> list[ContainerInfo]:
         """

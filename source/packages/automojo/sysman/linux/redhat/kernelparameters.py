@@ -5,45 +5,31 @@
 # ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class KernelParamActionStatus(Enum):
-    """
-        Outcome status for sysctl parameter actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
-
-
-class KernelModuleActionStatus(Enum):
-    """
-        Outcome status for kernel module actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible aliases.
+KernelParamActionStatus = ActionStatus
+KernelModuleActionStatus = ActionStatus
 
 
 @dataclass
-class KernelManagerConfig:
+class KernelManagerConfig(FeatureConfig):
     """
         Configuration shared by :class:`KernelParamManager` and
-        :class:`KernelModuleManager`.
+        :class:`KernelModuleManager`.  Inherits ``dry_run`` and
+        ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands or file writes execute.
-        :param elevated: When True, write commands run elevated.
         :param sysctl_dir: Drop-in directory for sysctl persistence.
         :param modules_load_dir: Drop-in directory for module persistence.
     """
-    dry_run: bool = False
-    elevated: bool = False
     sysctl_dir: str = "/etc/sysctl.d"
     modules_load_dir: str = "/etc/modules-load.d"
 
@@ -58,20 +44,16 @@ class KernelParamInfo:
 
 
 @dataclass
-class KernelParamActionResult:
+class KernelParamActionResult(FeatureActionResult):
     """
-        Outcome of a kernel parameter management action.
+        Outcome of a kernel-parameter management action.  Extends
+        :class:`FeatureActionResult` with sysctl-specific fields.
     """
-    status: KernelParamActionStatus
-    key: str
+    key: str = ""
     current_value: Optional[str] = None
     applied_value: Optional[str] = None
     filename: Optional[str] = None
     diff: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
 @dataclass
@@ -85,45 +67,22 @@ class KernelModuleInfo:
 
 
 @dataclass
-class KernelModuleActionResult:
+class KernelModuleActionResult(FeatureActionResult):
     """
-        Outcome of a kernel module management action.
+        Outcome of a kernel-module management action.  Extends
+        :class:`FeatureActionResult` with module-specific fields.
     """
-    status: KernelModuleActionStatus
-    module_name: str
+    module_name: str = ""
     filename: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
-class KernelParamManager:
+class KernelParamManager(BaseFeatureManager):
     """
         Facade for sysctl parameter management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[KernelManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for all execution.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = KernelManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: KernelManagerConfig = config
-        return
-
-    @property
-    def config(self) -> KernelManagerConfig:
-        """
-            The active :class:`KernelManagerConfig`.
-        """
-        return self._config
+    result_class = KernelParamActionResult
+    feature_name = "kernel-parameters"
 
     def read(self, key: str) -> Optional[KernelParamInfo]:
         """
@@ -151,28 +110,14 @@ class KernelParamManager:
             )
             return skipped
         command = ["sysctl", "-w", "{}={}".format(key, value)]
-        if self._config.dry_run:
-            dry = KernelParamActionResult(
-                status=KernelParamActionStatus.DRY_RUN,
-                key=key,
-                current_value=current_value,
-                applied_value=value,
-                command=command,
-            )
-            return dry
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = KernelParamActionStatus.SUCCESS if run_result.exit_code == 0 else KernelParamActionStatus.FAILED
-        result = KernelParamActionResult(
-            status=status,
+        return self._dispatch(
+            command=command,
+            detail=key,
+            operation="write",
             key=key,
             current_value=current_value,
             applied_value=value,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
         )
-        return result
 
     def persist(
         self,
@@ -193,9 +138,14 @@ class KernelParamManager:
                 status=KernelParamActionStatus.SKIPPED,
                 key=key, applied_value=value, filename=filename,
             )
-        return self._write_drop_in(
-            path=path, content=new_content, key=key,
-            applied_value=value, filename=filename,
+        return self._dispatch(
+            command=["tee", path],
+            detail=key,
+            stdin=new_content,
+            operation="persist",
+            key=key,
+            applied_value=value,
+            filename=filename,
         )
 
     def remove_persisted(
@@ -219,9 +169,13 @@ class KernelParamManager:
                 status=KernelParamActionStatus.SKIPPED,
                 key=key, filename=filename,
             )
-        return self._write_drop_in(
-            path=path, content=new_content, key=key,
-            applied_value=None, filename=filename,
+        return self._dispatch(
+            command=["tee", path],
+            detail=key,
+            stdin=new_content,
+            operation="remove_persisted",
+            key=key,
+            filename=filename,
         )
 
     def apply_all(self) -> KernelParamActionResult:
@@ -229,23 +183,12 @@ class KernelParamManager:
             Apply all persisted sysctl settings via ``sysctl --system``.
         """
         command = ["sysctl", "--system"]
-        if self._config.dry_run:
-            dry = KernelParamActionResult(
-                status=KernelParamActionStatus.DRY_RUN,
-                key="<all>", command=command,
-            )
-            return dry
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = KernelParamActionStatus.SUCCESS if run_result.exit_code == 0 else KernelParamActionStatus.FAILED
-        result = KernelParamActionResult(
-            status=status,
+        return self._dispatch(
+            command=command,
+            detail="<all>",
+            operation="apply_all",
             key="<all>",
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
         )
-        return result
 
     def query_all(self) -> list[KernelParamInfo]:
         """
@@ -266,68 +209,14 @@ class KernelParamManager:
             return ""
         return run_result.stdout
 
-    def _write_drop_in(
-        self,
-        *,
-        path: str,
-        content: str,
-        key: str,
-        applied_value: Optional[str],
-        filename: str,
-    ) -> KernelParamActionResult:
-        """
-            Write a sysctl drop-in file via ``tee``.
-        """
-        command = ["tee", path]
-        if self._config.dry_run:
-            return KernelParamActionResult(
-                status=KernelParamActionStatus.DRY_RUN,
-                key=key, applied_value=applied_value,
-                filename=filename, command=command,
-            )
-        run_result = self._runner.run(
-            command, elevated=self._config.elevated, stdin=content,
-        )
-        status = KernelParamActionStatus.SUCCESS if run_result.exit_code == 0 else KernelParamActionStatus.FAILED
-        result = KernelParamActionResult(
-            status=status,
-            key=key,
-            applied_value=applied_value,
-            filename=filename,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
-        return result
 
-
-class KernelModuleManager:
+class KernelModuleManager(BaseFeatureManager):
     """
         Facade for kernel module management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[KernelManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for execution.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = KernelManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: KernelManagerConfig = config
-        return
-
-    @property
-    def config(self) -> KernelManagerConfig:
-        """
-            The active :class:`KernelManagerConfig`.
-        """
-        return self._config
+    result_class = KernelModuleActionResult
+    feature_name = "kernel-parameters"       # same spec folder as KernelParamManager
 
     def load(
         self,
@@ -345,7 +234,12 @@ class KernelModuleManager:
         command = ["modprobe", name]
         if params is not None:
             command.extend(params)
-        return self._dispatch_module(command=command, name=name)
+        return self._dispatch(
+            command=command,
+            detail=name,
+            operation="load",
+            module_name=name,
+        )
 
     def unload(self, name: str) -> KernelModuleActionResult:
         """
@@ -357,7 +251,12 @@ class KernelModuleManager:
                 module_name=name,
             )
         command = ["modprobe", "-r", name]
-        return self._dispatch_module(command=command, name=name)
+        return self._dispatch(
+            command=command,
+            detail=name,
+            operation="unload",
+            module_name=name,
+        )
 
     def query_loaded(self) -> list[KernelModuleInfo]:
         """
@@ -387,8 +286,13 @@ class KernelModuleManager:
         new_modules = list(existing_modules)
         new_modules.append(name)
         new_content = "\n".join(new_modules) + "\n"
-        return self._write_module_file(
-            path=path, content=new_content, name=name, filename=filename,
+        return self._dispatch(
+            command=["tee", path],
+            detail=name,
+            stdin=new_content,
+            operation="persist_load",
+            module_name=name,
+            filename=filename,
         )
 
     def remove_persisted_load(
@@ -411,8 +315,13 @@ class KernelModuleManager:
         new_content = ""
         if len(new_modules) > 0:
             new_content = "\n".join(new_modules) + "\n"
-        return self._write_module_file(
-            path=path, content=new_content, name=name, filename=filename,
+        return self._dispatch(
+            command=["tee", path],
+            detail=name,
+            stdin=new_content,
+            operation="remove_persisted_load",
+            module_name=name,
+            filename=filename,
         )
 
     def _is_loaded(self, *, name: str) -> bool:
@@ -433,64 +342,6 @@ class KernelModuleManager:
         if run_result.exit_code != 0:
             return ""
         return run_result.stdout
-
-    def _dispatch_module(
-        self,
-        *,
-        command: list[str],
-        name: str,
-    ) -> KernelModuleActionResult:
-        """
-            Dispatch a modprobe command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return KernelModuleActionResult(
-                status=KernelModuleActionStatus.DRY_RUN,
-                module_name=name, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = KernelModuleActionStatus.SUCCESS if run_result.exit_code == 0 else KernelModuleActionStatus.FAILED
-        result = KernelModuleActionResult(
-            status=status,
-            module_name=name,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
-        return result
-
-    def _write_module_file(
-        self,
-        *,
-        path: str,
-        content: str,
-        name: str,
-        filename: str,
-    ) -> KernelModuleActionResult:
-        """
-            Write the modules-load drop-in file via ``tee``.
-        """
-        command = ["tee", path]
-        if self._config.dry_run:
-            return KernelModuleActionResult(
-                status=KernelModuleActionStatus.DRY_RUN,
-                module_name=name, filename=filename, command=command,
-            )
-        run_result = self._runner.run(
-            command, elevated=self._config.elevated, stdin=content,
-        )
-        status = KernelModuleActionStatus.SUCCESS if run_result.exit_code == 0 else KernelModuleActionStatus.FAILED
-        result = KernelModuleActionResult(
-            status=status,
-            module_name=name,
-            filename=filename,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
-        return result
 
 
 def _set_sysctl_line(*, content: str, key: str, value: str) -> str:

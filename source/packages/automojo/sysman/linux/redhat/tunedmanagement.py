@@ -1,75 +1,127 @@
 # automojo.sysman.linux.redhat.tunedmanagement
 #
 # TunedManager wraps tuned-adm through the ICommandRunner abstraction.
+# The ``tuned.service`` unit lifecycle is delegated to ServiceManager
+# (Part C seam).
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class TunedActionStatus(Enum):
+# Backwards-compatible alias.
+TunedActionStatus = ActionStatus
+
+
+def _as_tuned_result(base_result: FeatureActionResult) -> "TunedActionResult":
     """
-        Outcome status for tuned-adm actions.
+        Convert a :class:`FeatureActionResult` produced by a delegated
+        :class:`ServiceManager` call into a :class:`TunedActionResult`,
+        preserving every base field.
     """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+    return TunedActionResult(
+        status=base_result.status,
+        detail=base_result.detail,
+        exit_code=base_result.exit_code,
+        stdout=base_result.stdout,
+        stderr=base_result.stderr,
+        command=base_result.command,
+    )
 
 
 @dataclass
-class TunedManagerConfig:
+class TunedManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`TunedManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, tuned-adm runs elevated.
+        Configuration for :class:`TunedManager`.  Inherits ``dry_run``
+        and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
-class TunedActionResult:
+class TunedActionResult(FeatureActionResult):
     """
-        Outcome of a tuned-adm action.
+        Outcome of a tuned-adm action.  No feature-specific extras.
     """
-    status: TunedActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
-class TunedManager:
+class TunedManager(BaseFeatureManager):
     """
-        Facade for tuned profile management.
+        Facade for tuned profile management.  The ``tuned.service``
+        unit lifecycle (enable / disable / query) is delegated to
+        :class:`ServiceManager`.
     """
+
+    result_class = TunedActionResult
+    feature_name = "tuned-management"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[TunedManagerConfig] = None,
+        *,
+        service_manager=None,
+        report=None,
     ) -> None:
         """
             :param runner: Command runner.
             :param config: Manager configuration.
+            :param service_manager: Optional pre-built :class:`ServiceManager`.
+                                    When None, one is constructed with the
+                                    same runner and dry-run/elevated state.
+            :param report: Optional :class:`MaintenanceReport` for auto-
+                           emitting action records.
         """
-        if config is None:
-            config = TunedManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: TunedManagerConfig = config
+        super().__init__(runner=runner, config=config, report=report)
+        if service_manager is None:
+            from automojo.sysman.linux.redhat.servicemanagement import (
+                ServiceManager,
+                ServiceManagerConfig,
+            )
+            service_manager = ServiceManager(
+                runner,
+                ServiceManagerConfig(
+                    dry_run=self._config.dry_run,
+                    elevated=self._config.elevated,
+                ),
+            )
+        self._service_manager = service_manager
         return
 
-    @property
-    def config(self) -> TunedManagerConfig:
+    def enable(self) -> TunedActionResult:
         """
-            The active :class:`TunedManagerConfig`.
+            Enable and start ``tuned.service`` via :class:`ServiceManager`.
         """
-        return self._config
+        enable_res = self._service_manager.enable("tuned.service")
+        if enable_res.status == ActionStatus.FAILED:
+            return _as_tuned_result(enable_res)
+        start_res = self._service_manager.start("tuned.service")
+        return _as_tuned_result(start_res)
+
+    def disable(self) -> TunedActionResult:
+        """
+            Stop and disable ``tuned.service`` via :class:`ServiceManager`.
+        """
+        stop_res = self._service_manager.stop("tuned.service")
+        if stop_res.status == ActionStatus.FAILED:
+            return _as_tuned_result(stop_res)
+        disable_res = self._service_manager.disable("tuned.service")
+        return _as_tuned_result(disable_res)
+
+    def is_active(self) -> bool:
+        """
+            Return True when tuned.service is reported as active by
+            :class:`ServiceManager`.
+        """
+        info = self._service_manager.query("tuned.service")
+        return info.active_state == "active"
 
     def current_profile(self) -> Optional[str]:
         """
@@ -115,7 +167,7 @@ class TunedManager:
                 status=TunedActionStatus.SKIPPED, detail=profile,
             )
         command = ["tuned-adm", "profile", profile]
-        return self._dispatch(command=command, detail=profile)
+        return self._dispatch(command=command, detail=profile, operation="set_profile")
 
     def recommend(self) -> Optional[str]:
         """
@@ -130,27 +182,3 @@ class TunedManager:
         if len(value) == 0:
             return None
         return value
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> TunedActionResult:
-        """
-            Dispatch a tuned-adm command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return TunedActionResult(
-                status=TunedActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = TunedActionStatus.SUCCESS if run_result.exit_code == 0 else TunedActionStatus.FAILED
-        return TunedActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )

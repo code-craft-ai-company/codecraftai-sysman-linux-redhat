@@ -168,3 +168,207 @@ def test_find_world_writable_files_parses_output():
     files = mgr.find_world_writable_files(["/tmp"])
     testbase.assert_equal(files, ["/tmp/xxx", "/tmp/yyy"])
     return
+
+
+# ---------------------------------------------------------------------
+# run_compliance_suite — Part C aggregator
+# ---------------------------------------------------------------------
+
+
+def test_run_compliance_suite_aggregates_findings_all_passing():
+    """
+        run_compliance_suite() composes findings across SELinux and
+        SSH baselines; when both match expectations the report is
+        overall_compliant=True.
+    """
+    runner = _MockRunner()
+    # SELinux: enforcing (compliant).
+    runner.results[("getenforce",)] = RunResult(
+        exit_code=0, stdout="Enforcing\n", stderr="",
+        command=["getenforce"],
+    )
+    runner.results[("sestatus",)] = RunResult(
+        exit_code=0,
+        stdout="Loaded policy name:   targeted\n",
+        stderr="", command=["sestatus"],
+    )
+    # sshd_config compliant with the module default baseline (minimal
+    # content; every key matches).
+    sshd_body = (
+        "PermitRootLogin no\n"
+        "PasswordAuthentication no\n"
+        "PermitEmptyPasswords no\n"
+        "X11Forwarding no\n"
+        "MaxAuthTries 4\n"
+        "IgnoreRhosts yes\n"
+        "HostbasedAuthentication no\n"
+        "UsePAM yes\n"
+    )
+    runner.results[("cat", "/etc/ssh/sshd_config")] = RunResult(
+        exit_code=0, stdout=sshd_body, stderr="", command=["cat"],
+    )
+    mgr = SecurityComplianceManager(runner, SecurityComplianceConfig())
+    report = mgr.run_compliance_suite(
+        include_audit_rules=False,
+    )
+    testbase.assert_true(report.overall_compliant)
+    # At least one SELinux finding + 8 SSH findings.
+    testbase.assert_true(len(report.findings) >= 9)
+    # Every finding is compliant.
+    for finding in report.findings:
+        testbase.assert_true(finding.compliant)
+    return
+
+
+def test_run_compliance_suite_flags_selinux_mismatch():
+    """
+        run_compliance_suite() raises a non-compliant SELinux finding
+        when the observed mode does not match the requested mode.
+    """
+    runner = _MockRunner()
+    runner.results[("getenforce",)] = RunResult(
+        exit_code=0, stdout="Permissive\n", stderr="",
+        command=["getenforce"],
+    )
+    runner.results[("sestatus",)] = RunResult(
+        exit_code=0, stdout="", stderr="", command=["sestatus"],
+    )
+    runner.results[("cat", "/etc/ssh/sshd_config")] = RunResult(
+        exit_code=0, stdout="PermitRootLogin no\n", stderr="",
+        command=["cat"],
+    )
+    mgr = SecurityComplianceManager(runner, SecurityComplianceConfig())
+    report = mgr.run_compliance_suite(
+        expected_selinux_mode=SELinuxMode.ENFORCING,
+        include_audit_rules=False,
+    )
+    testbase.assert_false(report.overall_compliant)
+    selinux_findings = [f for f in report.findings if f.category == "selinux"]
+    testbase.assert_equal(len(selinux_findings), 1)
+    testbase.assert_false(selinux_findings[0].compliant)
+    testbase.assert_equal(selinux_findings[0].expected, "enforcing")
+    testbase.assert_equal(selinux_findings[0].actual, "permissive")
+    return
+
+
+def test_run_compliance_suite_collects_file_permission_results():
+    """
+        run_compliance_suite() runs file-permission checks when
+        ``file_permission_checks`` is supplied, and records a finding
+        per check.
+    """
+    runner = _MockRunner()
+    runner.results[("getenforce",)] = RunResult(
+        exit_code=0, stdout="Enforcing\n", stderr="",
+        command=["getenforce"],
+    )
+    runner.results[("sestatus",)] = RunResult(
+        exit_code=0, stdout="", stderr="", command=["sestatus"],
+    )
+    runner.results[("cat", "/etc/ssh/sshd_config")] = RunResult(
+        exit_code=0, stdout="", stderr="", command=["cat"],
+    )
+    runner.results[("stat", "-c", "%a|%U|%G", "/etc/shadow")] = RunResult(
+        exit_code=0, stdout="0|root|root", stderr="",
+        command=["stat"],
+    )
+    mgr = SecurityComplianceManager(runner, SecurityComplianceConfig())
+    report = mgr.run_compliance_suite(
+        file_permission_checks=[
+            FilePermissionCheck(
+                path="/etc/shadow",
+                expected_mode="0",
+                expected_owner="root",
+                expected_group="root",
+            ),
+        ],
+        include_audit_rules=False,
+    )
+    perm_findings = [f for f in report.findings if f.category == "file-permissions"]
+    testbase.assert_equal(len(perm_findings), 1)
+    testbase.assert_true(perm_findings[0].compliant)
+    return
+
+
+def test_run_compliance_suite_firewall_service_missing_flags():
+    """
+        When an expected firewall service is absent in the queried
+        zone, run_compliance_suite() raises a non-compliant firewall
+        finding.
+    """
+    runner = _MockRunner()
+    runner.results[("getenforce",)] = RunResult(
+        exit_code=0, stdout="Enforcing\n", stderr="",
+        command=["getenforce"],
+    )
+    runner.results[("sestatus",)] = RunResult(
+        exit_code=0, stdout="", stderr="", command=["sestatus"],
+    )
+    runner.results[("cat", "/etc/ssh/sshd_config")] = RunResult(
+        exit_code=0, stdout="", stderr="", command=["cat"],
+    )
+    runner.results[("firewall-cmd", "--state")] = RunResult(
+        exit_code=0, stdout="running\n", stderr="",
+        command=["firewall-cmd"],
+    )
+    runner.results[("firewall-cmd", "--get-default-zone")] = RunResult(
+        exit_code=0, stdout="public\n", stderr="",
+        command=["firewall-cmd"],
+    )
+    runner.results[
+        ("firewall-cmd", "--zone=public", "--list-all")
+    ] = RunResult(
+        exit_code=0,
+        stdout="public (active)\n  services: ssh\n  ports:\n",
+        stderr="", command=["firewall-cmd"],
+    )
+    mgr = SecurityComplianceManager(runner, SecurityComplianceConfig())
+    report = mgr.run_compliance_suite(
+        expected_firewall_services={"public": ["ssh", "https"]},
+        include_audit_rules=False,
+    )
+    firewall_findings = [
+        f for f in report.findings
+        if f.category == "firewall" and "service=https" in f.subject
+    ]
+    testbase.assert_equal(len(firewall_findings), 1)
+    testbase.assert_false(firewall_findings[0].compliant)
+    testbase.assert_false(report.overall_compliant)
+    # ssh should be present (compliant).
+    ssh_findings = [
+        f for f in report.findings
+        if f.category == "firewall" and "service=ssh" in f.subject
+    ]
+    testbase.assert_equal(len(ssh_findings), 1)
+    testbase.assert_true(ssh_findings[0].compliant)
+    return
+
+
+def test_run_compliance_suite_summary_counts():
+    """
+        ComplianceReport.summary() produces a compact counts dict.
+    """
+    runner = _MockRunner()
+    runner.results[("getenforce",)] = RunResult(
+        exit_code=0, stdout="Enforcing\n", stderr="",
+        command=["getenforce"],
+    )
+    runner.results[("sestatus",)] = RunResult(
+        exit_code=0, stdout="", stderr="", command=["sestatus"],
+    )
+    runner.results[("cat", "/etc/ssh/sshd_config")] = RunResult(
+        exit_code=0, stdout="PermitRootLogin no\n", stderr="",
+        command=["cat"],
+    )
+    mgr = SecurityComplianceManager(runner, SecurityComplianceConfig())
+    report = mgr.run_compliance_suite(include_audit_rules=False)
+    summary = report.summary()
+    testbase.assert_true(summary["findings_total"] > 0)
+    testbase.assert_equal(
+        summary["findings_total"],
+        summary["findings_passed"] + summary["findings_failed"],
+    )
+    testbase.assert_equal(summary["selinux_mode"], "enforcing")
+    testbase.assert_equal(summary["world_writable_count"], 0)
+    testbase.assert_equal(summary["suid_sgid_count"], 0)
+    return

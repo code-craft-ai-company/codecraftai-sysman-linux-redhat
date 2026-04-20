@@ -7,38 +7,37 @@ import os
 import re
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 from automojo.sysman.linux.redhat.runners.base import ICommandRunner
 
 
-class EnvActionStatus(Enum):
-    """
-        Outcome status for environment configuration actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible alias.
+EnvActionStatus = ActionStatus
 
 
 @dataclass
-class EnvironmentConfiguratorConfig:
+class EnvironmentConfiguratorConfig(FeatureConfig):
     """
-        Configuration for :class:`EnvironmentConfigurator`.
-
-        :param dry_run: When True, no files are written.
-        :param elevated: When True, system-wide writes run elevated.
+        Configuration for :class:`EnvironmentConfigurator`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
 class EnvActionResult:
     """
-        Outcome of an environment configuration action.
+        Outcome of an environment configuration action.  NOTE: this
+        feature uses a non-standard result shape (``path`` / ``name``
+        / ``value`` / ``message``) and does NOT subclass
+        :class:`FeatureActionResult`; migration normalisation is
+        tracked as a future task.
     """
     status: EnvActionStatus
     path: Optional[str] = None
@@ -63,33 +62,16 @@ _EXPORT_LINE_PATTERN = re.compile(r"^export\s+([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 _ENV_LINE_PATTERN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 
 
-class EnvironmentConfigurator:
+class EnvironmentConfigurator(BaseFeatureManager):
     """
         Facade for environment variable management across system-wide and
-        per-user files.
+        per-user files.  Uses its own :class:`EnvActionResult` shape
+        and therefore does not use the base class's ``_dispatch``
+        helper; inherits only the standard ``__init__`` / ``config``
+        / ``runner`` surface.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[EnvironmentConfiguratorConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for file operations.
-            :param config: Configurator configuration.
-        """
-        if config is None:
-            config = EnvironmentConfiguratorConfig()
-        self._runner: ICommandRunner = runner
-        self._config: EnvironmentConfiguratorConfig = config
-        return
-
-    @property
-    def config(self) -> EnvironmentConfiguratorConfig:
-        """
-            The active :class:`EnvironmentConfiguratorConfig`.
-        """
-        return self._config
+    feature_name = "environment-configuration"
 
     def set_system_var(
         self,

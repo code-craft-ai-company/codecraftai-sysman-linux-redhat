@@ -32,6 +32,7 @@ class _MockRunner:
         on_output: Optional[Callable[[str], None]] = None,
         on_error: Optional[Callable[[str], None]] = None,
         capture_output: bool = True,
+        stdin: Optional[str] = None,
     ) -> RunResult:
         self.calls.append({"args": list(args), "elevated": elevated})
         key = tuple(args)

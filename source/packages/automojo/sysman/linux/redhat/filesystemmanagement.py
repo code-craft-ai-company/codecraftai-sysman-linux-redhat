@@ -6,34 +6,28 @@
 import json
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 from automojo.sysman.linux.redhat.runners.models import RunResult
 
 
-class FilesystemActionStatus(Enum):
-    """
-        Outcome status for filesystem actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible alias.
+FilesystemActionStatus = ActionStatus
 
 
 @dataclass
-class FilesystemManagerConfig:
+class FilesystemManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`FilesystemManager`.
+        Configuration for :class:`FilesystemManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands are executed.
-        :param elevated: When True, write commands run elevated.
         :param fstab_path: Filesystem path to the fstab file.
     """
-    dry_run: bool = False
-    elevated: bool = False
     fstab_path: str = "/etc/fstab"
 
 
@@ -123,32 +117,16 @@ class MountInfo:
     options: str
 
 
-class FilesystemManager:
+class FilesystemManager(BaseFeatureManager):
     """
-        Facade for filesystem management operations through the command runner.
+        Facade for filesystem management operations through the command
+        runner.  Uses its own :class:`FilesystemActionResult` shape
+        (``path`` is a required field) so does not leverage the base
+        class's ``_dispatch`` helper; inherits only the standard
+        ``__init__`` / ``config`` / ``runner`` surface.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[FilesystemManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner used for all actions.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = FilesystemManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: FilesystemManagerConfig = config
-        return
-
-    @property
-    def config(self) -> FilesystemManagerConfig:
-        """
-            The active :class:`FilesystemManagerConfig`.
-        """
-        return self._config
+    feature_name = "filesystem-management"
 
     def create_directory(
         self,

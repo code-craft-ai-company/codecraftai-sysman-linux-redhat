@@ -120,15 +120,26 @@ def test_reload_config_fails_when_validation_fails():
 
 def test_reload_config_runs_systemctl_reload_when_valid():
     """
-        reload_config() runs ``systemctl reload sshd`` when validation passes.
+        reload_config() delegates to ServiceManager.reload("sshd")
+        when validation passes.  ServiceManager first queries
+        is-active/is-enabled then dispatches the reload; both end up
+        going through the injected runner.  (Part C seam.)
     """
     runner = _MockRunner()
     runner.results[("sshd", "-t")] = RunResult(
         exit_code=0, stdout="", stderr="", command=["sshd"],
     )
+    runner.results[("systemctl", "is-active", "sshd")] = RunResult(
+        exit_code=0, stdout="active\n", stderr="", command=["systemctl"],
+    )
+    runner.results[("systemctl", "is-enabled", "sshd")] = RunResult(
+        exit_code=0, stdout="enabled\n", stderr="", command=["systemctl"],
+    )
     cfg = SshServerConfigurator(runner, SshServerConfig(elevated=True))
     result = cfg.reload_config()
     testbase.assert_equal(result.status, SshdActionStatus.SUCCESS)
-    reload_calls = [c for c in runner.calls if c["args"][:3] == ["systemctl", "reload", "sshd"]]
+    reload_calls = [
+        c for c in runner.calls if c["args"][:3] == ["systemctl", "reload", "sshd"]
+    ]
     testbase.assert_equal(len(reload_calls), 1)
     return

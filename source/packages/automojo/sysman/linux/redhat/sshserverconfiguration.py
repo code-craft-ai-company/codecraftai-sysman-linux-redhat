@@ -4,47 +4,52 @@
 # validation, and reload through the ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class SshdActionStatus(Enum):
+SshdActionStatus = ActionStatus
+
+
+def _as_sshd_result(base_result: FeatureActionResult) -> "SshdActionResult":
     """
-        Outcome status for sshd management actions.
+        Convert a :class:`FeatureActionResult` produced by a delegated
+        :class:`ServiceManager` call into a :class:`SshdActionResult`.
     """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+    return SshdActionResult(
+        status=base_result.status,
+        detail=base_result.detail,
+        exit_code=base_result.exit_code,
+        stdout=base_result.stdout,
+        stderr=base_result.stderr,
+        command=base_result.command,
+    )
 
 
 @dataclass
-class SshServerConfig:
+class SshServerConfig(FeatureConfig):
     """
-        Configuration for :class:`SshServerConfigurator`.
+        Configuration for :class:`SshServerConfigurator`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write/validate commands run elevated.
         :param dropin_dir: Directory containing sshd drop-in files.
     """
-    dry_run: bool = False
-    elevated: bool = False
     dropin_dir: str = "/etc/ssh/sshd_config.d"
 
 
 @dataclass
-class SshdActionResult:
+class SshdActionResult(FeatureActionResult):
     """
-        Outcome of an sshd management action.
+        Outcome of an sshd management action.  No feature-specific
+        extras beyond the base fields.
     """
-    status: SshdActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
 @dataclass
@@ -56,32 +61,38 @@ class SshdValidateResult:
     stderr: str
 
 
-class SshServerConfigurator:
+class SshServerConfigurator(BaseFeatureManager):
     """
-        Facade for sshd configuration via drop-ins and systemctl.
+        Facade for sshd configuration via drop-ins.  The sshd service
+        reload is delegated to :class:`ServiceManager` (Part C seam).
     """
+
+    result_class = SshdActionResult
+    feature_name = "ssh-server-configuration"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[SshServerConfig] = None,
+        *,
+        service_manager=None,
+        report=None,
     ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = SshServerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: SshServerConfig = config
+        super().__init__(runner=runner, config=config, report=report)
+        if service_manager is None:
+            from automojo.sysman.linux.redhat.servicemanagement import (
+                ServiceManager,
+                ServiceManagerConfig,
+            )
+            service_manager = ServiceManager(
+                runner,
+                ServiceManagerConfig(
+                    dry_run=self._config.dry_run,
+                    elevated=self._config.elevated,
+                ),
+            )
+        self._service_manager = service_manager
         return
-
-    @property
-    def config(self) -> SshServerConfig:
-        """
-            The active :class:`SshServerConfig`.
-        """
-        return self._config
 
     def get_effective_directive(self, name: str) -> Optional[str]:
         """
@@ -181,7 +192,8 @@ class SshServerConfigurator:
 
     def reload_config(self) -> SshdActionResult:
         """
-            Validate then reload sshd.  Aborts if validation fails.
+            Validate then reload sshd via :class:`ServiceManager`.
+            Aborts if validation fails.
         """
         validation = self.validate_config()
         if not validation.valid:
@@ -190,21 +202,11 @@ class SshServerConfigurator:
                 detail="validation failed",
                 stderr=validation.stderr,
             )
-        if self._config.dry_run:
-            return SshdActionResult(
-                status=SshdActionStatus.DRY_RUN, detail="systemctl reload sshd",
-            )
-        run_result = self._runner.run(
-            ["systemctl", "reload", "sshd"], elevated=self._config.elevated,
-        )
-        status = SshdActionStatus.SUCCESS if run_result.exit_code == 0 else SshdActionStatus.FAILED
-        return SshdActionResult(
-            status=status, detail="systemctl reload sshd",
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
+        svc_res = self._service_manager.reload("sshd")
+        result = _as_sshd_result(svc_res)
+        if result.detail is None:
+            result.detail = "systemctl reload sshd"
+        return result
 
     def _read(self, *, path: str) -> str:
         """
