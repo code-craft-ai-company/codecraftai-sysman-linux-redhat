@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    BaseFeatureManager,
+    FeatureConfig,
+)
 
 
 class SELinuxMode(Enum):
@@ -21,16 +24,13 @@ class SELinuxMode(Enum):
 
 
 @dataclass
-class SecurityComplianceConfig:
+class SecurityComplianceConfig(FeatureConfig):
     """
-        Configuration for :class:`SecurityComplianceManager`.
+        Configuration for :class:`SecurityComplianceManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no mutating commands execute.
-        :param elevated: When True, mutating commands run elevated.
         :param ssh_config_path: Path to the sshd configuration file.
     """
-    dry_run: bool = False
-    elevated: bool = False
     ssh_config_path: str = "/etc/ssh/sshd_config"
 
 
@@ -92,32 +92,28 @@ class ComplianceActionResult:
     error: Optional[str] = None
 
 
-class SecurityComplianceManager:
+class SecurityComplianceManager(BaseFeatureManager):
     """
-        Facade for security compliance checks and remediations.
+        Facade for security compliance checks and remediations.  Uses
+        its own :class:`ComplianceActionResult` (``success``/``detail``/
+        ``dry_run``/``error`` — not compatible with
+        FeatureActionResult) so does not use the base class's
+        ``_dispatch`` helper.
     """
+
+    feature_name = "security-compliance"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[SecurityComplianceConfig] = None,
     ) -> None:
         """
             :param runner: Command runner.
             :param config: Manager configuration.
         """
-        if config is None:
-            config = SecurityComplianceConfig()
-        self._runner: ICommandRunner = runner
-        self._config: SecurityComplianceConfig = config
+        super().__init__(runner=runner, config=config)
         return
-
-    @property
-    def config(self) -> SecurityComplianceConfig:
-        """
-            The active :class:`SecurityComplianceConfig`.
-        """
-        return self._config
 
     def check_selinux(self) -> SELinuxStatus:
         """

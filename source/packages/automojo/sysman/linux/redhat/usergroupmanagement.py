@@ -7,33 +7,27 @@
 import os
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 from automojo.sysman.linux.redhat.runners.models import RunResult
 
 
-class ActionStatus(Enum):
-    """
-        Outcome status for user and group management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Re-export ActionStatus at module level — callers and tests import it
+# from this module by historical convention.
 
 
 @dataclass
-class UserGroupManagerConfig:
+class UserGroupManagerConfig(FeatureConfig):
     """
         Configuration for :class:`UserManager` and :class:`GroupManager`.
-
-        :param dry_run: When True, no write commands are executed.
-        :param elevated: When True, write commands run with elevated privileges.
+        Inherits ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -196,30 +190,19 @@ class GroupNotFoundError(Exception):
         return
 
 
-class GroupManager:
+class GroupManager(BaseFeatureManager):
     """
         Facade for local group management through the command runner.
+        Keeps its own :class:`GroupActionResult` shape (``groupname``
+        required) and does not use the base class's ``_dispatch``.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[UserGroupManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for system execution.
-            :param config: Configuration controlling dry-run and elevation.
-        """
-        if config is None:
-            config = UserGroupManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: UserGroupManagerConfig = config
-        return
+    feature_name = "user-group-management"
 
     @property
     def config(self) -> UserGroupManagerConfig:
         """
-            The active :class:`UserGroupManagerConfig`.
+            Narrow-typed alias for :attr:`BaseFeatureManager.config`.
         """
         return self._config
 
@@ -294,30 +277,19 @@ class GroupManager:
         return info
 
 
-class UserManager:
+class UserManager(BaseFeatureManager):
     """
         Facade for local user management through the command runner.
+        Keeps its own :class:`UserActionResult` shape (``username``
+        required) and does not use the base class's ``_dispatch``.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[UserGroupManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner for system execution.
-            :param config: Configuration controlling dry-run and elevation.
-        """
-        if config is None:
-            config = UserGroupManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: UserGroupManagerConfig = config
-        return
+    feature_name = "user-group-management"
 
     @property
     def config(self) -> UserGroupManagerConfig:
         """
-            The active :class:`UserGroupManagerConfig`.
+            Narrow-typed alias for :attr:`BaseFeatureManager.config`.
         """
         return self._config
 

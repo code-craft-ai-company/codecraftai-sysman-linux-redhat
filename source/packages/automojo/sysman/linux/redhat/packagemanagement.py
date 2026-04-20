@@ -7,35 +7,27 @@
 import os
 
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 from automojo.sysman.linux.redhat.runners.models import RunResult
 
 
-class PackageActionStatus(Enum):
-    """
-        Outcome status for package action operations.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+PackageActionStatus = ActionStatus
 
 
 @dataclass
-class PackageManagerConfig:
+class PackageManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`PackageManager`.
-
-        :param dry_run: When True, no commands are executed.
-        :param elevated: When True, write commands run with elevated privileges.
+        Configuration for :class:`PackageManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -148,40 +140,16 @@ _RPM = "rpm"
 _QUERY_FORMAT = "%{NAME} %{VERSION} %{RELEASE} %{ARCH}\n"
 
 
-class PackageManager:
+class PackageManager(BaseFeatureManager):
     """
-        High-level facade for Red Hat package management.  Delegates all
-        system interaction to the injected :class:`ICommandRunner`.
+        High-level facade for Red Hat package management.  Keeps its
+        own :class:`PackageActionResult` shape (``package_name``
+        required) so does not use the base class's ``_dispatch``;
+        inherits only the standard ``__init__`` / ``config`` /
+        ``runner`` surface.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[PackageManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Runner used for all command execution.
-            :param config: Package manager configuration.
-        """
-        if config is None:
-            config = PackageManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: PackageManagerConfig = config
-        return
-
-    @property
-    def config(self) -> PackageManagerConfig:
-        """
-            The active :class:`PackageManagerConfig`.
-        """
-        return self._config
-
-    @property
-    def runner(self) -> ICommandRunner:
-        """
-            The injected :class:`ICommandRunner`.
-        """
-        return self._runner
+    feature_name = "package-management"
 
     def install(self, name: str, version: Optional[str] = None) -> PackageActionResult:
         """

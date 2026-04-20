@@ -4,47 +4,37 @@
 # validation, and reload through the ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class SshdActionStatus(Enum):
-    """
-        Outcome status for sshd management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+SshdActionStatus = ActionStatus
 
 
 @dataclass
-class SshServerConfig:
+class SshServerConfig(FeatureConfig):
     """
-        Configuration for :class:`SshServerConfigurator`.
+        Configuration for :class:`SshServerConfigurator`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write/validate commands run elevated.
         :param dropin_dir: Directory containing sshd drop-in files.
     """
-    dry_run: bool = False
-    elevated: bool = False
     dropin_dir: str = "/etc/ssh/sshd_config.d"
 
 
 @dataclass
-class SshdActionResult:
+class SshdActionResult(FeatureActionResult):
     """
-        Outcome of an sshd management action.
+        Outcome of an sshd management action.  No feature-specific
+        extras beyond the base fields.
     """
-    status: SshdActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
 @dataclass
@@ -56,32 +46,13 @@ class SshdValidateResult:
     stderr: str
 
 
-class SshServerConfigurator:
+class SshServerConfigurator(BaseFeatureManager):
     """
         Facade for sshd configuration via drop-ins and systemctl.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[SshServerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = SshServerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: SshServerConfig = config
-        return
-
-    @property
-    def config(self) -> SshServerConfig:
-        """
-            The active :class:`SshServerConfig`.
-        """
-        return self._config
+    result_class = SshdActionResult
+    feature_name = "ssh-server-configuration"
 
     def get_effective_directive(self, name: str) -> Optional[str]:
         """

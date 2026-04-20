@@ -12,34 +12,27 @@ import os
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from enum import Enum
 from string import Template
 from typing import Callable, Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureConfig,
+)
 from automojo.sysman.linux.redhat.runners.models import RunResult
 
 
-class ConfigActionStatus(Enum):
-    """
-        Outcome status for configuration-management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+ConfigActionStatus = ActionStatus
 
 
 @dataclass
-class ConfigurationManagerConfig:
+class ConfigurationManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`ConfigurationManager`.
-
-        :param dry_run: When True, no mutating commands are executed.
-        :param elevated: When True, write commands run with elevated privileges.
+        Configuration for :class:`ConfigurationManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
@@ -118,34 +111,28 @@ _DEFAULT_VALIDATORS: dict[str, Callable[[str], list[str]]] = {
 }
 
 
-class ConfigurationManager:
+class ConfigurationManager(BaseFeatureManager):
     """
         Facade for Red Hat configuration-file management through the
-        command runner.
+        command runner.  Uses its own :class:`ConfigActionResult`
+        (``path`` required, plus ``backup_path``/``diff`` extras) so
+        does not leverage the base class's ``_dispatch`` helper.
     """
+
+    feature_name = "configuration-management"
 
     def __init__(
         self,
-        runner: ICommandRunner,
+        runner,
         config: Optional[ConfigurationManagerConfig] = None,
     ) -> None:
         """
             :param runner: Runner used for every filesystem action.
             :param config: Dry-run/elevation configuration.
         """
-        if config is None:
-            config = ConfigurationManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ConfigurationManagerConfig = config
+        super().__init__(runner=runner, config=config)
         self._validators: dict[str, Callable[[str], list[str]]] = dict(_DEFAULT_VALIDATORS)
         return
-
-    @property
-    def config(self) -> ConfigurationManagerConfig:
-        """
-            The active :class:`ConfigurationManagerConfig`.
-        """
-        return self._config
 
     def register_validator(
         self,
