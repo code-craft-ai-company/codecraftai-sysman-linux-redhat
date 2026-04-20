@@ -4,18 +4,18 @@
 # Collapses the repeated <Feature>ActionStatus enum, <Feature>Config
 # dataclass, <Feature>ActionResult dataclass, and _dispatch() helper
 # pattern that every Layer 3 manager currently spells out locally.
-#
-# Existing features retain their feature-specific dataclasses and can
-# migrate to the base incrementally; nothing in this module forces an
-# immediate rewrite.  A migrated feature re-exports the base types
-# (or sub-classes them) rather than defining its own.
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from automojo.sysman.linux.redhat.runners.base import ICommandRunner
 from automojo.sysman.linux.redhat.runners.models import RunResult
+
+if TYPE_CHECKING:
+    from automojo.sysman.linux.redhat.maintenancereporting import (
+        MaintenanceReport,
+    )
 
 
 class ActionStatus(Enum):
@@ -48,22 +48,8 @@ class FeatureConfig:
 class FeatureActionResult:
     """
         Canonical per-operation result shape.  Every feature's own
-        ``*ActionResult`` dataclass either IS this type or carries
-        these fields plus a small feature-specific set.
-
-        :param status: The outcome status.
-        :param detail: Free-form human-readable description.  Features
-                       commonly use this for the target path, the
-                       service name, or a short error summary.
-        :param exit_code: Runner exit code when a command was executed.
-        :param stdout: Captured stdout from the runner.
-        :param stderr: Captured stderr from the runner.
-        :param command: The argument vector as dispatched (or
-                        would-have-been dispatched in dry-run).
-                        Sensitive payloads such as passphrases are
-                        NOT included here; features routing secrets
-                        on stdin sanitise this field on the return
-                        path.
+        ``*ActionResult`` dataclass subclasses this and adds
+        feature-specific fields (path, name, archive_path, ...).
     """
     status: ActionStatus
     detail: Optional[str] = None
@@ -75,29 +61,37 @@ class FeatureActionResult:
 
 class BaseFeatureManager:
     """
-        Shared base for every feature manager.  Provides:
+        Shared base for every feature manager.
 
-        - Standard ``__init__(runner, config=None)`` shape
-        - Read-only ``config`` property
-        - ``_dispatch`` helper implementing the common
-          dry-run-short-circuit + runner-result mapping pattern
+        Subclasses override the class variables ``result_class`` and
+        (rarely) ``status_class`` to plug in feature-specific result
+        and status types.  Methods that need to populate extra
+        result fields either pass them through as ``**extra`` to
+        ``_dispatch`` / ``_wrap_result``, or override ``_wrap_result``
+        to inject them explicitly.
 
-        Subclasses MUST declare their own feature-specific config /
-        result types (typically by sub-classing :class:`FeatureConfig`
-        and :class:`FeatureActionResult`) when they need extra fields.
-        Otherwise they can reuse these directly.
-
-        The default ``_dispatch`` returns :class:`FeatureActionResult`;
-        subclasses that return a richer type override ``_wrap_result``
-        (below) to build their own result object from the same common
-        inputs.
+        An optional ``report: MaintenanceReport`` may be injected at
+        construction time; when present, every ``_dispatch`` call
+        appends an :class:`ActionRecord` to the report automatically.
+        This is the B.2 auto-wired-reporting hook.
     """
 
     # --- Subclass configuration knobs ---------------------------------
-    # Feature-specific status enum class.  Subclasses override ONLY when
-    # they extend :class:`ActionStatus` with extra members; otherwise
-    # the default is fine.
+    # Feature-specific result dataclass.  MUST subclass
+    # :class:`FeatureActionResult` so the standard fields are accepted
+    # as keyword arguments.
+    result_class: type = FeatureActionResult
+
+    # Feature-specific status enum.  Defaults to :class:`ActionStatus`;
+    # subclasses override only if they extend the base enum.
     status_class: type = ActionStatus
+
+    # Feature name used when auto-emitting :class:`ActionRecord` into
+    # an injected :class:`MaintenanceReport`.  Subclasses set this to
+    # the canonical spec-folder name (without the layer prefix), e.g.
+    # ``"audit-management"``.  When None, auto-reporting is disabled
+    # even if a ``report`` instance was injected.
+    feature_name: Optional[str] = None
 
     # ------------------------------------------------------------------
 
@@ -105,19 +99,24 @@ class BaseFeatureManager:
         self,
         runner: ICommandRunner,
         config: Optional[FeatureConfig] = None,
+        *,
+        report: "Optional[MaintenanceReport]" = None,
     ) -> None:
         """
             :param runner: The command runner used by every mutating
                            operation.
             :param config: Manager configuration.  Defaults to the base
-                           :class:`FeatureConfig` when omitted; most
-                           subclasses pass their own config type.
+                           :class:`FeatureConfig` when omitted.
+            :param report: Optional :class:`MaintenanceReport` to
+                           receive an :class:`ActionRecord` entry for
+                           every ``_dispatch`` call.
         """
         if config is None:
             config = FeatureConfig()
 
         self._runner: ICommandRunner = runner
         self._config: FeatureConfig = config
+        self._report: "Optional[MaintenanceReport]" = report
         return
 
     @property
@@ -134,36 +133,48 @@ class BaseFeatureManager:
         """
         return self._runner
 
+    @property
+    def report(self) -> "Optional[MaintenanceReport]":
+        """
+            The injected :class:`MaintenanceReport`, or None.
+        """
+        return self._report
+
     def _dispatch(
         self,
         *,
         command: list[str],
         detail: Optional[str] = None,
         stdin: Optional[str] = None,
+        operation: Optional[str] = None,
+        **extra,
     ) -> FeatureActionResult:
         """
             Dispatch a mutating command through the runner, honouring
-            dry-run, and map the resulting :class:`RunResult` to a
-            :class:`FeatureActionResult`.
+            dry-run, map the result to the feature's result type, and
+            optionally emit an :class:`ActionRecord` when a
+            :class:`MaintenanceReport` is wired in.
 
             :param command: Argument vector for the runner.
-            :param detail: Optional description stored on the returned
-                           result.
-            :param stdin: Optional stdin payload forwarded to the
-                          runner.  Senders that carry secrets on stdin
-                          MUST also override the returned result's
-                          ``command`` field to sanitise it — see the
-                          SanitisedDispatchMixin below.
-
-            :returns: A :class:`FeatureActionResult` describing the
-                      outcome.
+            :param detail: Optional human-readable description.
+            :param stdin: Optional stdin payload forwarded to the runner.
+            :param operation: Operation name written into the emitted
+                              :class:`ActionRecord`.  Defaults to
+                              ``"unknown"`` when a report is wired in
+                              and the caller did not supply one.
+            :param extra: Extra keyword arguments forwarded to
+                          :meth:`_wrap_result` — features that carry
+                          additional result fields (archive_path,
+                          mount, etc.) pass them here.
         """
         if self._config.dry_run:
             dry_result = self._wrap_result(
                 status=self.status_class.DRY_RUN,
                 detail=detail,
                 command=list(command),
+                **extra,
             )
+            self._emit_record(result=dry_result, operation=operation)
             return dry_result
 
         run_result = self._runner.run(
@@ -183,7 +194,9 @@ class BaseFeatureManager:
             stdout=run_result.stdout,
             stderr=run_result.stderr,
             command=list(run_result.command),
+            **extra,
         )
+        self._emit_record(result=final_result, operation=operation)
         return final_result
 
     def _wrap_result(
@@ -195,22 +208,60 @@ class BaseFeatureManager:
         stdout: Optional[str] = None,
         stderr: Optional[str] = None,
         command: Optional[list[str]] = None,
+        **extra,
     ) -> FeatureActionResult:
         """
-            Construct the feature-specific result type.  The default
-            returns :class:`FeatureActionResult`; subclasses with a
-            richer result type override this single method and keep
-            using ``_dispatch`` as-is.
+            Construct the feature-specific result.  The default
+            instantiates ``self.result_class`` with every passed
+            field; subclasses whose result dataclass does not accept
+            a given key override this method to filter or transform.
         """
-        rtnval = FeatureActionResult(
-            status=status,
-            detail=detail,
-            exit_code=exit_code,
-            stdout=stdout,
-            stderr=stderr,
-            command=command,
-        )
+        kwargs = {
+            "status": status,
+            "detail": detail,
+            "exit_code": exit_code,
+            "stdout": stdout,
+            "stderr": stderr,
+            "command": command,
+        }
+        kwargs.update(extra)
+        rtnval = self.result_class(**kwargs)
         return rtnval
+
+    def _emit_record(
+        self,
+        *,
+        result: FeatureActionResult,
+        operation: Optional[str],
+    ) -> None:
+        """
+            Append an :class:`ActionRecord` to the injected report
+            when one is configured.  No-op otherwise.
+        """
+        if self._report is None:
+            return
+        if self.feature_name is None:
+            return
+
+        # Lazy import to avoid a circular import at module-load time.
+        from automojo.sysman.linux.redhat.maintenancereporting import (
+            ActionRecord,
+            ActionStatus as ReportActionStatus,
+        )
+
+        # Map our local ActionStatus value onto the report's enum by
+        # string value — robust to subclass extensions.
+        report_status = ReportActionStatus(result.status.value)
+
+        record = ActionRecord(
+            feature=self.feature_name,
+            operation=(operation if operation is not None else "unknown"),
+            status=report_status,
+            detail=result.detail,
+            error=result.stderr if result.status == self.status_class.FAILED else None,
+        )
+        self._report.add_action(record)
+        return
 
 
 class SanitisedDispatchMixin:
@@ -220,16 +271,6 @@ class SanitisedDispatchMixin:
         mixed in before :class:`BaseFeatureManager`, ``_dispatch``
         forces the recorded ``command`` field back to the caller-
         supplied argv instead of ``run_result.command``.
-
-        Runners already avoid echoing stdin bytes into ``command``, but
-        this mixin documents the intent explicitly and protects against
-        a future runner that chooses to include them.
-
-        Example::
-
-            class SambaServerManager(SanitisedDispatchMixin,
-                                     BaseFeatureManager):
-                ...
     """
 
     def _dispatch(
@@ -238,13 +279,17 @@ class SanitisedDispatchMixin:
         command: list[str],
         detail: Optional[str] = None,
         stdin: Optional[str] = None,
+        operation: Optional[str] = None,
+        **extra,
     ) -> FeatureActionResult:
         if self._config.dry_run:
             dry_result = self._wrap_result(
                 status=self.status_class.DRY_RUN,
                 detail=detail,
                 command=list(command),
+                **extra,
             )
+            self._emit_record(result=dry_result, operation=operation)
             return dry_result
 
         run_result = self._runner.run(
@@ -263,8 +308,10 @@ class SanitisedDispatchMixin:
             exit_code=run_result.exit_code,
             stdout=run_result.stdout,
             stderr=run_result.stderr,
-            command=list(command),        # caller-supplied argv, NOT run_result.command
+            command=list(command),        # caller-supplied argv; never run_result.command
+            **extra,
         )
+        self._emit_record(result=final_result, operation=operation)
         return final_result
 
 
@@ -275,10 +322,7 @@ def result_from_run(
 ) -> FeatureActionResult:
     """
         Utility: map an existing :class:`RunResult` to a
-        :class:`FeatureActionResult` without dispatching.  Useful when
-        a subclass method has already issued the runner call itself
-        (e.g. reading a file via ``cat``) and wants to reuse the common
-        result shape.
+        :class:`FeatureActionResult` without dispatching.
     """
     mapped_status = (
         ActionStatus.SUCCESS if run_result.exit_code == 0 else ActionStatus.FAILED

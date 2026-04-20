@@ -4,47 +4,37 @@
 # ICommandRunner abstraction.
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class KdumpActionStatus(Enum):
-    """
-        Outcome status for kdump actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible alias.
+KdumpActionStatus = ActionStatus
 
 
 @dataclass
-class KdumpManagerConfig:
+class KdumpManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`KdumpManager`.
+        Configuration for :class:`KdumpManager`.  Inherits ``dry_run``
+        and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, write commands run elevated.
         :param config_path: Path to kdump.conf.
     """
-    dry_run: bool = False
-    elevated: bool = False
     config_path: str = "/etc/kdump.conf"
 
 
 @dataclass
-class KdumpActionResult:
+class KdumpActionResult(FeatureActionResult):
     """
-        Outcome of a kdump management action.
+        Outcome of a kdump management action.  No feature-specific
+        extras beyond the base fields.
     """
-    status: KdumpActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
 @dataclass
@@ -56,32 +46,13 @@ class KdumpStatus:
     enabled: bool
 
 
-class KdumpManager:
+class KdumpManager(BaseFeatureManager):
     """
         Facade for kdump service and configuration management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[KdumpManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = KdumpManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: KdumpManagerConfig = config
-        return
-
-    @property
-    def config(self) -> KdumpManagerConfig:
-        """
-            The active :class:`KdumpManagerConfig`.
-        """
-        return self._config
+    result_class = KdumpActionResult
+    feature_name = "kdump-management"
 
     def query_status(self) -> KdumpStatus:
         """
@@ -104,14 +75,14 @@ class KdumpManager:
             Enable and start ``kdump.service``.
         """
         command = ["systemctl", "enable", "--now", "kdump.service"]
-        return self._dispatch(command=command, detail="kdump.service")
+        return self._dispatch(command=command, detail="kdump.service", operation="enable")
 
     def disable(self) -> KdumpActionResult:
         """
             Disable and stop ``kdump.service``.
         """
         command = ["systemctl", "disable", "--now", "kdump.service"]
-        return self._dispatch(command=command, detail="kdump.service")
+        return self._dispatch(command=command, detail="kdump.service", operation="disable")
 
     def set_config_directive(
         self,
@@ -129,22 +100,11 @@ class KdumpManager:
             return KdumpActionResult(
                 status=KdumpActionStatus.SKIPPED, detail=directive,
             )
-        command = ["tee", self._config.config_path]
-        if self._config.dry_run:
-            return KdumpActionResult(
-                status=KdumpActionStatus.DRY_RUN,
-                detail=directive, command=command,
-            )
-        run_result = self._runner.run(
-            command, elevated=self._config.elevated, stdin=new_content,
-        )
-        status = KdumpActionStatus.SUCCESS if run_result.exit_code == 0 else KdumpActionStatus.FAILED
-        return KdumpActionResult(
-            status=status, detail=directive,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
+        return self._dispatch(
+            command=["tee", self._config.config_path],
+            detail=directive,
+            stdin=new_content,
+            operation="set_config_directive",
         )
 
     def _read(self, *, path: str) -> str:
@@ -155,30 +115,6 @@ class KdumpManager:
         if run_result.exit_code != 0:
             return ""
         return run_result.stdout
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> KdumpActionResult:
-        """
-            Dispatch a kdump command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return KdumpActionResult(
-                status=KdumpActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = KdumpActionStatus.SUCCESS if run_result.exit_code == 0 else KdumpActionStatus.FAILED
-        return KdumpActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
 
 
 def _apply_directive(

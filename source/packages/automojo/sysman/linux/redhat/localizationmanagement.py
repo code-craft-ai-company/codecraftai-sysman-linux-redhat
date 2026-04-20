@@ -3,46 +3,37 @@
 # LocalizationManager wraps localectl and timedatectl through the
 # ICommandRunner abstraction.
 
-from dataclasses import dataclass, field
-from enum import Enum
+from dataclasses import dataclass
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class LocalizationActionStatus(Enum):
-    """
-        Outcome status for localization actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
-
-
-@dataclass
-class LocalizationManagerConfig:
-    """
-        Configuration for :class:`LocalizationManager`.
-
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, mutating commands run elevated.
-    """
-    dry_run: bool = False
-    elevated: bool = False
+# Backwards-compatible alias.
+LocalizationActionStatus = ActionStatus
 
 
 @dataclass
-class LocalizationActionResult:
+class LocalizationManagerConfig(FeatureConfig):
     """
-        Outcome of a localization management action.
+        Configuration for :class:`LocalizationManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
     """
-    status: LocalizationActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
+
+
+@dataclass
+class LocalizationActionResult(FeatureActionResult):
+    """
+        Outcome of a localization management action.  No
+        feature-specific extras beyond the base fields.
+    """
+    pass
 
 
 @dataclass
@@ -74,32 +65,13 @@ class TimezoneInfo:
     local_rtc: bool
 
 
-class LocalizationManager:
+class LocalizationManager(BaseFeatureManager):
     """
         Facade for localectl and timedatectl operations.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[LocalizationManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = LocalizationManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: LocalizationManagerConfig = config
-        return
-
-    @property
-    def config(self) -> LocalizationManagerConfig:
-        """
-            The active :class:`LocalizationManagerConfig`.
-        """
-        return self._config
+    result_class = LocalizationActionResult
+    feature_name = "localization-management"
 
     def query_locale(self) -> LocaleInfo:
         """
@@ -136,7 +108,7 @@ class LocalizationManager:
                 status=LocalizationActionStatus.SKIPPED, detail=lang,
             )
         command = ["localectl", "set-locale", "LANG={}".format(lang)]
-        return self._dispatch(command=command, detail=lang)
+        return self._dispatch(command=command, detail=lang, operation="set_locale")
 
     def query_keymap(self) -> KeymapInfo:
         """
@@ -162,7 +134,7 @@ class LocalizationManager:
                 status=LocalizationActionStatus.SKIPPED, detail=keymap,
             )
         command = ["localectl", "set-keymap", keymap]
-        return self._dispatch(command=command, detail=keymap)
+        return self._dispatch(command=command, detail=keymap, operation="set_keymap")
 
     def query_timezone(self) -> TimezoneInfo:
         """
@@ -195,7 +167,7 @@ class LocalizationManager:
                 status=LocalizationActionStatus.SKIPPED, detail=timezone,
             )
         command = ["timedatectl", "set-timezone", timezone]
-        return self._dispatch(command=command, detail=timezone)
+        return self._dispatch(command=command, detail=timezone, operation="set_timezone")
 
     def set_ntp(self, enabled: bool) -> LocalizationActionResult:
         """
@@ -209,29 +181,7 @@ class LocalizationManager:
             )
         command = ["timedatectl", "set-ntp", "true" if enabled else "false"]
         return self._dispatch(
-            command=command, detail="true" if enabled else "false",
-        )
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> LocalizationActionResult:
-        """
-            Dispatch a localization command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return LocalizationActionResult(
-                status=LocalizationActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = LocalizationActionStatus.SUCCESS if run_result.exit_code == 0 else LocalizationActionStatus.FAILED
-        return LocalizationActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
+            command=command,
+            detail="true" if enabled else "false",
+            operation="set_ntp",
         )

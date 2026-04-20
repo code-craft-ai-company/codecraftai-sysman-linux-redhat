@@ -4,47 +4,39 @@
 # ICommandRunner abstraction.
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class AuditActionStatus(Enum):
-    """
-        Outcome status for audit management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+# Backwards-compatible alias; older callers import AuditActionStatus.
+AuditActionStatus = ActionStatus
 
 
 @dataclass
-class AuditManagerConfig:
+class AuditManagerConfig(FeatureConfig):
     """
         Configuration for :class:`AuditManager`.
 
-        :param dry_run: When True, no mutating commands execute.
-        :param elevated: When True, audit commands run elevated.
+        Inherits ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
+
         :param rules_dir: Directory containing audit rule drop-ins.
     """
-    dry_run: bool = False
-    elevated: bool = False
     rules_dir: str = "/etc/audit/rules.d"
 
 
 @dataclass
-class AuditActionResult:
+class AuditActionResult(FeatureActionResult):
     """
-        Outcome of an audit management action.
+        Outcome of an audit management action.  Inherits every field
+        from :class:`FeatureActionResult` — no extras.
     """
-    status: AuditActionStatus
-    detail: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    pass
 
 
 @dataclass
@@ -56,32 +48,13 @@ class AuditReport:
     command: Optional[list[str]] = None
 
 
-class AuditManager:
+class AuditManager(BaseFeatureManager):
     """
         Facade for the Linux audit subsystem.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[AuditManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = AuditManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: AuditManagerConfig = config
-        return
-
-    @property
-    def config(self) -> AuditManagerConfig:
-        """
-            The active :class:`AuditManagerConfig`.
-        """
-        return self._config
+    result_class = AuditActionResult
+    feature_name = "audit-management"
 
     def list_rules(self) -> list[str]:
         """
@@ -104,7 +77,7 @@ class AuditManager:
             Add a single audit rule at runtime via ``auditctl``.
         """
         command = ["auditctl"] + rule.split()
-        return self._dispatch(command=command, detail=rule)
+        return self._dispatch(command=command, detail=rule, operation="add_rule")
 
     def delete_rule(self, rule: str) -> AuditActionResult:
         """
@@ -114,7 +87,7 @@ class AuditManager:
         command = ["auditctl"] + tokens
         if len(tokens) > 0 and tokens[0] == "-a":
             command[1] = "-d"
-        return self._dispatch(command=command, detail=rule)
+        return self._dispatch(command=command, detail=rule, operation="delete_rule")
 
     def write_rules_file(
         self,
@@ -131,22 +104,11 @@ class AuditManager:
             return AuditActionResult(
                 status=AuditActionStatus.SKIPPED, detail=path,
             )
-        command = ["tee", path]
-        if self._config.dry_run:
-            return AuditActionResult(
-                status=AuditActionStatus.DRY_RUN,
-                detail=path, command=command,
-            )
-        run_result = self._runner.run(
-            command, elevated=self._config.elevated, stdin=content,
-        )
-        status = AuditActionStatus.SUCCESS if run_result.exit_code == 0 else AuditActionStatus.FAILED
-        return AuditActionResult(
-            status=status, detail=path,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
+        return self._dispatch(
+            command=["tee", path],
+            detail=path,
+            stdin=content,
+            operation="write_rules_file",
         )
 
     def search(
@@ -194,27 +156,3 @@ class AuditManager:
         if run_result.exit_code != 0:
             return ""
         return run_result.stdout
-
-    def _dispatch(
-        self,
-        *,
-        command: list[str],
-        detail: str,
-    ) -> AuditActionResult:
-        """
-            Dispatch a mutating audit command honouring dry-run.
-        """
-        if self._config.dry_run:
-            return AuditActionResult(
-                status=AuditActionStatus.DRY_RUN,
-                detail=detail, command=command,
-            )
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        status = AuditActionStatus.SUCCESS if run_result.exit_code == 0 else AuditActionStatus.FAILED
-        return AuditActionResult(
-            status=status, detail=detail,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )

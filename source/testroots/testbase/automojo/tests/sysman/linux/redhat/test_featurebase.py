@@ -170,3 +170,164 @@ def test_result_from_run_maps_runresult_to_actionresult():
     testbase.assert_equal(result.stderr, "b")
     testbase.assert_equal(result.detail, "hello")
     return
+
+
+def test_result_class_subclass_instantiated_by_default_wrap():
+    """
+        Setting result_class on a subclass causes _wrap_result to
+        produce that class — no override required.
+    """
+    @dataclass
+    class MyResult(FeatureActionResult):
+        my_extra: str = ""
+
+    class MyManager(BaseFeatureManager):
+        result_class = MyResult
+
+    runner = _MockRunner(queued=[
+        RunResult(exit_code=0, stdout="", stderr="", command=["x"])
+    ])
+    manager = MyManager(runner, FeatureConfig())
+    result = manager._dispatch(command=["x"], my_extra="carried")
+    testbase.assert_true(isinstance(result, MyResult))
+    testbase.assert_equal(result.my_extra, "carried")
+    return
+
+
+def test_report_autoemit_on_success():
+    """
+        When a MaintenanceReport is injected, _dispatch emits an
+        ActionRecord with matching feature / operation / status.
+    """
+    from automojo.sysman.linux.redhat.maintenancereporting import (
+        MaintenanceReport,
+        ActionStatus as ReportStatus,
+    )
+
+    class MyManager(BaseFeatureManager):
+        feature_name = "sample-feature"
+
+    report = MaintenanceReport(run_id="r1", host="h1")
+    runner = _MockRunner(queued=[
+        RunResult(exit_code=0, stdout="", stderr="", command=["x"])
+    ])
+    manager = MyManager(runner, FeatureConfig(), report=report)
+    manager._dispatch(command=["x"], operation="do-thing")
+
+    actions = report.actions
+    testbase.assert_equal(len(actions), 1)
+    testbase.assert_equal(actions[0].feature, "sample-feature")
+    testbase.assert_equal(actions[0].operation, "do-thing")
+    testbase.assert_equal(actions[0].status, ReportStatus.SUCCESS)
+    return
+
+
+def test_report_autoemit_on_failure_populates_error():
+    """
+        Failed dispatches emit ActionRecord with `error` populated.
+    """
+    from automojo.sysman.linux.redhat.maintenancereporting import (
+        MaintenanceReport,
+        ActionStatus as ReportStatus,
+    )
+
+    class MyManager(BaseFeatureManager):
+        feature_name = "sample-feature"
+
+    report = MaintenanceReport(run_id="r1", host="h1")
+    runner = _MockRunner(queued=[
+        RunResult(exit_code=2, stdout="", stderr="oh no", command=["x"])
+    ])
+    manager = MyManager(runner, FeatureConfig(), report=report)
+    manager._dispatch(command=["x"], operation="do-thing")
+
+    actions = report.actions
+    testbase.assert_equal(len(actions), 1)
+    testbase.assert_equal(actions[0].status, ReportStatus.FAILED)
+    testbase.assert_equal(actions[0].error, "oh no")
+    return
+
+
+def test_report_autoemit_in_dry_run():
+    """
+        Dry-run dispatches still emit ActionRecord (DRY_RUN status).
+    """
+    from automojo.sysman.linux.redhat.maintenancereporting import (
+        MaintenanceReport,
+        ActionStatus as ReportStatus,
+    )
+
+    class MyManager(BaseFeatureManager):
+        feature_name = "sample-feature"
+
+    report = MaintenanceReport(run_id="r1", host="h1")
+    runner = _MockRunner()
+    manager = MyManager(runner, FeatureConfig(dry_run=True), report=report)
+    manager._dispatch(command=["x"], operation="do-thing")
+
+    actions = report.actions
+    testbase.assert_equal(len(actions), 1)
+    testbase.assert_equal(actions[0].status, ReportStatus.DRY_RUN)
+    return
+
+
+def test_report_autoemit_skipped_when_feature_name_unset():
+    """
+        With no feature_name class variable, auto-emit is disabled
+        even if a report is injected.
+    """
+    from automojo.sysman.linux.redhat.maintenancereporting import (
+        MaintenanceReport,
+    )
+
+    report = MaintenanceReport(run_id="r1", host="h1")
+    runner = _MockRunner(queued=[
+        RunResult(exit_code=0, stdout="", stderr="", command=["x"])
+    ])
+    # feature_name defaults to None on BaseFeatureManager — no emit.
+    manager = BaseFeatureManager(runner, FeatureConfig(), report=report)
+    manager._dispatch(command=["x"], operation="do-thing")
+
+    testbase.assert_equal(len(report.actions), 0)
+    return
+
+
+def test_report_autoemit_skipped_when_no_report_injected():
+    """
+        Without a report, _dispatch never emits records even with
+        feature_name set.
+    """
+    class MyManager(BaseFeatureManager):
+        feature_name = "sample-feature"
+
+    runner = _MockRunner(queued=[
+        RunResult(exit_code=0, stdout="", stderr="", command=["x"])
+    ])
+    manager = MyManager(runner, FeatureConfig())
+    manager._dispatch(command=["x"], operation="do-thing")
+    # No assertion error raised means nothing tried to call emit with
+    # a None report.
+    return
+
+
+def test_dispatch_forwards_extra_to_wrap_result():
+    """
+        Extra kwargs on _dispatch flow through to _wrap_result via
+        **extra.
+    """
+    seen: dict = {}
+
+    class MyManager(BaseFeatureManager):
+        def _wrap_result(self, *, status, **kwargs):
+            seen.update(kwargs)
+            return FeatureActionResult(status=status)
+
+    runner = _MockRunner(queued=[
+        RunResult(exit_code=0, stdout="", stderr="", command=["x"])
+    ])
+    manager = MyManager(runner, FeatureConfig())
+    manager._dispatch(command=["x"], detail="d", archive_path="/path/to/archive")
+
+    testbase.assert_equal(seen["detail"], "d")
+    testbase.assert_equal(seen["archive_path"], "/path/to/archive")
+    return
