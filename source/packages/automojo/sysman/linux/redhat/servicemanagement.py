@@ -6,80 +6,51 @@
 import os
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class ServiceActionStatus(Enum):
-    """
-        Outcome status for service action operations.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+ServiceActionStatus = ActionStatus
 
 
 @dataclass
-class ServiceManagerConfig:
+class ServiceManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`ServiceManager`.
-
-        :param dry_run: When True, no commands are executed.
-        :param elevated: When True, write commands run with elevated privileges.
+        Configuration for :class:`ServiceManager`.  Inherits ``dry_run``
+        and ``elevated`` from :class:`FeatureConfig`.
     """
-
-    dry_run: bool = False
-    elevated: bool = False
+    pass
 
 
 @dataclass
 class ServiceInfo:
     """
         Active and enabled state for a service.
-
-        :param service_name: Service unit name.
-        :param active_state: Current active state string from systemctl.
-        :param enabled_state: Current enabled state string from systemctl.
     """
-
     service_name: str
     active_state: str
     enabled_state: str
 
 
 @dataclass
-class ServiceActionResult:
+class ServiceActionResult(FeatureActionResult):
     """
-        Result of a service management write operation.
-
-        :param status: Outcome of the action.
-        :param service_name: Service the action targeted.
-        :param exit_code: Raw exit code from the command runner.
-        :param stdout: Standard output from the runner.
-        :param stderr: Standard error from the runner.
-        :param command: The command that was (or would have been) executed.
+        Result of a service management write operation.  Extends
+        :class:`FeatureActionResult` with ``service_name``.
     """
-
-    status: ServiceActionStatus
-    service_name: str
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
+    service_name: str = ""
 
 
 class ServiceQueryError(Exception):
     """
         Raised when a query-like systemctl invocation fails for reasons other
         than returning state information.
-
-        :param command: The command that was executed.
-        :param exit_code: The exit code returned by the runner.
-        :param stderr: Standard error captured from the runner.
     """
 
     def __init__(
@@ -116,40 +87,13 @@ _VALID_ENABLED_STATES = {
 }
 
 
-class ServiceManager:
+class ServiceManager(BaseFeatureManager):
     """
-        High-level facade for systemd service management.  Delegates every
-        system call to the injected :class:`ICommandRunner`.
+        High-level facade for systemd service management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[ServiceManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Runner used for command execution.
-            :param config: Service manager configuration.
-        """
-        if config is None:
-            config = ServiceManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ServiceManagerConfig = config
-        return
-
-    @property
-    def config(self) -> ServiceManagerConfig:
-        """
-            The active :class:`ServiceManagerConfig`.
-        """
-        return self._config
-
-    @property
-    def runner(self) -> ICommandRunner:
-        """
-            The injected :class:`ICommandRunner`.
-        """
-        return self._runner
+    result_class = ServiceActionResult
+    feature_name = "service-management"
 
     def start(self, name: str) -> ServiceActionResult:
         """
@@ -157,14 +101,16 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.active_state == "active":
-            skipped = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.SKIPPED,
                 service_name=name,
             )
-            return skipped
-        command = [_SYSTEMCTL, "start", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "start", name],
+            detail=name,
+            operation="start",
+            service_name=name,
+        )
 
     def stop(self, name: str) -> ServiceActionResult:
         """
@@ -172,22 +118,27 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.active_state == "inactive":
-            skipped = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.SKIPPED,
                 service_name=name,
             )
-            return skipped
-        command = [_SYSTEMCTL, "stop", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "stop", name],
+            detail=name,
+            operation="stop",
+            service_name=name,
+        )
 
     def restart(self, name: str) -> ServiceActionResult:
         """
             Restart a service unit.  Always attempts the restart.
         """
-        command = [_SYSTEMCTL, "restart", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "restart", name],
+            detail=name,
+            operation="restart",
+            service_name=name,
+        )
 
     def reload(self, name: str) -> ServiceActionResult:
         """
@@ -197,15 +148,17 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.active_state != "active":
-            failed = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.FAILED,
                 service_name=name,
                 stderr="service is not active: {}".format(info.active_state),
             )
-            return failed
-        command = [_SYSTEMCTL, "reload", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "reload", name],
+            detail=name,
+            operation="reload",
+            service_name=name,
+        )
 
     def enable(self, name: str) -> ServiceActionResult:
         """
@@ -213,14 +166,16 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.enabled_state == "enabled":
-            skipped = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.SKIPPED,
                 service_name=name,
             )
-            return skipped
-        command = [_SYSTEMCTL, "enable", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "enable", name],
+            detail=name,
+            operation="enable",
+            service_name=name,
+        )
 
     def disable(self, name: str) -> ServiceActionResult:
         """
@@ -228,14 +183,16 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.enabled_state == "disabled":
-            skipped = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.SKIPPED,
                 service_name=name,
             )
-            return skipped
-        command = [_SYSTEMCTL, "disable", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "disable", name],
+            detail=name,
+            operation="disable",
+            service_name=name,
+        )
 
     def mask(self, name: str) -> ServiceActionResult:
         """
@@ -243,14 +200,16 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.enabled_state == "masked":
-            skipped = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.SKIPPED,
                 service_name=name,
             )
-            return skipped
-        command = [_SYSTEMCTL, "mask", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "mask", name],
+            detail=name,
+            operation="mask",
+            service_name=name,
+        )
 
     def unmask(self, name: str) -> ServiceActionResult:
         """
@@ -258,22 +217,27 @@ class ServiceManager:
         """
         info = self.query(name)
         if info.enabled_state != "masked":
-            skipped = ServiceActionResult(
+            return ServiceActionResult(
                 status=ServiceActionStatus.SKIPPED,
                 service_name=name,
             )
-            return skipped
-        command = [_SYSTEMCTL, "unmask", name]
-        action_result = self._issue_write(name=name, command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "unmask", name],
+            detail=name,
+            operation="unmask",
+            service_name=name,
+        )
 
     def daemon_reload(self) -> ServiceActionResult:
         """
             Reload the systemd manager configuration.
         """
-        command = [_SYSTEMCTL, "daemon-reload"]
-        action_result = self._issue_write(name="<daemon>", command=command)
-        return action_result
+        return self._dispatch(
+            command=[_SYSTEMCTL, "daemon-reload"],
+            detail="<daemon>",
+            operation="daemon_reload",
+            service_name="<daemon>",
+        )
 
     def query(self, name: str) -> ServiceInfo:
         """
@@ -314,26 +278,6 @@ class ServiceManager:
             )
         return run_result.stdout
 
-    def _issue_write(
-        self,
-        *,
-        name: str,
-        command: list[str],
-    ) -> ServiceActionResult:
-        """
-            Execute a write command honouring the dry-run configuration.
-        """
-        if self._config.dry_run:
-            dry = ServiceActionResult(
-                status=ServiceActionStatus.DRY_RUN,
-                service_name=name,
-                command=command,
-            )
-            return dry
-        run_result = self._runner.run(command, elevated=self._config.elevated)
-        result = self._result_from_run(name=name, run_result=run_result)
-        return result
-
     def _query_state(
         self,
         *,
@@ -342,8 +286,6 @@ class ServiceManager:
     ) -> str:
         """
             Run a state-query command and return the reported state string.
-            Non-zero exit codes are informational for state queries; any
-            unrecognised state raises :class:`ServiceQueryError`.
         """
         run_result = self._runner.run(command, elevated=False)
         reported_state = run_result.stdout.strip()
@@ -358,26 +300,3 @@ class ServiceManager:
             exit_code=run_result.exit_code,
             stderr=run_result.stderr,
         )
-
-    def _result_from_run(
-        self,
-        *,
-        name: str,
-        run_result: RunResult,
-    ) -> ServiceActionResult:
-        """
-            Map a :class:`RunResult` to a :class:`ServiceActionResult`.
-        """
-        if run_result.exit_code == 0:
-            status = ServiceActionStatus.SUCCESS
-        else:
-            status = ServiceActionStatus.FAILED
-        action_result = ServiceActionResult(
-            status=status,
-            service_name=name,
-            exit_code=run_result.exit_code,
-            stdout=run_result.stdout,
-            stderr=run_result.stderr,
-            command=list(run_result.command),
-        )
-        return action_result
