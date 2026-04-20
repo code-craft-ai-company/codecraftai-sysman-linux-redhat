@@ -6,33 +6,27 @@
 import json
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
-from automojo.sysman.linux.redhat.runners.base import ICommandRunner
+from automojo.sysman.linux.redhat.featurebase import (
+    ActionStatus,
+    BaseFeatureManager,
+    FeatureActionResult,
+    FeatureConfig,
+)
 
 
-class ContainerActionStatus(Enum):
-    """
-        Outcome status for container management actions.
-    """
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    DRY_RUN = "dry_run"
+ContainerActionStatus = ActionStatus
 
 
 @dataclass
-class ContainerManagerConfig:
+class ContainerManagerConfig(FeatureConfig):
     """
-        Configuration for :class:`ContainerManager`.
+        Configuration for :class:`ContainerManager`.  Inherits
+        ``dry_run`` and ``elevated`` from :class:`FeatureConfig`.
 
-        :param dry_run: When True, no commands execute.
-        :param elevated: When True, podman commands run elevated.
         :param engine: Container engine binary to invoke.
     """
-    dry_run: bool = False
-    elevated: bool = False
     engine: str = "podman"
 
 
@@ -59,16 +53,11 @@ class ContainerSpec:
 
 
 @dataclass
-class ContainerActionResult:
+class ContainerActionResult(FeatureActionResult):
     """
-        Outcome of a container management action.
+        Outcome of a container management action.  Adds ``name``.
     """
-    status: ContainerActionStatus
     name: Optional[str] = None
-    exit_code: Optional[int] = None
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
-    command: Optional[list[str]] = None
 
 
 @dataclass
@@ -82,32 +71,13 @@ class ContainerInfo:
     state: str
 
 
-class ContainerManager:
+class ContainerManager(BaseFeatureManager):
     """
         Facade for podman container management.
     """
 
-    def __init__(
-        self,
-        runner: ICommandRunner,
-        config: Optional[ContainerManagerConfig] = None,
-    ) -> None:
-        """
-            :param runner: Command runner.
-            :param config: Manager configuration.
-        """
-        if config is None:
-            config = ContainerManagerConfig()
-        self._runner: ICommandRunner = runner
-        self._config: ContainerManagerConfig = config
-        return
-
-    @property
-    def config(self) -> ContainerManagerConfig:
-        """
-            The active :class:`ContainerManagerConfig`.
-        """
-        return self._config
+    result_class = ContainerActionResult
+    feature_name = "container-management"
 
     def pull_image(self, image: str) -> ContainerActionResult:
         """
