@@ -156,19 +156,33 @@ def test_by_layer_filters_correctly():
 
 def test_default_registry_populated_with_all_implemented_features():
     """
-        The seed registry contains exactly the 32 implemented features
-        (2 Layer 1 + 1 Layer 2 + 29 Layer 3).
+        The seed registry contains exactly the 46 implemented features
+        (2 Layer 1 + 1 Layer 2 + 43 Layer 3).
     """
     registry = build_default_registry()
     names = registry.names()
-    testbase.assert_equal(len(names), 32)
+    testbase.assert_equal(len(names), 46)
     testbase.assert_true("command-execution" in names)
     testbase.assert_true("maintenance-reporting" in names)
     testbase.assert_true("package-management" in names)
     testbase.assert_true("security-compliance" in names)
+    testbase.assert_true("acl-management" in names)
+    testbase.assert_true("filesystem-quotas" in names)
+    testbase.assert_true("precision-time-management" in names)
+    testbase.assert_true("remote-log-forwarding" in names)
+    testbase.assert_true("authentication-management" in names)
+    testbase.assert_true("dns-server-management" in names)
+    testbase.assert_true("mail-transport-management" in names)
+    testbase.assert_true("nfs-server-management" in names)
+    testbase.assert_true("samba-server-management" in names)
+    testbase.assert_true("certificate-issuance" in names)
+    testbase.assert_true("encryption-management" in names)
+    testbase.assert_true("identity-management" in names)
+    testbase.assert_true("resource-control-management" in names)
+    testbase.assert_true("virtualization-management" in names)
     testbase.assert_equal(len(registry.by_layer(layer=1)), 2)
     testbase.assert_equal(len(registry.by_layer(layer=2)), 1)
-    testbase.assert_equal(len(registry.by_layer(layer=3)), 29)
+    testbase.assert_equal(len(registry.by_layer(layer=3)), 43)
     return
 
 

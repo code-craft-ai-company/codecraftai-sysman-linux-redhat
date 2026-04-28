@@ -166,11 +166,25 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="Structured report of actions performed during a run.",
     ),
     FeatureDescriptor(
+        name="acl-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.aclmanagement",
+        class_name="AclManager",
+        summary="POSIX ACLs, ext attrs, file capabilities (setfacl/chattr/setcap).",
+    ),
+    FeatureDescriptor(
         name="audit-management",
         layer=3,
         module="automojo.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="auditd daemon, rules, and aureport/ausearch tools.",
+    ),
+    FeatureDescriptor(
+        name="authentication-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.authenticationmanagement",
+        class_name="AuthenticationManager",
+        summary="authselect profiles, PAM stacks, faillock, pwquality, limits.",
     ),
     FeatureDescriptor(
         name="backup-restore",
@@ -187,9 +201,16 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="grub2 default kernel, kernel command line, bootctl.",
     ),
     FeatureDescriptor(
+        name="certificate-issuance",
+        layer=3,
+        module="automojo.sysman.linux.redhat.certificateissuance",
+        class_name="CertificateIssuanceManager",
+        summary="OpenSSL keys/CSRs/self-signed certs + certmonger + ACME (certbot).",
+    ),
+    FeatureDescriptor(
         name="certificate-trust-management",
         layer=3,
-        module="automojo.sysman.linux.redhat.certificatetrust",
+        module="automojo.sysman.linux.redhat.certificatetrustmanagement",
         class_name="CertificateTrustManager",
         summary="CA trust anchors under /etc/pki/ca-trust/.",
     ),
@@ -215,6 +236,20 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="Podman container + image lifecycle.",
     ),
     FeatureDescriptor(
+        name="dns-server-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.dnsservermanagement",
+        class_name="DnsServerManager",
+        summary="BIND / Unbound / dnsmasq DNS server configuration & lifecycle.",
+    ),
+    FeatureDescriptor(
+        name="encryption-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.encryptionmanagement",
+        class_name="EncryptionManager",
+        summary="LUKS2 disk encryption + TPM2 / Clevis bindings + crypttab.",
+    ),
+    FeatureDescriptor(
         name="environment-configuration",
         layer=3,
         module="automojo.sysman.linux.redhat.environmentconfiguration",
@@ -229,6 +264,13 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="Directories, symlinks, mounts, /etc/fstab.",
     ),
     FeatureDescriptor(
+        name="filesystem-quotas",
+        layer=3,
+        module="automojo.sysman.linux.redhat.filesystemquotas",
+        class_name="FilesystemQuotaManager",
+        summary="XFS / ext quotas via xfs_quota / setquota / repquota.",
+    ),
+    FeatureDescriptor(
         name="firewall-management",
         layer=3,
         module="automojo.sysman.linux.redhat.firewallmanagement",
@@ -241,6 +283,13 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         module="automojo.sysman.linux.redhat.hardwareinventory",
         class_name="HardwareInventoryManager",
         summary="Read-only DMI / CPU / memory / block / PCI / USB / NIC snapshot.",
+    ),
+    FeatureDescriptor(
+        name="identity-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.identitymanagement",
+        class_name="IdentityManager",
+        summary="realmd / SSSD / Kerberos client (AD / IPA join, /etc/krb5.conf).",
     ),
     FeatureDescriptor(
         name="insights-management",
@@ -278,11 +327,25 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="journalctl, logrotate drop-ins, journal vacuum.",
     ),
     FeatureDescriptor(
+        name="mail-transport-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.mailtransportmanagement",
+        class_name="MailTransportManager",
+        summary="Postfix main.cf, master.cf, lookup tables, queue, aliases.",
+    ),
+    FeatureDescriptor(
         name="network-configuration",
         layer=3,
         module="automojo.sysman.linux.redhat.networkconfiguration",
         class_name="NetworkConfigurator",
         summary="Hostname, /etc/hosts, DNS resolver, NTP, NetworkManager.",
+    ),
+    FeatureDescriptor(
+        name="nfs-server-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.nfsservermanagement",
+        class_name="NfsServerManager",
+        summary="/etc/exports + drop-ins, exportfs, idmapd, nfs-server lifecycle.",
     ),
     FeatureDescriptor(
         name="package-management",
@@ -292,6 +355,13 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="RPM install/remove/update/query via dnf + rpm.",
     ),
     FeatureDescriptor(
+        name="precision-time-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.precisiontimemanagement",
+        class_name="PrecisionTimeManager",
+        summary="linuxptp (ptp4l, phc2sys, pmc) configuration and lifecycle.",
+    ),
+    FeatureDescriptor(
         name="process-management",
         layer=3,
         module="automojo.sysman.linux.redhat.processmanagement",
@@ -299,11 +369,32 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="Enumerate / signal / reprioritise processes.",
     ),
     FeatureDescriptor(
+        name="remote-log-forwarding",
+        layer=3,
+        module="automojo.sysman.linux.redhat.remotelogforwarding",
+        class_name="RemoteLogForwardingManager",
+        summary="rsyslog drop-ins + journald-upload remote forwarding.",
+    ),
+    FeatureDescriptor(
         name="repository-management",
         layer=3,
         module="automojo.sysman.linux.redhat.repositorymanagement",
         class_name="RepositoryManager",
         summary="dnf/yum .repo definitions under /etc/yum.repos.d/.",
+    ),
+    FeatureDescriptor(
+        name="resource-control-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.resourcecontrolmanagement",
+        class_name="ResourceControlManager",
+        summary="systemd resource controls (cgroups v2): CPUQuota, MemoryMax, slices.",
+    ),
+    FeatureDescriptor(
+        name="samba-server-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.sambaservermanagement",
+        class_name="SambaServerManager",
+        summary="smb.conf shares, smbpasswd users, smb/nmb/winbind lifecycle.",
     ),
     FeatureDescriptor(
         name="scheduled-tasks",
@@ -368,13 +459,20 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         class_name="UserManager",
         summary="Local users, groups, membership, SSH authorized keys.",
     ),
+    FeatureDescriptor(
+        name="virtualization-management",
+        layer=3,
+        module="automojo.sysman.linux.redhat.virtualizationmanagement",
+        class_name="VirtualizationManager",
+        summary="libvirt domains, networks, storage pools/volumes, snapshots.",
+    ),
 ]
 
 
 def build_default_registry() -> FeatureRegistry:
     """
         Build a :class:`FeatureRegistry` pre-populated with every
-        implemented feature in this package (the 32 source-backed
+        implemented feature in this package (the 46 source-backed
         entries).  Spec-only features are deliberately excluded to
         avoid :class:`ImportError` at resolution time.
     """
