@@ -83,12 +83,19 @@ class RedHatVPNClientManagerConfig(VPNClientManagerConfig):
         :param package_manager: ``"dnf"`` or ``"yum"``. Auto-detected
                                 lazily when left at the default of
                                 ``"dnf"``.
+        :param tailscale_distro: Distribution slug used in the Tailscale
+                                 repo URL (defaults to ``"rhel"``).
+        :param tailscale_release: Release version slug used in the
+                                  Tailscale repo URL (defaults to
+                                  ``"9"``).
     """
     tailscale_channel: str = "stable"
     tailscale_repo_path: str = _DEFAULT_TAILSCALE_REPO_PATH
     twingate_repo_path: str = _DEFAULT_TWINGATE_REPO_PATH
     twingate_config_path: str = _DEFAULT_TWINGATE_CONFIG_PATH
     package_manager: str = "dnf"
+    tailscale_distro: str = "rhel"
+    tailscale_release: str = "9"
 
 
 class RedHatVPNClientManager(VPNClientManagementBase):
@@ -292,19 +299,28 @@ class RedHatVPNClientManager(VPNClientManagementBase):
         *,
         channel: str,
         aspects: Aspects,
-        distro: str = "rhel",
-        release: str = "9",
+        distro: Optional[str] = None,
+        release: Optional[str] = None,
     ) -> VPNActionResult:
         """
             Write the Tailscale ``.repo`` file via ``tee``.
 
             :param channel: Tailscale release channel for the repo URL.
             :param aspects: Behaviour controls forwarded to the runner.
-            :param distro: Distribution slug for the repo URL.
+            :param distro: Distribution slug for the repo URL.  When
+                           ``None`` the configured
+                           ``tailscale_distro`` is used.
             :param release: Release version slug for the repo URL.
+                            When ``None`` the configured
+                            ``tailscale_release`` is used.
 
             :returns: A :class:`VPNActionResult` describing the outcome.
         """
+        if distro is None:
+            distro = self._config.tailscale_distro
+        if release is None:
+            release = self._config.tailscale_release
+
         repo_path = self._config.tailscale_repo_path
         baseurl_lines = [
             "[tailscale-stable]",
