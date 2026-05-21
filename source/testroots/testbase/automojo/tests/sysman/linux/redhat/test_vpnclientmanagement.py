@@ -971,6 +971,60 @@ class TestAuditRegressions(unittest.TestCase):
         self.assertNotIn("gpgcheck=0", body)
         return
 
+    def test_tailscale_repo_uses_default_distro_release(self) -> None:
+        """
+            By default the Tailscale repo URL targets ``rhel/9``.
+        """
+        runner = _MockRunner()
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=1, stdout="", stderr="",
+        )))
+        manager = _make_manager(runner=runner)
+
+        manager.install_tailscale(
+            version=None, channel="stable", aspects=_aspects(),
+        )
+
+        tee_calls = [
+            c for c in runner.calls
+            if c["args"][0] == "tee" and c["args"][-1].endswith(".repo")
+        ]
+        self.assertEqual(len(tee_calls), 1)
+        body = tee_calls[0]["stdin"] or ""
+        self.assertIn("pkgs.tailscale.com/stable/rhel/9/", body)
+        return
+
+    def test_tailscale_repo_distro_release_are_overridable(self) -> None:
+        """
+            The Tailscale repo distro / release slugs are config
+            parameters; overriding them must change the repo URL so the
+            manager is not locked to ``rhel/9``.
+        """
+        runner = _MockRunner()
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=1, stdout="", stderr="",
+        )))
+        config = RedHatVPNClientManagerConfig(
+            tailscale_distro="centos",
+            tailscale_release="8",
+        )
+        manager = RedHatVPNClientManager(runner=runner, config=config)
+        manager._detected_pm = "dnf"
+
+        manager.install_tailscale(
+            version=None, channel="stable", aspects=_aspects(),
+        )
+
+        tee_calls = [
+            c for c in runner.calls
+            if c["args"][0] == "tee" and c["args"][-1].endswith(".repo")
+        ]
+        self.assertEqual(len(tee_calls), 1)
+        body = tee_calls[0]["stdin"] or ""
+        self.assertIn("pkgs.tailscale.com/stable/centos/8/", body)
+        self.assertNotIn("/rhel/9/", body)
+        return
+
 
 if __name__ == "__main__":
     unittest.main()
