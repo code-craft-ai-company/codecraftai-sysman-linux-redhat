@@ -30,7 +30,6 @@ from automojo.interfaces.icommandrunner import ICommandRunner
 from automojo.sysman.common.vpnactionresult import VPNActionResult
 from automojo.sysman.common.vpnactionstatus import VPNActionStatus
 from automojo.sysman.common.vpnclientmanagementbase import (
-    VERB_KIND_READ,
     VERB_KIND_WRITE,
     VPNClientManagementBase,
 )
@@ -175,8 +174,8 @@ class RedHatVPNClientManager(VPNClientManagementBase):
         aspects: Aspects,
     ) -> Optional[str]:
         """
-            Return the installed version of an RPM, or ``None`` when
-            the package is not installed.
+            Return the installed ``%{VERSION}`` of an RPM, or ``None``
+            when the package is not installed.
 
             :param package: RPM name.
             :param aspects: Behaviour controls forwarded to the runner.
@@ -204,9 +203,94 @@ class RedHatVPNClientManager(VPNClientManagementBase):
         rtnval = version_text
         return rtnval
 
+    def _rpm_installed_version_release(
+        self,
+        *,
+        package: str,
+        aspects: Aspects,
+    ) -> Optional[str]:
+        """
+            Return the installed ``%{VERSION}-%{RELEASE}`` of an RPM, or
+            ``None`` when the package is not installed.
+
+            ``%{VERSION}`` alone cannot satisfy a fully-qualified pin
+            such as ``1.62.1-1``; the version-release form is required
+            so the idempotency guard can match a qualified request.
+
+            :param package: RPM name.
+            :param aspects: Behaviour controls forwarded to the runner.
+
+            :returns: ``version-release`` string or ``None``.
+        """
+        command = [
+            "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", package,
+        ]
+        run_result = self._runner.run(command, elevated=False)
+        if run_result.exit_code != 0:
+            rtnval: Optional[str] = None
+            return rtnval
+
+        text = (run_result.stdout or "").strip()
+        if len(text) == 0:
+            rtnval = None
+            return rtnval
+
+        lowered = text.lower()
+        if "not installed" in lowered:
+            rtnval = None
+            return rtnval
+
+        rtnval = text
+        return rtnval
+
+    def _version_pin_satisfied(
+        self,
+        *,
+        package: str,
+        requested_version: Optional[str],
+        installed_version: str,
+        aspects: Aspects,
+    ) -> bool:
+        """
+            Decide whether an installed RPM satisfies a requested
+            version pin.
+
+            ``requested_version`` may be a bare ``%{VERSION}`` or a
+            fully-qualified ``%{VERSION}-%{RELEASE}``; both forms are
+            checked so a qualified pin no longer triggers a reinstall
+            loop.
+
+            :param package: RPM name.
+            :param requested_version: The version requested by the
+                                      caller, or ``None`` for "any".
+            :param installed_version: The installed ``%{VERSION}``.
+            :param aspects: Behaviour controls forwarded to the runner.
+
+            :returns: True when the installation satisfies the request.
+        """
+        if requested_version is None:
+            rtnval = True
+            return rtnval
+
+        if installed_version == requested_version:
+            rtnval = True
+            return rtnval
+
+        version_release = self._rpm_installed_version_release(
+            package=package,
+            aspects=aspects,
+        )
+        if version_release is not None and version_release == requested_version:
+            rtnval = True
+            return rtnval
+
+        rtnval = False
+        return rtnval
+
     def _ensure_tailscale_repo(
         self,
         *,
+        channel: str,
         aspects: Aspects,
         distro: str = "rhel",
         release: str = "9",
@@ -214,13 +298,13 @@ class RedHatVPNClientManager(VPNClientManagementBase):
         """
             Write the Tailscale ``.repo`` file via ``tee``.
 
+            :param channel: Tailscale release channel for the repo URL.
             :param aspects: Behaviour controls forwarded to the runner.
             :param distro: Distribution slug for the repo URL.
             :param release: Release version slug for the repo URL.
 
             :returns: A :class:`VPNActionResult` describing the outcome.
         """
-        channel = self._config.tailscale_channel
         repo_path = self._config.tailscale_repo_path
         baseurl_lines = [
             "[tailscale-stable]",
@@ -231,7 +315,7 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             "enabled=1",
             "type=rpm",
             "repo_gpgcheck=1",
-            "gpgcheck=0",
+            "gpgcheck=1",
             "gpgkey=https://pkgs.tailscale.com/{}/{}/{}/repo.gpg".format(
                 channel, distro, release,
             ),
@@ -282,7 +366,7 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             "enabled=1",
             "type=rpm",
             "repo_gpgcheck=1",
-            "gpgcheck=0",
+            "gpgcheck=1",
             "gpgkey=https://packages.twingate.com/rpm/gpg.key",
         ]
         body = os.linesep.join(lines) + os.linesep
@@ -353,9 +437,14 @@ class RedHatVPNClientManager(VPNClientManagementBase):
 
             :returns: A :class:`VPNActionResult` describing the outcome.
         """
-        # Honour the per-call channel override.
+        # Honour the per-call channel override without mutating shared
+        # instance config (concurrent installs must not corrupt each
+        # other).  The effective channel is threaded through as a
+        # local and passed explicitly to the repo writer.
         if channel is not None and len(channel) > 0:
-            self._config.tailscale_channel = channel
+            effective_channel = channel
+        else:
+            effective_channel = self._config.tailscale_channel
 
         if version is not None:
             target_pkg = "{}-{}".format(_TAILSCALE_PACKAGE, version)
@@ -381,11 +470,12 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             aspects=aspects,
         )
         if installed_version is not None:
-            already_satisfied = False
-            if version is None:
-                already_satisfied = True
-            elif installed_version == version:
-                already_satisfied = True
+            already_satisfied = self._version_pin_satisfied(
+                package=_TAILSCALE_PACKAGE,
+                requested_version=version,
+                installed_version=installed_version,
+                aspects=aspects,
+            )
 
             if already_satisfied is True:
                 rtnval = VPNActionResult(
@@ -400,7 +490,10 @@ class RedHatVPNClientManager(VPNClientManagementBase):
                 return rtnval
 
         # Write repo first.
-        repo_result = self._ensure_tailscale_repo(aspects=aspects)
+        repo_result = self._ensure_tailscale_repo(
+            channel=effective_channel,
+            aspects=aspects,
+        )
         if repo_result.status == VPNActionStatus.FAILED:
             rtnval = repo_result
             return rtnval
@@ -456,11 +549,12 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             aspects=aspects,
         )
         if installed_version is not None:
-            already_satisfied = False
-            if version is None:
-                already_satisfied = True
-            elif installed_version == version:
-                already_satisfied = True
+            already_satisfied = self._version_pin_satisfied(
+                package=_TWINGATE_PACKAGE,
+                requested_version=version,
+                installed_version=installed_version,
+                aspects=aspects,
+            )
 
             if already_satisfied is True:
                 rtnval = VPNActionResult(
@@ -586,6 +680,37 @@ class RedHatVPNClientManager(VPNClientManagementBase):
         )
         return rtnval
 
+    def _status_quiet(
+        self,
+        *,
+        provider: VPNProvider,
+        aspects: Aspects,
+    ) -> Optional[VPNClientStatus]:
+        """
+            Best-effort status probe for the idempotency guards in
+            ``bring_up`` / ``bring_down``.
+
+            A transient :class:`VPNClientQueryError` from the probe
+            must not crash the mutating verb; on any query error this
+            returns ``None`` so the caller falls through to dispatching
+            the command.
+
+            :param provider: Target provider.
+            :param aspects: Behaviour controls forwarded to the runner.
+
+            :returns: The status snapshot, or ``None`` when the probe
+                      could not produce one.
+        """
+        try:
+            rtnval: Optional[VPNClientStatus] = self.status(
+                provider=provider,
+                aspects=aspects,
+            )
+            return rtnval
+        except VPNClientQueryError:
+            rtnval = None
+            return rtnval
+
     # ------------------------------------------------------------------
     # Verb: bring_up
     # ------------------------------------------------------------------
@@ -673,12 +798,12 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             rtnval = dry_result
             return rtnval
 
-        # Idempotency guard via status.
-        current_status = self.status(
+        # Idempotency guard via a best-effort status probe.
+        current_status = self._status_quiet(
             provider=VPNProvider.TAILSCALE,
             aspects=aspects,
         )
-        if current_status.running is True:
+        if current_status is not None and current_status.running is True:
             host_match = True
             if hostname is not None and len(hostname) > 0:
                 host_match = (current_status.hostname == hostname)
@@ -737,11 +862,11 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             rtnval = dry_result
             return rtnval
 
-        current_status = self.status(
+        current_status = self._status_quiet(
             provider=VPNProvider.TWINGATE,
             aspects=aspects,
         )
-        if current_status.running is True:
+        if current_status is not None and current_status.running is True:
             rtnval = VPNActionResult(
                 status=VPNActionStatus.SKIPPED,
                 provider=VPNProvider.TWINGATE,
@@ -801,8 +926,8 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             rtnval = dry_result
             return rtnval
 
-        current_status = self.status(provider=provider, aspects=aspects)
-        if current_status.running is False:
+        current_status = self._status_quiet(provider=provider, aspects=aspects)
+        if current_status is not None and current_status.running is False:
             rtnval = VPNActionResult(
                 status=VPNActionStatus.SKIPPED,
                 provider=provider,
@@ -1132,8 +1257,16 @@ def _parse_tailscale_status_json(
 
     hostname = self_block.get("HostName") or None
 
-    magic_dns = document.get("MagicDNSSuffix") or document.get("CurrentTailnet", {}).get("Name") or None
-    tailnet = magic_dns
+    magic_dns_suffix = document.get("MagicDNSSuffix")
+    if magic_dns_suffix is not None and len(str(magic_dns_suffix)) > 0:
+        tailnet: Optional[str] = str(magic_dns_suffix)
+    else:
+        current_tailnet = document.get("CurrentTailnet") or {}
+        tailnet_name = current_tailnet.get("Name")
+        if tailnet_name is not None and len(str(tailnet_name)) > 0:
+            tailnet = str(tailnet_name)
+        else:
+            tailnet = None
 
     version_field = document.get("Version") or installed_version
 

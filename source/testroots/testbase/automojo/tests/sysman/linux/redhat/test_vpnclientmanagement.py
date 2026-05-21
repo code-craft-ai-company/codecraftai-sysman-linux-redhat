@@ -807,5 +807,170 @@ class TestPropertyIdempotency(unittest.TestCase):
         return
 
 
+class TestAuditRegressions(unittest.TestCase):
+    """
+        Regression coverage for the Sysman VPN audit findings:
+        C2 (status probe crash), C3 (authkey redaction), S-H4
+        (config mutation), S-H5 (version-pin idempotency), S-H6
+        (gpgcheck).
+    """
+
+    def test_bring_up_survives_transient_status_query_error(self) -> None:
+        """
+            C2: a transient ``VPNClientQueryError`` from the idempotency
+            probe must not crash ``bring_up`` — the probe is best-effort.
+        """
+        runner = _MockRunner()
+        # rpm -q reports tailscale installed.
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=0, stdout="1.62.1", stderr="",
+        )))
+        # tailscale status --json fails with an unrecognised error so
+        # the status() verb raises VPNClientQueryError.
+        runner.exact[("tailscale", "status", "--json")] = _RunResult(
+            exit_code=1, stdout="", stderr="transient daemon socket error",
+        )
+        manager = _make_manager(runner=runner)
+
+        result = manager.bring_up(
+            provider=VPNProvider.TAILSCALE,
+            authkey="tskey-auth-ABC",
+            hostname=None,
+            advertise_tags=None,
+            advertise_routes=None,
+            exit_node=False,
+            aspects=_aspects(),
+        )
+
+        # No crash: the verb fell through to dispatching the command.
+        self.assertIn(
+            result.status,
+            (VPNActionStatus.SUCCESS, VPNActionStatus.FAILED),
+        )
+        return
+
+    def test_bring_up_redacts_authkey_in_command(self) -> None:
+        """
+            C3: the Tailscale auth key must be redacted in the returned
+            ``VPNActionResult.command``.
+        """
+        runner = _MockRunner()
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=0, stdout="1.62.1", stderr="",
+        )))
+        runner.exact[("tailscale", "status", "--json")] = _RunResult(
+            exit_code=0, stdout=json.dumps({"BackendState": "Stopped"}),
+        )
+        manager = _make_manager(runner=runner)
+
+        secret = "tskey-auth-SUPERSECRET"
+        result = manager.bring_up(
+            provider=VPNProvider.TAILSCALE,
+            authkey=secret,
+            hostname=None,
+            advertise_tags=None,
+            advertise_routes=None,
+            exit_node=False,
+            aspects=_aspects(),
+        )
+
+        self.assertIsNotNone(result.command)
+        joined = " ".join(result.command)
+        self.assertNotIn(secret, joined)
+        self.assertIn("--authkey=***", joined)
+        return
+
+    def test_install_does_not_mutate_shared_config_channel(self) -> None:
+        """
+            S-H4: ``install_tailscale`` must not mutate the shared
+            instance config's ``tailscale_channel``.
+        """
+        runner = _MockRunner()
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=1, stdout="", stderr="",
+        )))
+        config = RedHatVPNClientManagerConfig(tailscale_channel="stable")
+        manager = RedHatVPNClientManager(runner=runner, config=config)
+        manager._detected_pm = "dnf"
+
+        manager.install_tailscale(
+            version=None, channel="unstable", aspects=_aspects(),
+        )
+
+        self.assertEqual(config.tailscale_channel, "stable")
+        return
+
+    def test_qualified_version_pin_matches_via_version_release(self) -> None:
+        """
+            S-H5: a fully-qualified ``version-release`` pin must be
+            satisfied by the installed RPM (no reinstall loop).
+        """
+        runner = _MockRunner()
+        runner.exact[(
+            "rpm", "-q", "--queryformat", "%{VERSION}", "tailscale",
+        )] = _RunResult(exit_code=0, stdout="1.62.1")
+        runner.exact[(
+            "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}",
+            "tailscale",
+        )] = _RunResult(exit_code=0, stdout="1.62.1-1")
+        manager = _make_manager(runner=runner)
+
+        result = manager.install_tailscale(
+            version="1.62.1-1", channel="stable", aspects=_aspects(),
+        )
+
+        self.assertEqual(result.status, VPNActionStatus.SKIPPED)
+        return
+
+    def test_tailscale_repo_enables_gpgcheck(self) -> None:
+        """
+            S-H6 sibling: the Tailscale ``.repo`` body must enable
+            ``gpgcheck``.
+        """
+        runner = _MockRunner()
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=1, stdout="", stderr="",
+        )))
+        manager = _make_manager(runner=runner)
+
+        manager.install_tailscale(
+            version=None, channel="stable", aspects=_aspects(),
+        )
+
+        tee_calls = [
+            c for c in runner.calls
+            if c["args"][0] == "tee" and c["args"][-1].endswith(".repo")
+        ]
+        self.assertEqual(len(tee_calls), 1)
+        body = tee_calls[0]["stdin"] or ""
+        self.assertIn("gpgcheck=1", body)
+        self.assertNotIn("gpgcheck=0", body)
+        return
+
+    def test_twingate_repo_enables_gpgcheck(self) -> None:
+        """
+            S-H6: the Twingate ``.repo`` body must set ``gpgcheck=1``.
+        """
+        runner = _MockRunner()
+        runner.prefix.append((("rpm", "-q"), _RunResult(
+            exit_code=1, stdout="", stderr="",
+        )))
+        manager = _make_manager(runner=runner)
+
+        manager.install_twingate_connector(
+            version=None, aspects=_aspects(),
+        )
+
+        tee_calls = [
+            c for c in runner.calls
+            if c["args"][0] == "tee" and c["args"][-1].endswith(".repo")
+        ]
+        self.assertEqual(len(tee_calls), 1)
+        body = tee_calls[0]["stdin"] or ""
+        self.assertIn("gpgcheck=1", body)
+        self.assertNotIn("gpgcheck=0", body)
+        return
+
+
 if __name__ == "__main__":
     unittest.main()
