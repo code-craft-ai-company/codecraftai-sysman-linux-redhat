@@ -135,3 +135,6 @@ dmypy.json
 
 # Test runner output
 .output/
+
+# macOS Finder metadata
+.DS_Store
