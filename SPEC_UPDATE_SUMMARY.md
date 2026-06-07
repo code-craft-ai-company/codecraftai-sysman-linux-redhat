@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the comprehensive update of all feature specifications for the `automojo-sysman-linux-redhat` package to include formal correctness properties and property-based testing strategies.
+This document summarizes the comprehensive update of all feature specifications for the `codecraftai-sysman-linux-redhat` package to include formal correctness properties and property-based testing strategies.
 
 ## Update Scope
 

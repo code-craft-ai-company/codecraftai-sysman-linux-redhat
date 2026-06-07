@@ -3,7 +3,7 @@
 ## Introduction
 
 The identity management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to integrate
+`codecraftai-sysman-linux-redhat` package with the ability to integrate
 Red Hat Linux systems with enterprise identity services: Active
 Directory, FreeIPA / Red Hat Identity Management, generic LDAP, and
 Kerberos.  It covers domain discovery and join, SSSD configuration,
@@ -12,7 +12,7 @@ the Kerberos client stack, and ticket lifecycle.
 A maintenance coordinator uses this feature to bring a system into a
 declared directory-membership state.  All commands (`realm`,
 `adcli`, `sssctl`, `kinit`, `klist`, `kdestroy`, `sss_cache`) are
-executed through the `automojo-interfaces` command-runner abstraction.
+executed through the `codecraftai-interfaces` command-runner abstraction.
 All reads and writes against `/etc/sssd/sssd.conf`,
 `/etc/sssd/conf.d/*.conf`, `/etc/krb5.conf`, `/etc/krb5.conf.d/*`,
 and `/etc/nsswitch.conf` route through the runner (`cat`/`tee`).
@@ -22,7 +22,7 @@ This feature complements — and does not duplicate — the local PAM
 and NSS surfaces owned by `3-authentication-management`, the
 local-account surface owned by `3-user-group-management`, and the
 CA-trust surface owned by `3-certificate-trust-management`.
-Credentials SHALL route through `automojo-credentials` rather than
+Credentials SHALL route through `codecraftai-credentials` rather than
 being accepted as plain-text function arguments wherever practical.
 
 ---
@@ -67,7 +67,7 @@ declared directory.
 1. WHEN the coordinator requests a join THE SYSTEM SHALL invoke
    `realm join <domain>` with the supplied credential.  Credentials
    SHALL be passed via an `SshCredential`-style abstraction from
-   `automojo-credentials` (or an equivalent credential object) and
+   `codecraftai-credentials` (or an equivalent credential object) and
    forwarded to `realm join` through `stdin` (`--one-time-password`
    or `-U <user>` + `stdin` password) — never on argv.
 2. WHEN the system is already joined to the requested realm THE

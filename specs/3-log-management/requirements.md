@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The log management feature provides the `automojo-sysman-linux-redhat` package with the
+The log management feature provides the `codecraftai-sysman-linux-redhat` package with the
 ability to inspect and manage logs on a Red Hat Linux system.  This covers querying the
 `systemd` journal via `journalctl`, reading and rotating traditional log files, managing
 `logrotate` configuration drop-ins, and vacuuming old journal data to reclaim disk space.
@@ -10,7 +10,7 @@ ability to inspect and manage logs on a Red Hat Linux system.  This covers query
 A maintenance coordinator drives all operations by calling into this feature's public
 interfaces.  The feature does not decide *which* logs to inspect or rotate — it provides
 the primitives to do so reliably and with full auditability.  All commands are executed
-through the `automojo-interfaces` command-runner abstraction and all file operations go
+through the `codecraftai-interfaces` command-runner abstraction and all file operations go
 through the file-operator abstraction, enabling dry-run simulation, auditing, and test
 mocking without requiring a live system.
 

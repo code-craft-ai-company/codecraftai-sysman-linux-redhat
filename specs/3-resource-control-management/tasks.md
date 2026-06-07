@@ -5,7 +5,7 @@ implementation.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/resourcecontrolmanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/resourcecontrolmanagement.py`
   - _Requirements: All_
 
 - [ ] 2. Define `ResourceActionStatus` enum
@@ -130,7 +130,7 @@ implementation.
 
 ## Follow-ups
 
-- [ ] 33. **automojo-* reuse check**: `3-service-management` is the
+- [ ] 33. **codecraftai-* reuse check**: `3-service-management` is the
   canonical systemd surface; confirm this feature delegates
   daemon-reload, enable/disable, and any lifecycle ops rather than
   re-spelling `systemctl`.

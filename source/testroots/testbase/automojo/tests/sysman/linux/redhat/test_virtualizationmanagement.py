@@ -5,10 +5,10 @@ import os
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.runners.models import RunResult
-from automojo.sysman.linux.redhat.virtualizationmanagement import (
+from ccai.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.virtualizationmanagement import (
     DomainInfo,
     NetworkInfo,
     SnapshotInfo,

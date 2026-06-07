@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/precisiontimemanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/precisiontimemanagement.py`
 - [ ] 2. Define `PtpActionStatus`, `PrecisionTimeManagerConfig`,
   `PtpActionResult`, `PtpCurrentDataSet`, `PtpParentDataSet`,
   `PtpPortDataSet` dataclasses
@@ -105,5 +105,5 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 31. **automojo-* reuse check**: no obvious sibling helpers
+- [ ] 31. **codecraftai-* reuse check**: no obvious sibling helpers
   for PTP plumbing; verify before extending.

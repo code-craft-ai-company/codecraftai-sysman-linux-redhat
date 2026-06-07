@@ -3,14 +3,14 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.insightsmanagement import (
+from ccai.sysman.linux.redhat.insightsmanagement import (
     InsightsActionStatus,
     InsightsManager,
     InsightsManagerConfig,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass

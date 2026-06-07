@@ -3,7 +3,7 @@
 ## Introduction
 
 The DNS server management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 a local DNS server on Red Hat Linux systems.  It supports three
 backends — BIND (`named`), Unbound, and dnsmasq — and exposes a
 common surface for config validation, zone CRUD (BIND), forwarder
@@ -11,7 +11,7 @@ configuration (Unbound / dnsmasq), and runtime control.
 
 All system commands (`named-checkconf`, `named-checkzone`, `rndc`,
 `unbound-checkconf`, `unbound-control`, `dnsmasq --test`) are
-executed through the `automojo-interfaces` command-runner
+executed through the `codecraftai-interfaces` command-runner
 abstraction.  Config reads and writes route through the runner
 (`cat`/`tee`).  All mutating operations respect dry-run mode.
 

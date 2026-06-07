@@ -3,7 +3,7 @@
 ## Introduction
 
 The certificate issuance feature provides the
-`automojo-sysman-linux-redhat` package with the ability to *issue*
+`codecraftai-sysman-linux-redhat` package with the ability to *issue*
 X.509 certificates — as opposed to the *trust* of externally-issued
 certificates covered by `3-certificate-trust-management`.  It
 covers OpenSSL-based CSR generation and self-signing, certmonger
@@ -11,14 +11,14 @@ enrolment and renewal tracking, and ACME-based issuance via
 `certbot` or `acme.sh`.
 
 All system commands (`openssl`, `getcert`, `certmonger`, `certbot`,
-`acme.sh`) are executed through the `automojo-interfaces`
+`acme.sh`) are executed through the `codecraftai-interfaces`
 command-runner abstraction.  Private-key and certificate files are
 created at declared paths; reads and writes route through the
 runner (`cat`/`tee`).  All mutating operations respect dry-run
 mode.
 
 Private-key passphrases and ACME account credentials SHALL flow
-through `automojo-credentials` (or an equivalent credential
+through `codecraftai-credentials` (or an equivalent credential
 object) and be delivered via runner `stdin`, never argv.
 
 This feature complements — and does not duplicate — the trust-store

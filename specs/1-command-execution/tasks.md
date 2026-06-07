@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `commandexecution` module
-  - `source/packages/automojo/sysman/linux/redhat/commandexecution.py` exists
+  - `source/packages/ccai/sysman/linux/redhat/commandexecution.py` exists
   - Module-level comment describes purpose
   - _Requirements: 1, 2, 3_
 
@@ -59,7 +59,7 @@ items (`[ ]`) identify remaining work.
 - [x] 9. Implement `run_script()` method
   - Returns dry-run result immediately when `config.dry_run=True`; no file
     created
-  - Writes script to `tempfile.NamedTemporaryFile(prefix="automojo_script_",
+  - Writes script to `tempfile.NamedTemporaryFile(prefix="ccai_script_",
     suffix=".sh", delete=False)`
   - `chmod` temp file to `0o755`
   - Invokes `run(["bash", tmpfile_path], ...)` forwarding all kwargs

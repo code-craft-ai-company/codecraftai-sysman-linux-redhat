@@ -3,12 +3,12 @@
 ## Introduction
 
 The virtualization management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 KVM virtual machines on Red Hat Linux systems through libvirt.  It
 covers domain (VM), network, and storage-pool/volume lifecycle via
 `virsh`, `virt-install`, and `virt-clone`.
 
-All system commands are executed through the `automojo-interfaces`
+All system commands are executed through the `codecraftai-interfaces`
 command-runner abstraction.  Reads and writes of XML definitions
 and `/etc/libvirt/*` files route through the runner (`cat`/`tee`).
 All mutating operations respect dry-run mode.

@@ -3,13 +3,13 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.featurebase import (
+from ccai.sysman.linux.redhat.featurebase import (
     ActionStatus,
     FeatureActionResult,
 )
-from automojo.sysman.linux.redhat.mailtransportmanagement import (
+from ccai.sysman.linux.redhat.mailtransportmanagement import (
     MailActionResult,
     MailActionStatus,
     MailTransportManager,
@@ -19,7 +19,7 @@ from automojo.sysman.linux.redhat.mailtransportmanagement import (
     _parse_postconf_output,
     _parse_postqueue_output,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

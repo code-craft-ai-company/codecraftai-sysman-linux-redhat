@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The maintenance reporting feature provides the `automojo-sysman-linux-redhat` package
+The maintenance reporting feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to produce structured, human-readable reports summarising the outcomes
 of a maintenance run.  Reports capture the actions taken, their statuses, any errors
 encountered, timing information, and system context gathered at the start of the run.

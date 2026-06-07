@@ -3,7 +3,7 @@
 ## Overview
 
 The hardware inventory feature is implemented as a single module,
-`automojo.sysman.linux.redhat.hardwareinventory`, that exposes a
+`ccai.sysman.linux.redhat.hardwareinventory`, that exposes a
 `HardwareInventoryManager` class. The coordinator instantiates
 `HardwareInventoryManager` and calls its methods to query discrete hardware and
 platform identity capabilities, or to produce a combined hardware snapshot.
@@ -47,7 +47,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            HardwareInventoryManager                         │
-│  automojo.sysman.linux.redhat.hardwareinventory             │
+│  ccai.sysman.linux.redhat.hardwareinventory             │
 │                                                             │
 │  get_dmi_identity()       get_cpu_info()                    │
 │  get_memory_info()        list_block_devices()              │
@@ -89,7 +89,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `HardwareInventoryManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/hardwareinventory.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/hardwareinventory.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an
 `IFileOperator`, and a `HardwareInventoryConfig`.
@@ -109,7 +109,7 @@ The primary public class. Constructed with an `ICommandRunner`, an
 
 ### `HardwareInventoryConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/hardwareinventory.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/hardwareinventory.py`
 
 A dataclass holding runtime configuration for `HardwareInventoryManager`.
 
@@ -456,7 +456,7 @@ no firmware data is readable, `available` is `False`.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `HardwareInventoryManager` depends on this interface, injected at construction
 time.
@@ -471,7 +471,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `HardwareInventoryManager` depends on this interface for reading `/proc`, `/sys`,
 and `/etc` content without bypassing the transport boundary.
@@ -483,7 +483,7 @@ class IFileOperator(Protocol):
     def list_dir(self, path: str) -> list[str]: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -579,12 +579,12 @@ Command absence is detected by the runner (non-zero exit with
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── hardwareinventory.py             ← HardwareInventoryManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_hardwareinventory.py    ← unit + property-based tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -656,9 +656,9 @@ correctness across many inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.hardwareinventory import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.hardwareinventory import (
     HardwareInventoryManager,
     HardwareInventoryConfig,
 )
@@ -684,9 +684,9 @@ if len(snapshot.warnings) > 0:
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.hardwareinventory import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.hardwareinventory import (
     HardwareInventoryManager,
     HardwareInventoryConfig,
 )
@@ -722,14 +722,14 @@ if metrics.last_error is not None:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, RetryAspect, TimeoutAspect,
     PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.hardwareinventory import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.hardwareinventory import (
     HardwareInventoryManager,
     HardwareInventoryConfig,
 )

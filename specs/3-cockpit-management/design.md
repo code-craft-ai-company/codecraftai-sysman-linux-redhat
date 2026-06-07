@@ -3,7 +3,7 @@
 ## Overview
 
 The cockpit management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.cockpitmanagement`, that exposes a `CockpitManager` class.
+`ccai.sysman.linux.redhat.cockpitmanagement`, that exposes a `CockpitManager` class.
 The coordinator instantiates `CockpitManager` and calls its methods to query Cockpit
 state, manage the `cockpit.socket` lifecycle, enumerate installed Cockpit modules under
 `/usr/share/cockpit/`, configure the listen port through a systemd socket drop-in, edit
@@ -62,7 +62,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            CockpitManager                                   │
-│  automojo.sysman.linux.redhat.cockpitmanagement             │
+│  ccai.sysman.linux.redhat.cockpitmanagement             │
 │                                                             │
 │  get_socket_state()    lifecycle_action()                   │
 │  list_modules()        get_listen_port()                    │
@@ -105,7 +105,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
 
 ### `CockpitManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/cockpitmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/cockpitmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`,
 and a `CockpitManagerConfig`.
@@ -126,7 +126,7 @@ and a `CockpitManagerConfig`.
 
 ### `CockpitManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/cockpitmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/cockpitmanagement.py`
 
 A dataclass holding runtime configuration for `CockpitManager`.
 
@@ -311,7 +311,7 @@ non-zero exit code shall raise `CockpitQueryError`.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `CockpitManager` depends on this interface, injected at construction time.
 
@@ -325,7 +325,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `CockpitManager` depends on this interface for all filesystem interaction under
 `/etc/cockpit/`, `/etc/systemd/system/cockpit.socket.d/`,
@@ -354,7 +354,7 @@ class IFileOperator(Protocol):
     ) -> None: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -454,12 +454,12 @@ manifests.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── cockpitmanagement.py          ← CockpitManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_cockpitmanagement.py ← unit tests using MockCommandRunner +
                                     MockFileOperator
 ```
@@ -527,9 +527,9 @@ across many inputs.
 ### Local Execution (Enable Socket, Set Banner, Change Port)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.cockpitmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.cockpitmanagement import (
     CockpitManager,
     CockpitManagerConfig,
 )
@@ -569,9 +569,9 @@ print(f"Set listen port: {port_result.status} (note: {port_result.note})")
 ### SSH Execution with Reliability Tracking (Enable Cockpit Across Fleet)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.cockpitmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.cockpitmanagement import (
     CockpitManager,
     CockpitManagerConfig,
 )
@@ -619,24 +619,24 @@ RPMs, `firewall-management` opens the port, and `service-management` performs th
 `daemon-reload` and socket restart after `CockpitManager` writes the listen drop-in.
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, PersistenceAspectConfig,
     RetryAspect, RetryAspectConfig,
     TimeoutAspect, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.packagemanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.packagemanagement import (
     PackageManager, PackageManagerConfig,
 )
-from automojo.sysman.linux.redhat.firewallmanagement import (
+from ccai.sysman.linux.redhat.firewallmanagement import (
     FirewallManager, FirewallManagerConfig,
 )
-from automojo.sysman.linux.redhat.servicemanagement import (
+from ccai.sysman.linux.redhat.servicemanagement import (
     ServiceManager, ServiceManagerConfig,
 )
-from automojo.sysman.linux.redhat.cockpitmanagement import (
+from ccai.sysman.linux.redhat.cockpitmanagement import (
     CockpitManager, CockpitManagerConfig,
 )
 

@@ -3,7 +3,7 @@
 ## Introduction
 
 The remote log forwarding feature provides the
-`automojo-sysman-linux-redhat` package with the ability to ship
+`codecraftai-sysman-linux-redhat` package with the ability to ship
 logs off-host, as the counterpart to the existing local-journal +
 logrotate surface in `3-log-management`.  It covers rsyslog
 forward rules (TCP + TLS), `systemd-journal-upload`, and the
@@ -11,7 +11,7 @@ forward rules (TCP + TLS), `systemd-journal-upload`, and the
 
 All system commands (`rsyslogd -N1`, `systemctl` via the injected
 `ServiceManager`, `journalctl --verify-key`) are executed through
-the `automojo-interfaces` command-runner abstraction.  Config
+the `codecraftai-interfaces` command-runner abstraction.  Config
 reads and writes (`/etc/rsyslog.conf`, `/etc/rsyslog.d/*`,
 `/etc/systemd/journal-upload.conf`, `/etc/systemd/journald.conf`)
 route through the runner (`cat`/`tee`).  All mutating operations

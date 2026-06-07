@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.featurebase import ActionStatus
-from automojo.sysman.linux.redhat.precisiontimemanagement import (
+from ccai.sysman.linux.redhat.featurebase import ActionStatus
+from ccai.sysman.linux.redhat.precisiontimemanagement import (
     PrecisionTimeManager,
     PrecisionTimeManagerConfig,
     PtpActionResult,
@@ -19,7 +19,7 @@ from automojo.sysman.linux.redhat.precisiontimemanagement import (
     _parse_sysconfig_options,
     _render_sysconfig_options,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

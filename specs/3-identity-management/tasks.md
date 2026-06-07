@@ -5,7 +5,7 @@ implementation.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/identitymanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/identitymanagement.py`
   - _Requirements: All_
 
 - [ ] 2. Define `IdentityActionStatus` enum (SUCCESS / FAILED /
@@ -192,8 +192,8 @@ implementation.
 
 ## Follow-ups
 
-- [ ] 46. **automojo-* reuse check**: route the credential
+- [ ] 46. **codecraftai-* reuse check**: route the credential
   parameter of `join` / `kinit` through
-  `automojo.credentials.sshcredential.SshCredential` (or a similar
+  `ccai.credentials.sshcredential.SshCredential` (or a similar
   credential abstraction) rather than accepting a plain password
   string.

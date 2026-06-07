@@ -3,7 +3,7 @@
 ## Introduction
 
 The filesystem-quotas feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 disk quotas on Red Hat Linux systems for ext* and XFS filesystems.
 It covers user and group block/inode quotas via the traditional
 `quota` tooling, project quotas on XFS via `xfs_quota`, and the
@@ -11,7 +11,7 @@ It covers user and group block/inode quotas via the traditional
 
 All system commands (`quota`, `repquota`, `edquota`, `setquota`,
 `quotaon`, `quotaoff`, `quotacheck`, `xfs_quota`) are executed
-through the `automojo-interfaces` command-runner abstraction.  All
+through the `codecraftai-interfaces` command-runner abstraction.  All
 mutating operations respect dry-run mode.
 
 This feature complements — and does not duplicate — the mount-side

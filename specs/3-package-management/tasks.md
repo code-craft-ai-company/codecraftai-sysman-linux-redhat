@@ -109,6 +109,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 45. **automojo-* reuse check**: `3-repository-management` manages
+- [ ] 45. **codecraftai-* reuse check**: `3-repository-management` manages
   the repo definitions; ensure this feature's `install_local` and
   group ops do not accidentally duplicate that surface.

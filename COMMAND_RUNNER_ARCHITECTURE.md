@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive architectural design for the command execution layer of the `automojo-sysman-linux-redhat` package. The architecture introduces support for **SSH-based remote execution**, **measured reliability tracking**, and **aspect-oriented execution control** while maintaining backward compatibility with existing features.
+This document provides a comprehensive architectural design for the command execution layer of the `codecraftai-sysman-linux-redhat` package. The architecture introduces support for **SSH-based remote execution**, **measured reliability tracking**, and **aspect-oriented execution control** while maintaining backward compatibility with existing features.
 
 ## Key Concepts
 
@@ -111,8 +111,8 @@ PersistenceAspect → RetryAspect → TimeoutAspect → [COMMAND] → TimeoutAsp
 ### Local Execution (Current Behavior)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -127,8 +127,8 @@ result = pkg_manager.install("nginx")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -156,10 +156,10 @@ print(f"Connection retries: {metrics.retry_count}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

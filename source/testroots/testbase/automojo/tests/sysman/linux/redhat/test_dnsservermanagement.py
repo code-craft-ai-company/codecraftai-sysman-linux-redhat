@@ -7,11 +7,11 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.errors.exceptions import SemanticError
+from ccai.errors.exceptions import SemanticError
 
-from automojo.sysman.linux.redhat.dnsservermanagement import (
+from ccai.sysman.linux.redhat.dnsservermanagement import (
     DnsActionStatus,
     DnsBackendMismatchError,
     DnsBackendNotAvailableError,
@@ -30,7 +30,7 @@ from automojo.sysman.linux.redhat.dnsservermanagement import (
     _upsert_dnsmasq_lines,
     _upsert_unbound_block_text,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass
@@ -912,7 +912,7 @@ def test_add_forward_zone_writes_block_and_reloads():
     runner.default_result = RunResult(
         exit_code=0, stdout="", stderr="", command=[],
     )
-    _seed_cat(runner, path="/etc/unbound/conf.d/automojo.conf", body=None)
+    _seed_cat(runner, path="/etc/unbound/conf.d/ccai.conf", body=None)
     config = DnsServerManagerConfig(
         backend=DnsServerBackend.UNBOUND, elevated=True,
     )
@@ -956,7 +956,7 @@ def test_add_forward_zone_skipped_when_unchanged():
     )
     _seed_cat(
         runner,
-        path="/etc/unbound/conf.d/automojo.conf",
+        path="/etc/unbound/conf.d/ccai.conf",
         body=rendered + "\n",
     )
     config = DnsServerManagerConfig(backend=DnsServerBackend.UNBOUND)
@@ -990,7 +990,7 @@ def test_remove_forward_zone_strips_block():
     )
     _seed_cat(
         runner,
-        path="/etc/unbound/conf.d/automojo.conf",
+        path="/etc/unbound/conf.d/ccai.conf",
         body=rendered + "\n",
     )
     config = DnsServerManagerConfig(backend=DnsServerBackend.UNBOUND)
@@ -1015,7 +1015,7 @@ def test_remove_forward_zone_skipped_when_absent():
     runner = _MockRunner()
     _seed_cat(
         runner,
-        path="/etc/unbound/conf.d/automojo.conf",
+        path="/etc/unbound/conf.d/ccai.conf",
         body="# nothing managed here\n",
     )
     config = DnsServerManagerConfig(backend=DnsServerBackend.UNBOUND)
@@ -1034,7 +1034,7 @@ def test_add_stub_zone_writes_stub_addr_lines():
     runner.default_result = RunResult(
         exit_code=0, stdout="", stderr="", command=[],
     )
-    _seed_cat(runner, path="/etc/unbound/conf.d/automojo.conf", body=None)
+    _seed_cat(runner, path="/etc/unbound/conf.d/ccai.conf", body=None)
     config = DnsServerManagerConfig(backend=DnsServerBackend.UNBOUND)
     manager = DnsServerManager(runner=runner, config=config)
     result = manager.add_stub_zone(
@@ -1066,7 +1066,7 @@ def test_set_static_host_writes_host_record_and_restarts():
     runner.default_result = RunResult(
         exit_code=0, stdout="", stderr="", command=[],
     )
-    _seed_cat(runner, path="/etc/dnsmasq.d/automojo.conf", body=None)
+    _seed_cat(runner, path="/etc/dnsmasq.d/ccai.conf", body=None)
     service_mgr = _MockServiceManager()
     config = DnsServerManagerConfig(
         backend=DnsServerBackend.DNSMASQ, elevated=True,
@@ -1102,7 +1102,7 @@ def test_set_static_host_skipped_when_unchanged():
     runner = _MockRunner()
     body = "host-record=printer.lan,192.168.1.10\n"
     _seed_cat(
-        runner, path="/etc/dnsmasq.d/automojo.conf", body=body,
+        runner, path="/etc/dnsmasq.d/ccai.conf", body=body,
     )
     service_mgr = _MockServiceManager()
     config = DnsServerManagerConfig(backend=DnsServerBackend.DNSMASQ)
@@ -1131,7 +1131,7 @@ def test_remove_static_host_strips_directive_and_restarts():
         "host-record=printer.lan,192.168.1.10\n"
     )
     _seed_cat(
-        runner, path="/etc/dnsmasq.d/automojo.conf", body=body,
+        runner, path="/etc/dnsmasq.d/ccai.conf", body=body,
     )
     service_mgr = _MockServiceManager()
     config = DnsServerManagerConfig(backend=DnsServerBackend.DNSMASQ)
@@ -1161,7 +1161,7 @@ def test_set_forwarder_domain_writes_server_lines():
     runner.default_result = RunResult(
         exit_code=0, stdout="", stderr="", command=[],
     )
-    _seed_cat(runner, path="/etc/dnsmasq.d/automojo.conf", body=None)
+    _seed_cat(runner, path="/etc/dnsmasq.d/ccai.conf", body=None)
     service_mgr = _MockServiceManager()
     config = DnsServerManagerConfig(backend=DnsServerBackend.DNSMASQ)
     manager = DnsServerManager(
@@ -1199,7 +1199,7 @@ def test_remove_forwarder_domain_strips_directives():
         "server=/other.example.com/10.9.9.9\n"
     )
     _seed_cat(
-        runner, path="/etc/dnsmasq.d/automojo.conf", body=body,
+        runner, path="/etc/dnsmasq.d/ccai.conf", body=body,
     )
     service_mgr = _MockServiceManager()
     config = DnsServerManagerConfig(backend=DnsServerBackend.DNSMASQ)

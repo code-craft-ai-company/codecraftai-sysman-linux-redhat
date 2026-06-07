@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The SSH server configuration feature provides the `automojo-sysman-linux-redhat`
+The SSH server configuration feature provides the `codecraftai-sysman-linux-redhat`
 package with the ability to manage the OpenSSH server configuration on Red Hat
 Linux systems: the service lifecycle, the main `/etc/ssh/sshd_config`, drop-in files
 under `/etc/ssh/sshd_config.d/`, `Match` blocks, host-key files, and configuration
@@ -15,8 +15,8 @@ does not duplicate — the per-user `authorized_keys` management already provide
 the `user-group-management` feature.
 
 All system commands (`sshd`, `systemctl`, `ssh-keygen`) are executed through the
-`automojo-interfaces` command-runner abstraction. All reads and writes under
-`/etc/ssh/` use the `automojo-interfaces` file-operator abstraction. All mutating
+`codecraftai-interfaces` command-runner abstraction. All reads and writes under
+`/etc/ssh/` use the `codecraftai-interfaces` file-operator abstraction. All mutating
 operations respect dry-run mode.
 
 ---

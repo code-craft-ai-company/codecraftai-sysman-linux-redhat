@@ -1,12 +1,12 @@
 # Tests for the TimeoutAspect.
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.aspects.timeout import (
+from ccai.sysman.linux.redhat.aspects.timeout import (
     TimeoutAspect,
     TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.runners.models import ExecutionContext
+from ccai.sysman.linux.redhat.runners.models import ExecutionContext
 
 
 def _context_without_timeout() -> ExecutionContext:

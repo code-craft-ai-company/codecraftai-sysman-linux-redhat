@@ -3,7 +3,7 @@
 ## Overview
 
 The authentication management feature is implemented as a single
-module, `automojo.sysman.linux.redhat.authenticationmanagement`,
+module, `ccai.sysman.linux.redhat.authenticationmanagement`,
 exposing an `AuthenticationManager` class that wraps `authselect`,
 direct PAM drop-ins, `pam_pwquality.conf`,
 `pam_faillock.conf`/`faillock`, `/etc/security/limits.d/*`, and
@@ -36,7 +36,7 @@ filesystem access occurs inside this module.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            AuthenticationManager                            │
-│  automojo.sysman.linux.redhat.authenticationmanagement     │
+│  ccai.sysman.linux.redhat.authenticationmanagement     │
 │                                                             │
 │  authselect:                                                │
 │    current_profile(), list_profiles(), select_profile()    │
@@ -68,7 +68,7 @@ filesystem access occurs inside this module.
 
 ### `AuthenticationManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/authenticationmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/authenticationmanagement.py`
 
 | Method | Description |
 |---|---|
@@ -248,11 +248,11 @@ Every mutating entry point follows the same pattern:
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── authenticationmanagement.py           ← AuthenticationManager + models
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_authenticationmanagement.py
 ```
 

@@ -3,7 +3,7 @@
 ## Overview
 
 The container management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.containermanagement`, that exposes a `ContainerManager`
+`ccai.sysman.linux.redhat.containermanagement`, that exposes a `ContainerManager`
 class. The coordinator instantiates `ContainerManager` and calls its methods to
 perform discrete container, image, registry, and Quadlet actions on a Red Hat
 Enterprise Linux host using Podman.
@@ -57,7 +57,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            ContainerManager                                 │
-│  automojo.sysman.linux.redhat.containermanagement           │
+│  ccai.sysman.linux.redhat.containermanagement           │
 │                                                             │
 │  pull_image()    remove_image()    list_images()            │
 │  run_container() stop_container()  start_container()        │
@@ -119,7 +119,7 @@ writes to.
 
 ### `ContainerManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/containermanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/containermanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`,
 and a `ContainerManagerConfig`.
@@ -153,7 +153,7 @@ and a `ContainerManagerConfig`.
 
 ### `ContainerManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/containermanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/containermanagement.py`
 
 A dataclass holding runtime configuration for `ContainerManager`.
 
@@ -384,7 +384,7 @@ raise `ContainerQueryError` and SHALL NOT silently return an empty list.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `ContainerManager` depends on this interface, injected at construction time.
 
@@ -399,7 +399,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 ```python
 class IFileOperator(Protocol):
@@ -418,7 +418,7 @@ class IFileOperator(Protocol):
     def list_dir(self, path: str, elevated: bool = False) -> list[str]: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -539,12 +539,12 @@ call multiple times.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── containermanagement.py          ← ContainerManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_containermanagement.py ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -611,9 +611,9 @@ across many inputs.
 ### Local Rootful Execution — Deploy nginx from Image and Quadlet
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.containermanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.containermanagement import (
     ContainerManager,
     ContainerManagerConfig,
 )
@@ -648,9 +648,9 @@ print("quadlet:", install_result.status)
 ### SSH Rootful Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.containermanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.containermanagement import (
     ContainerManager,
     ContainerManagerConfig,
 )
@@ -685,9 +685,9 @@ print("average duration ms: {:.2f}".format(metrics.avg_duration_ms))
 ### SSH Execution with Aspects and Credential Redaction
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect,
     PersistenceAspectConfig,
     RetryAspect,
@@ -695,8 +695,8 @@ from automojo.sysman.linux.redhat.aspects import (
     TimeoutAspect,
     TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.containermanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.containermanagement import (
     ContainerManager,
     ContainerManagerConfig,
 )
@@ -740,9 +740,9 @@ assert "s3cret-token-value" not in " ".join(login_result.command or [])
 ### Rootless Local Execution
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.containermanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.containermanagement import (
     ContainerManager,
     ContainerManagerConfig,
 )

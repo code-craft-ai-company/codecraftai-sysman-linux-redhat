@@ -9,16 +9,16 @@ import socket
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.runners.models import SSHErrorType
-from automojo.sysman.linux.redhat.runners.ssh import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.runners.models import SSHErrorType
+from ccai.sysman.linux.redhat.runners.ssh import SSHCommandRunner, SSHRunnerConfig
 
 
 @dataclass
 class _FakeSshAgent:
     """
-        Drop-in replacement for :class:`automojo.interop.protocols.ssh.sshagent.SshAgent`
+        Drop-in replacement for :class:`ccai.interop.protocols.ssh.sshagent.SshAgent`
         that records each command and returns queued results.
     """
     queued_results: list = field(default_factory=list)
@@ -195,7 +195,7 @@ def test_agent_is_lazy_built_when_not_supplied():
     """
     from unittest import mock
     with mock.patch(
-        "automojo.sysman.linux.redhat.runners.ssh._import_ssh_deps"
+        "ccai.sysman.linux.redhat.runners.ssh._import_ssh_deps"
     ) as import_mock:
         captured = {}
 
@@ -236,7 +236,7 @@ def test_aspect_invocation_order_matches_local_runner():
     """
         before/after aspects run in registration and reverse-registration order.
     """
-    from automojo.sysman.linux.redhat.runners.models import ExecutionContext, RunResult
+    from ccai.sysman.linux.redhat.runners.models import ExecutionContext, RunResult
 
     @dataclass
     class _RecordingAspect:

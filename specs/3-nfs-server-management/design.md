@@ -3,7 +3,7 @@
 ## Overview
 
 The NFS server management feature is implemented as a single
-module, `automojo.sysman.linux.redhat.nfsservermanagement`,
+module, `ccai.sysman.linux.redhat.nfsservermanagement`,
 exposing an `NfsServerManager` class that wraps `exportfs`,
 `nfsstat`, `showmount`, and manages the content of
 `/etc/exports`, `/etc/exports.d/`, `/etc/idmapd.conf`, and
@@ -63,7 +63,7 @@ class NfsServerManagerConfig:
     elevated: bool = True
     exports_main: str = "/etc/exports"
     exports_dir: str = "/etc/exports.d"
-    exports_dropin: str = "automojo.exports"
+    exports_dropin: str = "ccai.exports"
     idmapd_conf: str = "/etc/idmapd.conf"
     nfs_conf: str = "/etc/nfs.conf"
 ```

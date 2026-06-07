@@ -4,7 +4,7 @@
 
 The DNS server management feature is implemented as a single
 module,
-`automojo.sysman.linux.redhat.dnsservermanagement`, exposing a
+`ccai.sysman.linux.redhat.dnsservermanagement`, exposing a
 `DnsServerManager` class that wraps `named-checkconf` /
 `named-checkzone` / `rndc`, `unbound-checkconf` /
 `unbound-control`, and `dnsmasq --test` through the
@@ -76,11 +76,11 @@ class DnsServerManagerConfig:
 
     # Unbound
     unbound_dropin_dir: str = "/etc/unbound/conf.d"
-    unbound_dropin_basename: str = "automojo.conf"
+    unbound_dropin_basename: str = "ccai.conf"
 
     # dnsmasq
     dnsmasq_dropin_dir: str = "/etc/dnsmasq.d"
-    dnsmasq_dropin_basename: str = "automojo.conf"
+    dnsmasq_dropin_basename: str = "ccai.conf"
 ```
 
 ---

@@ -102,8 +102,8 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 40. **automojo-* reuse check**: filesystem helpers may exist in
-  `automojo-interop` or `automojo-interfaces`; confirm the raw-shell
+- [ ] 40. **codecraftai-* reuse check**: filesystem helpers may exist in
+  `codecraftai-interop` or `codecraftai-interfaces`; confirm the raw-shell
   approach is preferred before extending (esp. for `query_path` which
   could use `os.stat` locally if the runner exposed a file-operator
   surface).

@@ -2,11 +2,11 @@
 
 ## Introduction
 
-The vpn-client-management feature provides the `automojo-sysman-linux-redhat`
+The vpn-client-management feature provides the `codecraftai-sysman-linux-redhat`
 package with the ability to install, configure, and lifecycle the **Tailscale**
 client (`tailscaled`) and the **Twingate Connector** on RHEL / CentOS Stream /
 Fedora hosts. This spec implements the vpn-client-management contract defined
-at `automojo-sysman-common/specs/contracts/vpn-client-management/contract.md`
+at `codecraftai-sysman-common/specs/contracts/vpn-client-management/contract.md`
 for the Red Hat family using the official Tailscale dnf/yum repository, the
 official Twingate yum repository, and `systemctl` for service control.
 

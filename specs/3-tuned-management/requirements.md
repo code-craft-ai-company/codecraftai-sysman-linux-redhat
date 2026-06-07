@@ -2,16 +2,16 @@
 
 ## Introduction
 
-The tuned management feature provides the `automojo-sysman-linux-redhat` package with
+The tuned management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to manage the `tuned` performance-tuning subsystem on Red Hat Linux
 systems: the `tuned.service` lifecycle, the active profile, profile listing, profile
 verification, and custom profiles placed under `/etc/tuned/`.
 
 A maintenance coordinator uses this feature to apply a declared performance profile to
 the target system and verify that it remains applied. All system commands (`systemctl`,
-`tuned-adm`) are executed through the `automojo-interfaces` command-runner
+`tuned-adm`) are executed through the `codecraftai-interfaces` command-runner
 abstraction. All file reads and writes under `/etc/tuned/` use the
-`automojo-interfaces` file-operator abstraction. All mutating operations respect
+`codecraftai-interfaces` file-operator abstraction. All mutating operations respect
 dry-run mode.
 
 ---

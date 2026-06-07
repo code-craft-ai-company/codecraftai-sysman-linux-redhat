@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The environment configuration feature provides the `automojo-sysman-linux-redhat` package
+The environment configuration feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to manage shell environment variables on a Red Hat Linux system.  This
 covers setting, unsetting, and querying variables in system-wide profile drop-in files
 (`/etc/profile.d/`), user-level shell rc files (`.bashrc`, `.bash_profile`), and
@@ -11,7 +11,7 @@ covers setting, unsetting, and querying variables in system-wide profile drop-in
 A maintenance coordinator drives all operations by calling into this feature's public
 interfaces.  The feature does not decide *which* variables to set — it provides the
 primitives to apply, remove, and inspect environment configuration reliably, idempotently,
-and with full auditability.  File reads and writes use the `automojo-interfaces`
+and with full auditability.  File reads and writes use the `codecraftai-interfaces`
 file-operator abstraction; command execution uses the command-runner abstraction.  This
 ensures dry-run simulation, auditing, and test mocking without requiring a live system.
 

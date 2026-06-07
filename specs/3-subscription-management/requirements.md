@@ -2,16 +2,16 @@
 
 ## Introduction
 
-The subscription management feature provides the `automojo-sysman-linux-redhat` package
+The subscription management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to register a Red Hat Enterprise Linux system with Red Hat Subscription
 Management (RHSM), attach entitlements, manage subscription-provided repositories, set the
 release version, and query subscription state. All operations are driven by a maintenance
 coordinator through this feature's public interfaces.
 
 All system commands (`subscription-manager`, `rhsmcertd`, `rct`) are executed exclusively
-through the `automojo-interfaces` command-runner abstraction, enabling dry-run simulation,
+through the `codecraftai-interfaces` command-runner abstraction, enabling dry-run simulation,
 command auditing, and test mocking. All file reads and writes use the
-`automojo-interfaces` file-operator abstraction.
+`codecraftai-interfaces` file-operator abstraction.
 
 ---
 

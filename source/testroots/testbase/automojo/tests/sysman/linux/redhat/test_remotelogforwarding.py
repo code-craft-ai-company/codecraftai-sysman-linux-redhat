@@ -3,13 +3,13 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.featurebase import (
+from ccai.sysman.linux.redhat.featurebase import (
     ActionStatus,
     FeatureActionResult,
 )
-from automojo.sysman.linux.redhat.remotelogforwarding import (
+from ccai.sysman.linux.redhat.remotelogforwarding import (
     ForwarderQueryError,
     ForwardingTarget,
     LogForwardingActionResult,
@@ -25,7 +25,7 @@ from automojo.sysman.linux.redhat.remotelogforwarding import (
     _render_forward_rule,
     _upsert_section,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

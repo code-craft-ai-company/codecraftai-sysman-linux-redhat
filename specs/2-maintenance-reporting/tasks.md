@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `maintenancereporting` module
-  - `source/packages/automojo/sysman/linux/redhat/maintenancereporting.py`
+  - `source/packages/ccai/sysman/linux/redhat/maintenancereporting.py`
     exists
   - Module comment makes clear the feature has no runner or command-execution
     dependencies

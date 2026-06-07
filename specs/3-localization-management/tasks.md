@@ -89,6 +89,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 29. **automojo-* reuse check**: `timedatectl` / `localectl`
+- [ ] 29. **codecraftai-* reuse check**: `timedatectl` / `localectl`
   parsing is bespoke enough that local parsers are fine, but verify
-  nothing exists already in `automojo-interop` before extending.
+  nothing exists already in `codecraftai-interop` before extending.

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The kernel parameters feature provides the `automojo-sysman-linux-redhat` package with the
+The kernel parameters feature provides the `codecraftai-sysman-linux-redhat` package with the
 ability to read and write `sysctl` kernel parameters at runtime, persist them across reboots
 via drop-in files in `/etc/sysctl.d/`, load and unload kernel modules, and persist module
 load configuration in `/etc/modules-load.d/`.
@@ -11,7 +11,7 @@ A maintenance coordinator running in an external package drives all operations b
 into this feature's public interfaces.  The feature does not decide *which* parameters or
 modules to manage — it provides the capability to *do it* reliably, idempotently, and with
 full auditability.  All system commands are executed exclusively through the
-`automojo-interfaces` command-runner abstraction, enabling dry-run simulation, auditing,
+`codecraftai-interfaces` command-runner abstraction, enabling dry-run simulation, auditing,
 and test mocking without requiring a live system.
 
 ---

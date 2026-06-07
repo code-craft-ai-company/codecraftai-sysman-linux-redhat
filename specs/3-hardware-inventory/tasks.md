@@ -89,7 +89,7 @@ This feature is read-only — no dry-run distinction, no mutating ops.
 
 ## Follow-ups
 
-- [ ] 31. **automojo-* reuse check**: `automojo-interop` may expose
+- [ ] 31. **codecraftai-* reuse check**: `codecraftai-interop` may expose
   generic hardware/PCI enumeration helpers that would save a lot of
-  output-parsing logic here.  Also check `automojo-landscaping` and
-  `automojo-dataprofiles` for existing snapshot schemas.
+  output-parsing logic here.  Also check `codecraftai-landscaping` and
+  `codecraftai-dataprofiles` for existing snapshot schemas.

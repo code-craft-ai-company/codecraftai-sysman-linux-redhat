@@ -4,7 +4,7 @@
 
 The mail transport management feature is implemented as a single
 module,
-`automojo.sysman.linux.redhat.mailtransportmanagement`, exposing a
+`ccai.sysman.linux.redhat.mailtransportmanagement`, exposing a
 `MailTransportManager` class that wraps `postconf`, `postmap`,
 `newaliases`, `postqueue`, `mailq`, and `postsuper` through the
 `ICommandRunner` abstraction.  It also directly reads and writes

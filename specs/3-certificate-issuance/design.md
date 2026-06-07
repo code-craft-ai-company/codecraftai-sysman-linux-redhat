@@ -3,7 +3,7 @@
 ## Overview
 
 The certificate issuance feature is implemented as a single module,
-`automojo.sysman.linux.redhat.certificateissuance`, exposing a
+`ccai.sysman.linux.redhat.certificateissuance`, exposing a
 `CertificateIssuanceManager` class that wraps `openssl`,
 `getcert` (certmonger), and `certbot` through the `ICommandRunner`
 abstraction.  It writes private keys, CSRs, and certificates at
@@ -309,4 +309,4 @@ freely, though `expires_in` may still fail with
 | CA trust-store anchors | `3-certificate-trust-management` | Separate — trust vs. issuance |
 | IPA-issued certs via certmonger | This feature (via `request_certmonger(ca="IPA")`) | `3-identity-management` performs the IPA join first |
 | TLS material for Postfix / Samba / NFS | Respective feature specs | This feature produces the key/cert pair; callers reference the paths |
-| Credential / passphrase handling | `automojo-credentials` | Credential objects accepted; passphrases on stdin only |
+| Credential / passphrase handling | `codecraftai-credentials` | Credential objects accepted; passphrases on stdin only |

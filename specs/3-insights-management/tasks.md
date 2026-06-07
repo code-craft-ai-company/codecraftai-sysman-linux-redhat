@@ -62,6 +62,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 21. **automojo-* reuse check**: RHSM (`3-subscription-management`)
+- [ ] 21. **codecraftai-* reuse check**: RHSM (`3-subscription-management`)
   and Insights are often co-managed; consider whether shared
   connection-test helpers should live in a common place.

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The SELinux management feature provides the `automojo-sysman-linux-redhat` package with
+The SELinux management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to manage the full SELinux surface on Red Hat Linux systems: file and port
 contexts, policy booleans, policy modules, mode persistence, and audit-driven policy
 generation. It complements — and does not duplicate — the coarse SELinux mode query and
@@ -11,9 +11,9 @@ generation. It complements — and does not duplicate — the coarse SELinux mod
 A maintenance coordinator uses this feature to bring a system's SELinux posture into a
 declared desired state, apply labeling, and adjust policy. All commands (`getenforce`,
 `sestatus`, `getsebool`, `setsebool`, `semanage`, `semodule`, `chcon`, `restorecon`,
-`matchpathcon`, `audit2allow`) are executed through the `automojo-interfaces`
+`matchpathcon`, `audit2allow`) are executed through the `codecraftai-interfaces`
 command-runner abstraction. All reads and writes against `/etc/selinux/config` and
-policy `.pp` files use the `automojo-interfaces` file-operator abstraction. All mutating
+policy `.pp` files use the `codecraftai-interfaces` file-operator abstraction. All mutating
 operations respect dry-run mode.
 
 ---

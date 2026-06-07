@@ -3,7 +3,7 @@
 ## Overview
 
 The log management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.logmanagement`, that exposes a `LogManager` class. The
+`ccai.sysman.linux.redhat.logmanagement`, that exposes a `LogManager` class. The
 coordinator instantiates `LogManager` and calls its methods to query the systemd journal,
 read and search traditional log files, vacuum journal data, trigger logrotate runs, and
 manage logrotate drop-in configuration files.
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              LogManager                                     │
-│  automojo.sysman.linux.redhat.logmanagement                │
+│  ccai.sysman.linux.redhat.logmanagement                │
 │                                                             │
 │  query_journal()   journal_disk_usage()                     │
 │  vacuum_by_size()  vacuum_by_time()                         │
@@ -86,7 +86,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `LogManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/logmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/logmanagement.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -523,12 +523,12 @@ the rendered config string exactly matches the existing file content the method 
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── logmanagement.py        ← LogManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_logmanagement.py
 ```
 
@@ -541,8 +541,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.logmanagement import LogManager, LogManagerConfig, JournalQueryParams, LogrotateConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.logmanagement import LogManager, LogManagerConfig, JournalQueryParams, LogrotateConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -606,8 +606,8 @@ print(f"Log rotation: {rotate_result.status}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.logmanagement import LogManager, LogManagerConfig, JournalQueryParams
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.logmanagement import LogManager, LogManagerConfig, JournalQueryParams
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -646,11 +646,11 @@ print(f"Connection retries: {metrics.retry_count}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.logmanagement import LogManager, LogManagerConfig, JournalQueryParams
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.logmanagement import LogManager, LogManagerConfig, JournalQueryParams
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

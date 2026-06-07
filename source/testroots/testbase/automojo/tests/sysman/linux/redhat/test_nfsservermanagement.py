@@ -9,9 +9,9 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.nfsservermanagement import (
+from ccai.sysman.linux.redhat.nfsservermanagement import (
     ClientSpec,
     ExportEntry,
     NfsActionResult,
@@ -31,7 +31,7 @@ from automojo.sysman.linux.redhat.nfsservermanagement import (
     _parse_showmount_e,
     _render_export_line,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------
@@ -158,7 +158,7 @@ def _fail(
     return rtnval
 
 
-_DROPIN_PATH = "/etc/exports.d/automojo.exports"
+_DROPIN_PATH = "/etc/exports.d/ccai.exports"
 _EXPORTS_MAIN = "/etc/exports"
 _EXPORTS_DIR = "/etc/exports.d"
 _IDMAPD_CONF = "/etc/idmapd.conf"
@@ -775,12 +775,12 @@ def test_list_configured_merges_main_and_dropins():
     _seed_cat(runner, path=_EXPORTS_MAIN, body=main_body)
     _seed_ls(
         runner, directory=_EXPORTS_DIR,
-        names=["automojo.exports", "README.txt"],
+        names=["ccai.exports", "README.txt"],
     )
     dropin_body = "/srv/dropin 10.0.0.0/24(ro,sync)\n"
     _seed_cat(
         runner,
-        path=_EXPORTS_DIR + "/automojo.exports",
+        path=_EXPORTS_DIR + "/ccai.exports",
         body=dropin_body,
     )
 
@@ -794,7 +794,7 @@ def test_list_configured_merges_main_and_dropins():
     testbase.assert_equal(by_path["/srv/main"].source_file, _EXPORTS_MAIN)
     testbase.assert_equal(
         by_path["/srv/dropin"].source_file,
-        _EXPORTS_DIR + "/automojo.exports",
+        _EXPORTS_DIR + "/ccai.exports",
     )
     return
 

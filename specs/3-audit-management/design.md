@@ -3,7 +3,7 @@
 ## Overview
 
 The audit management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.auditmanagement`, that exposes an `AuditManager` class.
+`ccai.sysman.linux.redhat.auditmanagement`, that exposes an `AuditManager` class.
 The coordinator instantiates `AuditManager` and calls its methods to perform discrete
 maintenance actions against the Linux Audit subsystem: the `auditd` service lifecycle,
 the runtime and persistent rule sets, the daemon configuration file, and the
@@ -42,7 +42,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            AuditManager                                     │
-│  automojo.sysman.linux.redhat.auditmanagement               │
+│  ccai.sysman.linux.redhat.auditmanagement               │
 │                                                             │
 │  get_service_state()   set_service_state()                  │
 │  restart_service()                                          │
@@ -88,7 +88,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `AuditManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/auditmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/auditmanagement.py`
 
 The primary public class.  Constructed with an `ICommandRunner`, an `IFileOperator`,
 and an `AuditManagerConfig`.
@@ -115,7 +115,7 @@ and an `AuditManagerConfig`.
 
 ### `AuditManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/auditmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/auditmanagement.py`
 
 A dataclass holding runtime configuration for `AuditManager`.
 
@@ -347,7 +347,7 @@ the `auditd.service` unit is explicitly protected against systemctl-driven resta
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `AuditManager` depends on this interface, injected at construction time.
 
@@ -361,7 +361,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `AuditManager` depends on this interface for reading and writing configuration files
 and rule drop-ins.
@@ -384,7 +384,7 @@ class IFileOperator(Protocol):
     def stat_size(self, path: str) -> int: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -473,12 +473,12 @@ multiple times.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── auditmanagement.py            ← AuditManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_auditmanagement.py   ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -543,9 +543,9 @@ across many inputs.
 ### Local Execution: Add Rule + Reload
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.auditmanagement import AuditManager, AuditManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.auditmanagement import AuditManager, AuditManagerConfig
 
 # Create local runner and file operator
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -573,9 +573,9 @@ print(f"Reload: {reload_result.status}")
 ### SSH Execution with Reliability Tracking: Search Events
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.auditmanagement import AuditManager, AuditManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.auditmanagement import AuditManager, AuditManagerConfig
 
 # Create SSH runner for remote system
 ssh_runner_config = SSHRunnerConfig(
@@ -613,12 +613,12 @@ print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
 ### SSH Execution with Aspects: Apply a Baseline Rule Set
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.auditmanagement import AuditManager, AuditManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.auditmanagement import AuditManager, AuditManagerConfig
 
 # Create SSH runner and file operator
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

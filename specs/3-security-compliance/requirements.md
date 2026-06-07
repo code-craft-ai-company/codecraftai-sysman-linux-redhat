@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The security compliance feature provides the `automojo-sysman-linux-redhat` package with
+The security compliance feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to audit and remediate common security posture concerns on Red Hat Linux
 systems.  It covers five areas: SELinux mode management, file permission auditing and
 remediation, SSH daemon configuration hardening, discovery of world-writable and
@@ -12,9 +12,9 @@ SUID/SGID files, and an extensible compliance check runner that produces a struc
 A maintenance coordinator uses this feature to query the current security state, compare
 it against a desired baseline, apply remediations, and obtain a machine-readable report
 of findings.  All file reads and writes are performed through the
-`automojo-interfaces` file-operator abstraction.  All commands (`getenforce`, `sestatus`,
+`codecraftai-interfaces` file-operator abstraction.  All commands (`getenforce`, `sestatus`,
 `setenforce`, `stat`, `chmod`, `chown`, `find`, `systemctl`) are executed through the
-`automojo-interfaces` command-runner abstraction.  No shell is invoked directly, and all
+`codecraftai-interfaces` command-runner abstraction.  No shell is invoked directly, and all
 write or mutating operations respect dry-run mode.
 
 ---

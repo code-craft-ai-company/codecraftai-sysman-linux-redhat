@@ -3,7 +3,7 @@
 ## Overview
 
 The ACL management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.aclmanagement`, exposing an
+`ccai.sysman.linux.redhat.aclmanagement`, exposing an
 `AclManager` class that wraps `getfacl` / `setfacl`, `lsattr` /
 `chattr`, and `getcap` / `setcap` through the `ICommandRunner`
 abstraction.

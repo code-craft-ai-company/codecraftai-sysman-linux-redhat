@@ -3,7 +3,7 @@
 ## Overview
 
 The firewall management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.firewallmanagement`, that exposes a `FirewallManager` class.
+`ccai.sysman.linux.redhat.firewallmanagement`, that exposes a `FirewallManager` class.
 The coordinator instantiates `FirewallManager` and calls its methods to perform discrete
 maintenance actions against the `firewalld` daemon via the `firewall-cmd` CLI.
 
@@ -39,7 +39,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            FirewallManager                                  │
-│  automojo.sysman.linux.redhat.firewallmanagement           │
+│  ccai.sysman.linux.redhat.firewallmanagement           │
 │                                                             │
 │  add_service()      remove_service()                        │
 │  add_port()         remove_port()                           │
@@ -81,7 +81,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `FirewallManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/firewallmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/firewallmanagement.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -151,7 +151,7 @@ class FirewallState:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -460,12 +460,12 @@ All other failures from write operations are surfaced as `FirewallActionResult` 
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── firewallmanagement.py         ← FirewallManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_firewallmanagement.py
 ```
 
@@ -478,8 +478,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.firewallmanagement import FirewallManager, FirewallManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.firewallmanagement import FirewallManager, FirewallManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -517,8 +517,8 @@ print(f"Zone ports: {zone_info.ports}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.firewallmanagement import FirewallManager, FirewallManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.firewallmanagement import FirewallManager, FirewallManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -560,11 +560,11 @@ print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.firewallmanagement import FirewallManager, FirewallManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.firewallmanagement import FirewallManager, FirewallManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

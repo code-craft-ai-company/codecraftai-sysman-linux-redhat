@@ -6,7 +6,7 @@ corresponding code lands.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/authenticationmanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/authenticationmanagement.py`
   with module-level comment describing purpose and the seams with
   related features
   - _Requirements: All_
@@ -185,7 +185,7 @@ corresponding code lands.
 
 ## Follow-ups
 
-- [ ] 41. **automojo-* reuse check**: consider whether
-  `automojo-configuration` offers a better substrate for the
+- [ ] 41. **codecraftai-* reuse check**: consider whether
+  `codecraftai-configuration` offers a better substrate for the
   pwquality / faillock / nsswitch INI-ish parsers than the bespoke
   regex approach.

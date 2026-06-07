@@ -10,9 +10,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.certificateissuance import (
+from ccai.sysman.linux.redhat.certificateissuance import (
     AcmeIssuanceSpec,
     AcmeRequiredArgumentError,
     CertificateActionStatus,
@@ -30,7 +30,7 @@ from automojo.sysman.linux.redhat.certificateissuance import (
     _parse_fingerprint_line,
     _render_openssl_config,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------
@@ -120,7 +120,7 @@ class _MockRunner:
 class _MockCredential:
     """
         Minimal credential stand-in.  Exposes ``secret_bytes()`` per
-        the `automojo-credentials` shape.
+        the `codecraftai-credentials` shape.
     """
 
     payload: bytes

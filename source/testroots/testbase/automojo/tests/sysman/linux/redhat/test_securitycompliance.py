@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.runners.models import RunResult
-from automojo.sysman.linux.redhat.securitycompliance import (
+from ccai.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.securitycompliance import (
     FilePermissionCheck,
     SecurityComplianceConfig,
     SecurityComplianceManager,
@@ -100,7 +100,7 @@ def test_remediate_file_permissions_runs_chmod_and_chown():
         exit_code=0, stdout="", stderr="", command=["chmod"],
     ))
     mgr = SecurityComplianceManager(runner, SecurityComplianceConfig(elevated=True))
-    from automojo.sysman.linux.redhat.securitycompliance import FilePermissionResult
+    from ccai.sysman.linux.redhat.securitycompliance import FilePermissionResult
     failed = FilePermissionResult(
         path="/etc/shadow", compliant=False,
         expected_mode="600", expected_owner="root", expected_group="root",

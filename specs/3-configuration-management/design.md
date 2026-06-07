@@ -3,7 +3,7 @@
 ## Overview
 
 The configuration management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.configurationmanagement`, that exposes a
+`ccai.sysman.linux.redhat.configurationmanagement`, that exposes a
 `ConfigurationManager` class. The coordinator instantiates `ConfigurationManager` and
 calls its methods to read, write, diff, backup, restore, validate, and adjust permissions
 on system configuration files.
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │        ConfigurationManager                                 │
-│  automojo.sysman.linux.redhat.configurationmanagement     │
+│  ccai.sysman.linux.redhat.configurationmanagement     │
 │                                                             │
 │  write()           write_template()                         │
 │  backup()          restore()                                │
@@ -77,7 +77,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `ConfigurationManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/configurationmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/configurationmanagement.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -172,7 +172,7 @@ class ConfigValidationResult:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -405,13 +405,13 @@ All other failures are surfaced as `ConfigActionResult` with `status=FAILED`.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── configurationmanagement.py    ← ConfigurationManager, config, models, exceptions,
                                      ValidatorRegistry
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_configurationmanagement.py
 ```
 
@@ -424,8 +424,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.configurationmanagement import ConfigurationManager, ConfigurationManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.configurationmanagement import ConfigurationManager, ConfigurationManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -451,8 +451,8 @@ print(f"Backup created: {backup_result.backup_path}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.configurationmanagement import ConfigurationManager, ConfigurationManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.configurationmanagement import ConfigurationManager, ConfigurationManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -489,11 +489,11 @@ print(f"Connection retries: {metrics.retry_count}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.configurationmanagement import ConfigurationManager, ConfigurationManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.configurationmanagement import ConfigurationManager, ConfigurationManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

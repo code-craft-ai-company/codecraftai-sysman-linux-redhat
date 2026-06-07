@@ -3,7 +3,7 @@
 ## Overview
 
 The SELinux management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.selinuxmanagement`, that exposes a `SELinuxManager` class.
+`ccai.sysman.linux.redhat.selinuxmanagement`, that exposes a `SELinuxManager` class.
 The coordinator instantiates `SELinuxManager` and calls its methods to perform discrete
 SELinux maintenance actions: query and modify file contexts, manage local file-context
 rules, toggle policy booleans, assign port contexts, install and remove policy modules,
@@ -47,7 +47,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            SELinuxManager                                   │
-│  automojo.sysman.linux.redhat.selinuxmanagement             │
+│  ccai.sysman.linux.redhat.selinuxmanagement             │
 │                                                             │
 │  query_context()     set_context()     restore_context()    │
 │  add_fcontext_rule() remove_fcontext_rule()                 │
@@ -95,7 +95,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `SELinuxManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/selinuxmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/selinuxmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`, and a
 `SELinuxManagerConfig`.
@@ -122,7 +122,7 @@ The primary public class. Constructed with an `ICommandRunner`, an `IFileOperato
 
 ### `SELinuxManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/selinuxmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/selinuxmanagement.py`
 
 A dataclass holding runtime configuration for `SELinuxManager`.
 
@@ -357,7 +357,7 @@ returned `SELinuxGeneratedModule` should have `pp_path=None` and `te_path=None`.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `SELinuxManager` depends on this interface, injected at construction time.
 
@@ -371,7 +371,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `SELinuxManager` uses this interface to read and write `/etc/selinux/config`. All direct
 file I/O is mediated through the operator, so local and SSH transports are transparent.
@@ -383,7 +383,7 @@ class IFileOperator(Protocol):
     def exists(self, path: str) -> bool: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -484,12 +484,12 @@ belongs to the `security-compliance` feature).
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── selinuxmanagement.py         ← SELinuxManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_selinuxmanagement.py ← unit tests using MockCommandRunner & MockFileOperator
 ```
 
@@ -551,9 +551,9 @@ verify universal correctness across many inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator
-from automojo.sysman.linux.redhat.selinuxmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator
+from ccai.sysman.linux.redhat.selinuxmanagement import (
     SELinuxManager,
     SELinuxManagerConfig,
 )
@@ -583,9 +583,9 @@ print(f"Relabel: {restore_result.status} (changed={restore_result.changed})")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator
-from automojo.sysman.linux.redhat.selinuxmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator
+from ccai.sysman.linux.redhat.selinuxmanagement import (
     SELinuxManager,
     SELinuxManagerConfig,
 )
@@ -621,9 +621,9 @@ if metrics.last_error:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect,
     RetryAspect,
     TimeoutAspect,
@@ -631,8 +631,8 @@ from automojo.sysman.linux.redhat.aspects import (
     RetryAspectConfig,
     TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.selinuxmanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.selinuxmanagement import (
     SELinuxManager,
     SELinuxManagerConfig,
 )

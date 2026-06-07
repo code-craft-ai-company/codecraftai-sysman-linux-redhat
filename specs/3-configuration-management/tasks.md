@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `configurationmanagement` module
-  - `source/packages/automojo/sysman/linux/redhat/configurationmanagement.py`
+  - `source/packages/ccai/sysman/linux/redhat/configurationmanagement.py`
     exists
 
 - [x] 2. Define `ConfigActionStatus` enum (SUCCESS / FAILED / SKIPPED /
@@ -135,8 +135,8 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 48. **automojo-* reuse check**: `automojo-configuration` exists
+- [ ] 48. **codecraftai-* reuse check**: `codecraftai-configuration` exists
   as a sibling package — evaluate whether its config parsing / diffing
   helpers should be used here rather than re-implementing INI/JSON/YAML
-  handling.  Similarly check `automojo-dataprofiles` for config-shape
+  handling.  Similarly check `codecraftai-dataprofiles` for config-shape
   definitions.

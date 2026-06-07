@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.runners.models import RunResult
-from automojo.sysman.linux.redhat.subscriptionmanagement import (
+from ccai.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.subscriptionmanagement import (
     SubscriptionActionStatus,
     SubscriptionManager,
     SubscriptionManagerConfig,
@@ -123,7 +123,7 @@ def test_status_parses_overall_status():
 
 class _StubCredential:
     """
-        Minimal duck-type of automojo-credentials' BasicCredential.
+        Minimal duck-type of codecraftai-credentials' BasicCredential.
     """
 
     def __init__(self, *, username: str, password: str) -> None:

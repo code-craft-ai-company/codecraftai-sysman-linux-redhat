@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `backuprestore` module
-  - `source/packages/automojo/sysman/linux/redhat/backuprestore.py` exists
+  - `source/packages/ccai/sysman/linux/redhat/backuprestore.py` exists
   - _Requirements: All_
 
 - [x] 2. Define `BackupActionStatus` enum (SUCCESS / FAILED / SKIPPED /
@@ -86,7 +86,7 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 25. **automojo-* reuse check**: investigate whether
-  `automojo-interop` provides higher-level archive/sync helpers or
+- [ ] 25. **codecraftai-* reuse check**: investigate whether
+  `codecraftai-interop` provides higher-level archive/sync helpers or
   whether the raw-`tar`/`rsync` approach is the right level for this
   package.

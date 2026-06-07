@@ -3,13 +3,13 @@
 ## Introduction
 
 The ACL management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 POSIX ACLs, extended file attributes, and file capabilities on
 Red Hat Linux systems.  It covers `setfacl` / `getfacl` for POSIX
 ACLs, `chattr` / `lsattr` for ext*-family extended attributes, and
 `getcap` / `setcap` for file capabilities.
 
-All system commands are executed through the `automojo-interfaces`
+All system commands are executed through the `codecraftai-interfaces`
 command-runner abstraction.  All mutating operations respect
 dry-run mode.
 

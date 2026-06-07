@@ -5,10 +5,10 @@ import time
 from typing import Optional
 from unittest import mock
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.aspects.retry import RetryAspect, RetryAspectConfig
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.aspects.retry import RetryAspect, RetryAspectConfig
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 def _result(exit_code: int, stderr: str = "") -> RunResult:

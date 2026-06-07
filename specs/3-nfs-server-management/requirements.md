@@ -3,7 +3,7 @@
 ## Introduction
 
 The NFS server management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 a local NFS v3/v4 server on Red Hat Linux systems.  It covers
 `/etc/exports` and `/etc/exports.d/*.exports` management,
 `exportfs` reloads, NFSv4 idmapping configuration
@@ -11,7 +11,7 @@ a local NFS v3/v4 server on Red Hat Linux systems.  It covers
 `/etc/nfs.conf`, and basic server-state queries (`nfsstat`,
 `showmount`).
 
-All system commands are executed through the `automojo-interfaces`
+All system commands are executed through the `codecraftai-interfaces`
 command-runner abstraction.  All mutating operations respect
 dry-run mode.
 
@@ -56,7 +56,7 @@ matches the desired state.
 
 1. WHEN the coordinator adds an export THE SYSTEM SHALL append an
    export line to a named drop-in file under `/etc/exports.d/`
-   (default file is `automojo.exports`), then run `exportfs -r`
+   (default file is `ccai.exports`), then run `exportfs -r`
    to reload.
 2. WHEN an identical export line already exists in the drop-in
    THE SYSTEM SHALL return `SKIPPED`.
@@ -66,7 +66,7 @@ matches the desired state.
 4. WHEN the coordinator removes an export THE SYSTEM SHALL strip
    every line whose path matches the requested export, then
    `exportfs -r`; SKIPPED when no lines match.
-5. WHEN `/etc/exports.d/automojo.exports` becomes empty after
+5. WHEN `/etc/exports.d/ccai.exports` becomes empty after
    removal THE SYSTEM SHALL `rm -f` the file.
 
 ---

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The repository management feature provides the `automojo-sysman-linux-redhat` package with
+The repository management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to add, remove, enable, disable, and refresh `dnf`/`yum` software repositories
 on Red Hat Linux systems.  Repository definitions live in `/etc/yum.repos.d/` as `.repo`
 files and control where `dnf` sources packages during install and update operations.
@@ -10,7 +10,7 @@ files and control where `dnf` sources packages during install and update operati
 A maintenance coordinator running in an external package drives all operations by calling
 into this feature's public interfaces.  The feature does not decide *which* repositories to
 manage — it provides the capability to *do it* reliably, idempotently, and with full
-auditability.  All system commands are executed exclusively through the `automojo-interfaces`
+auditability.  All system commands are executed exclusively through the `codecraftai-interfaces`
 command-runner abstraction, enabling dry-run simulation, auditing, and test mocking without
 requiring a live system.
 

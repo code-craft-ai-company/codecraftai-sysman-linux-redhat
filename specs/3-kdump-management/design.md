@@ -3,7 +3,7 @@
 ## Overview
 
 The kdump management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.kdumpmanagement`, that exposes a `KdumpManager` class.
+`ccai.sysman.linux.redhat.kdumpmanagement`, that exposes a `KdumpManager` class.
 The coordinator instantiates `KdumpManager` and calls its methods to manage the kernel
 crash-dump capture subsystem: the `kdump.service` lifecycle, `/etc/kdump.conf` keys, the
 `crashkernel=` kernel command-line reservation, the kdump initramfs, and
@@ -57,7 +57,7 @@ changes to the `KdumpManager` code.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐         ┌──────────────────────┐
 │            KdumpManager                                     │ ──────▶ │   BootManager        │
-│  automojo.sysman.linux.redhat.kdumpmanagement               │ crash-  │  (boot-management)   │
+│  ccai.sysman.linux.redhat.kdumpmanagement               │ crash-  │  (boot-management)   │
 │                                                             │ kernel  │                      │
 │  get_service_state()   lifecycle_action()                   │ ops     │ add_kernel_arg()     │
 │  get_config()          set_config()    delete_config()      │         │ remove_kernel_arg()  │
@@ -106,7 +106,7 @@ changes to the `KdumpManager` code.
 
 ### `KdumpManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/kdumpmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/kdumpmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`, and a
 `KdumpManagerConfig` (which carries an injected `BootManager` used for `crashkernel=`
@@ -130,7 +130,7 @@ delegation).
 
 ### `KdumpManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/kdumpmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/kdumpmanagement.py`
 
 A dataclass holding runtime configuration for `KdumpManager`.
 
@@ -308,7 +308,7 @@ the same quoting style that the existing entry used.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `KdumpManager` depends on this interface, injected at construction time.
 
@@ -322,7 +322,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `KdumpManager` depends on this interface for all reads and writes against
 `/etc/kdump.conf`, `/etc/sysconfig/kdump`, `/proc/cmdline`, and the
@@ -344,7 +344,7 @@ class IFileOperator(Protocol):
     def delete(self, path: str, elevated: bool = False) -> None: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -445,12 +445,12 @@ invoking the runner, file operator write, or `BootManager` mutation.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── kdumpmanagement.py           ← KdumpManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_kdumpmanagement.py  ← unit tests using MockCommandRunner,
                                     MockFileOperator, MockBootManager
 ```
@@ -514,10 +514,10 @@ inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileoperators import LocalFileOperator
-from automojo.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
-from automojo.sysman.linux.redhat.kdumpmanagement import KdumpManager, KdumpManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileoperators import LocalFileOperator
+from ccai.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
+from ccai.sysman.linux.redhat.kdumpmanagement import KdumpManager, KdumpManagerConfig
 
 # Create local runner and file operator
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -541,10 +541,10 @@ print(f"rebuild status: {rebuild_result.status}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileoperators import SSHFileOperator
-from automojo.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
-from automojo.sysman.linux.redhat.kdumpmanagement import KdumpManager, KdumpManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileoperators import SSHFileOperator
+from ccai.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
+from ccai.sysman.linux.redhat.kdumpmanagement import KdumpManager, KdumpManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -582,13 +582,13 @@ if metrics.last_error is not None:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileoperators import SSHFileOperator
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
-from automojo.sysman.linux.redhat.kdumpmanagement import KdumpManager, KdumpManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileoperators import SSHFileOperator
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
+from ccai.sysman.linux.redhat.kdumpmanagement import KdumpManager, KdumpManagerConfig
 
 # Create SSH transport
 ssh_config = SSHRunnerConfig(host="remote-server", username="admin")

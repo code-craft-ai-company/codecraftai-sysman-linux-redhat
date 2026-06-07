@@ -3,7 +3,7 @@
 ## Overview
 
 The filesystem management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.filesystemmanagement`, that exposes a `FilesystemManager`
+`ccai.sysman.linux.redhat.filesystemmanagement`, that exposes a `FilesystemManager`
 class. The coordinator instantiates `FilesystemManager` and calls its methods to perform
 discrete maintenance actions on the local filesystem.
 
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │          FilesystemManager                                  │
-│  automojo.sysman.linux.redhat.filesystemmanagement         │
+│  ccai.sysman.linux.redhat.filesystemmanagement         │
 │                                                             │
 │  create_directory()  remove_directory()                     │
 │  create_symlink()    remove_symlink()                       │
@@ -78,7 +78,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `FilesystemManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/filesystemmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/filesystemmanagement.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -178,7 +178,7 @@ class MountInfo:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -476,12 +476,12 @@ to `remove_symlink`) also return `FAILED` with a `detail` message rather than ra
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── filesystemmanagement.py       ← FilesystemManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_filesystemmanagement.py
 ```
 
@@ -494,8 +494,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.filesystemmanagement import FilesystemManager, FilesystemManagerConfig, MountSpec, FstabEntry
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.filesystemmanagement import FilesystemManager, FilesystemManagerConfig, MountSpec, FstabEntry
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -526,8 +526,8 @@ print(f"Mount: {mount_result.status}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.filesystemmanagement import FilesystemManager, FilesystemManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.filesystemmanagement import FilesystemManager, FilesystemManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -564,11 +564,11 @@ print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.filesystemmanagement import FilesystemManager, FilesystemManagerConfig, FstabEntry
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.filesystemmanagement import FilesystemManager, FilesystemManagerConfig, FstabEntry
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

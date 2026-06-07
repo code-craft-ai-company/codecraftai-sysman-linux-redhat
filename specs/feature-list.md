@@ -1,7 +1,7 @@
 # Feature List
 
 This document enumerates the feature specifications for the
-`automojo-sysman-linux-redhat` package, organised according to the six-layer
+`codecraftai-sysman-linux-redhat` package, organised according to the six-layer
 architecture model documented in
 [../userguide/architecture-layers.md](../userguide/architecture-layers.md).
 

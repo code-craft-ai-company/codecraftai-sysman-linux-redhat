@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The network configuration feature provides the `automojo-sysman-linux-redhat` package with
+The network configuration feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to set the system hostname, manage `/etc/hosts` entries, configure DNS
 resolution, manage NTP/Chrony sources and verify sync status, and manage NetworkManager
 connections on Red Hat Linux systems.
@@ -11,7 +11,7 @@ A maintenance coordinator running in an external package drives all operations b
 into this feature's public interfaces.  The feature does not decide *what* network
 configuration to apply — it provides the capability to *do it* reliably, idempotently, and
 with full auditability.  All system commands are executed exclusively through the
-`automojo-interfaces` command-runner abstraction, enabling dry-run simulation, auditing,
+`codecraftai-interfaces` command-runner abstraction, enabling dry-run simulation, auditing,
 and test mocking without requiring a live system.
 
 ---

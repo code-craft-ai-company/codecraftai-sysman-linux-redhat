@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/remotelogforwarding.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/remotelogforwarding.py`
 - [ ] 2. Define `LogForwardingActionStatus`,
   `RemoteLogForwardingConfig`,
   `LogForwardingActionResult`, `RsyslogForwardRule`,
@@ -24,7 +24,7 @@ All tasks are unchecked — new feature.
 ## rsyslog
 
 - [ ] 7. Implement `list_forward_rules()` — enumerate drop-ins
-  under `rsyslog_dropin_dir` matching the automojo naming
+  under `rsyslog_dropin_dir` matching the ccai naming
   convention; returns raw content + the parsed rule when
   derivable
   - _Requirements: 1 (read side)_
@@ -97,5 +97,5 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 26. **automojo-* reuse check**: no obvious sibling helpers
+- [ ] 26. **codecraftai-* reuse check**: no obvious sibling helpers
   for rsyslog plumbing; verify before extending.

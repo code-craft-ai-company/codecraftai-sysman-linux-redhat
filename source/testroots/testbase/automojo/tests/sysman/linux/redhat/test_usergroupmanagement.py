@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.runners.models import RunResult
-from automojo.sysman.linux.redhat.usergroupmanagement import (
+from ccai.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.usergroupmanagement import (
     ActionStatus,
     GroupManager,
     GroupSpec,
@@ -410,7 +410,7 @@ def test_group_query_parses_members():
 
 class _StubCredential:
     """
-        Minimal duck-type of automojo-credentials' BasicCredential —
+        Minimal duck-type of codecraftai-credentials' BasicCredential —
         exposes a ``.password`` attribute.  Used in tests to avoid
         requiring the real credential at test-collection time.
     """

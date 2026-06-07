@@ -96,6 +96,6 @@ The module exposes two managers: `KernelParamManager` (sysctl) and
 
 ## Follow-ups
 
-- [ ] 35. **automojo-* reuse check**: sysctl lookups are simple enough
+- [ ] 35. **codecraftai-* reuse check**: sysctl lookups are simple enough
   that local implementation is fine; verify before adding any new
   parsing helpers.

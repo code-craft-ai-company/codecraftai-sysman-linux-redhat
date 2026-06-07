@@ -3,7 +3,7 @@
 ## Overview
 
 The tuned management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.tunedmanagement`, that exposes a `TunedManager` class.
+`ccai.sysman.linux.redhat.tunedmanagement`, that exposes a `TunedManager` class.
 The coordinator instantiates `TunedManager` and calls its methods to perform discrete
 maintenance actions against the `tuned` performance-tuning subsystem.
 
@@ -40,7 +40,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            TunedManager                                     │
-│  automojo.sysman.linux.redhat.tunedmanagement               │
+│  ccai.sysman.linux.redhat.tunedmanagement               │
 │                                                             │
 │  get_service_state()                                        │
 │  lifecycle_action(action)                                   │
@@ -84,7 +84,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
 
 ### `TunedManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/tunedmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/tunedmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`,
 and a `TunedManagerConfig`.
@@ -104,7 +104,7 @@ and a `TunedManagerConfig`.
 
 ### `TunedManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/tunedmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/tunedmanagement.py`
 
 A dataclass holding runtime configuration for `TunedManager`.
 
@@ -278,7 +278,7 @@ exit code 0.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `TunedManager` depends on this interface, injected at construction time.
 
@@ -292,7 +292,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `TunedManager` depends on this interface, injected at construction time. It is
 used exclusively for reads, writes, and removals under `/etc/tuned/`.
@@ -320,7 +320,7 @@ class IFileOperator(Protocol):
     def remove_tree(self, path: str, elevated: bool = False) -> None: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -408,12 +408,12 @@ call multiple times.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── tunedmanagement.py           ← TunedManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_tunedmanagement.py  ← unit + property tests using mock runner
                                    and mock file operator
 ```
@@ -488,9 +488,9 @@ correctness across many inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator
-from automojo.sysman.linux.redhat.tunedmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator
+from ccai.sysman.linux.redhat.tunedmanagement import (
     TunedManager, TunedManagerConfig
 )
 
@@ -510,9 +510,9 @@ print(f"Apply: {result.status}")
 ### SSH Execution with Reliability Tracking (Verify Profile Drift Across a Fleet)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator
-from automojo.sysman.linux.redhat.tunedmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator
+from ccai.sysman.linux.redhat.tunedmanagement import (
     TunedManager, TunedManagerConfig
 )
 
@@ -550,14 +550,14 @@ print(f"Hosts with drift: {len(drift_report)}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, RetryAspect, TimeoutAspect,
     PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.tunedmanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.tunedmanagement import (
     TunedManager, TunedManagerConfig
 )
 

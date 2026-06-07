@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.featurebase import (
+from ccai.sysman.linux.redhat.featurebase import (
     ActionStatus,
     BaseFeatureManager,
     FeatureActionResult,
@@ -13,7 +13,7 @@ from automojo.sysman.linux.redhat.featurebase import (
     SanitisedDispatchMixin,
     result_from_run,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass
@@ -199,7 +199,7 @@ def test_report_autoemit_on_success():
         When a MaintenanceReport is injected, _dispatch emits an
         ActionRecord with matching feature / operation / status.
     """
-    from automojo.sysman.linux.redhat.maintenancereporting import (
+    from ccai.sysman.linux.redhat.maintenancereporting import (
         MaintenanceReport,
         ActionStatus as ReportStatus,
     )
@@ -226,7 +226,7 @@ def test_report_autoemit_on_failure_populates_error():
     """
         Failed dispatches emit ActionRecord with `error` populated.
     """
-    from automojo.sysman.linux.redhat.maintenancereporting import (
+    from ccai.sysman.linux.redhat.maintenancereporting import (
         MaintenanceReport,
         ActionStatus as ReportStatus,
     )
@@ -252,7 +252,7 @@ def test_report_autoemit_in_dry_run():
     """
         Dry-run dispatches still emit ActionRecord (DRY_RUN status).
     """
-    from automojo.sysman.linux.redhat.maintenancereporting import (
+    from ccai.sysman.linux.redhat.maintenancereporting import (
         MaintenanceReport,
         ActionStatus as ReportStatus,
     )
@@ -276,7 +276,7 @@ def test_report_autoemit_skipped_when_feature_name_unset():
         With no feature_name class variable, auto-emit is disabled
         even if a report is injected.
     """
-    from automojo.sysman.linux.redhat.maintenancereporting import (
+    from ccai.sysman.linux.redhat.maintenancereporting import (
         MaintenanceReport,
     )
 

@@ -3,7 +3,7 @@
 ## Overview
 
 The maintenance reporting feature is implemented as a single module,
-`automojo.sysman.linux.redhat.maintenancereporting`, that exposes a `MaintenanceReport`
+`ccai.sysman.linux.redhat.maintenancereporting`, that exposes a `MaintenanceReport`
 class. The coordinator instantiates `MaintenanceReport` at the start of a run, calls
 `add_action` after each operation, calls `finalise` at the end, and then calls `to_json`,
 `to_text`, or `write_report` to persist or display the results.
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │          MaintenanceReport                                  │
-│  automojo.sysman.linux.redhat.maintenancereporting         │
+│  ccai.sysman.linux.redhat.maintenancereporting         │
 │                                                             │
 │  add_action()        finalise()                             │
 │  summary_counts()    to_json()                              │
@@ -76,7 +76,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `MaintenanceReport`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/maintenancereporting.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/maintenancereporting.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -460,12 +460,12 @@ time without monkeypatching.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── maintenancereporting.py     ← MaintenanceReport, models, config
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_maintenancereporting.py
 ```
 
@@ -478,8 +478,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.fileoperators import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.maintenancereporting import MaintenanceReport, MaintenanceReportConfig, ActionRecord, ActionStatus
+from ccai.sysman.linux.redhat.fileoperators import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.maintenancereporting import MaintenanceReport, MaintenanceReportConfig, ActionRecord, ActionStatus
 
 # Create local file operator
 file_operator = LocalFileOperator(LocalFileOperatorConfig())
@@ -544,8 +544,8 @@ if result.success:
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.maintenancereporting import MaintenanceReport, MaintenanceReportConfig, ActionRecord, ActionStatus
+from ccai.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.maintenancereporting import MaintenanceReport, MaintenanceReportConfig, ActionRecord, ActionStatus
 
 # Create SSH file operator for remote system
 ssh_config = SSHFileOperatorConfig(
@@ -589,11 +589,11 @@ print(f"Average transfer time: {metrics.avg_duration_ms:.2f}ms")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.maintenancereporting import MaintenanceReport, MaintenanceReportConfig
+from ccai.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.maintenancereporting import MaintenanceReport, MaintenanceReportConfig
 
 # Create SSH file operator
 file_operator = SSHFileOperator(SSHFileOperatorConfig(host="remote-server", username="admin"))

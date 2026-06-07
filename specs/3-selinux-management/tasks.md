@@ -103,6 +103,6 @@ booleans, and policy modules.
 
 ## Follow-ups
 
-- [ ] 34. **automojo-* reuse check**: nothing obvious to delegate to
+- [ ] 34. **codecraftai-* reuse check**: nothing obvious to delegate to
   beyond the fine-grained runner primitives already in use.  Keep the
   seam with `3-security-compliance` clean when tasks 16–20 land.

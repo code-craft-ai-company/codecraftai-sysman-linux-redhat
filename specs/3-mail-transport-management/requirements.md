@@ -3,7 +3,7 @@
 ## Introduction
 
 The mail transport management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage a
+`codecraftai-sysman-linux-redhat` package with the ability to manage a
 local Postfix MTA on Red Hat Linux systems.  It covers
 `/etc/postfix/main.cf` and `master.cf` read/write via `postconf`
 and direct file edits, lookup-table map management (`postmap`),
@@ -12,7 +12,7 @@ lifecycle (`postqueue`, `mailq`, `postsuper`).
 
 All system commands (`postconf`, `postmap`, `newaliases`,
 `postqueue`, `postsuper`, `mailq`) are executed through the
-`automojo-interfaces` command-runner abstraction.  Config reads
+`codecraftai-interfaces` command-runner abstraction.  Config reads
 and writes route through the runner (`cat`/`tee`).  All mutating
 operations respect dry-run mode.
 

@@ -43,7 +43,7 @@ All system management features (package management, service management, etc.) de
 ┌──────────────────────┐      ┌──────────────────────┐
 │ LocalCommandRunner   │      │ SSHCommandRunner     │
 │ - subprocess.run()   │      │ - wraps SshAgent     │
-│ - sudo -n            │      │   (automojo-interop) │
+│ - sudo -n            │      │   (codecraftai-interop) │
 │ - direct env/cwd     │      │ - env/cwd via shell  │
 │                      │      │ - sudo -n            │
 └──────────┬───────────┘      └──────────┬───────────┘
@@ -73,7 +73,7 @@ All system management features (package management, service management, etc.) de
 
 ### `ICommandRunner` (Protocol)
 
-**Location:** `automojo.sysman.linux.redhat.runners.base`
+**Location:** `ccai.sysman.linux.redhat.runners.base`
 
 A `@runtime_checkable` Protocol that every runner implements.  Features depend on this protocol and therefore compose with any runner — local, SSH, or mock.
 
@@ -103,7 +103,7 @@ The `stdin` parameter lets callers pipe arbitrary bytes into the remote command 
 
 ### `LocalCommandRunner`
 
-**Location:** `automojo.sysman.linux.redhat.runners.local`
+**Location:** `ccai.sysman.linux.redhat.runners.local`
 
 Executes commands via local subprocess.
 
@@ -125,7 +125,7 @@ class LocalRunnerConfig:
 
 ### `SSHCommandRunner`
 
-**Location:** `automojo.sysman.linux.redhat.runners.ssh`
+**Location:** `ccai.sysman.linux.redhat.runners.ssh`
 
 Executes commands over SSH with connection management and reliability tracking.
 
@@ -255,7 +255,7 @@ class IExecutionAspect(Protocol):
 
 ### `PersistenceAspect`
 
-**Location:** `automojo.sysman.linux.redhat.aspects.persistence`
+**Location:** `ccai.sysman.linux.redhat.aspects.persistence`
 
 Logs all command executions to a persistent store.
 
@@ -287,7 +287,7 @@ class ICommandStorage(Protocol):
 
 ### `RetryAspect`
 
-**Location:** `automojo.sysman.linux.redhat.aspects.retry`
+**Location:** `ccai.sysman.linux.redhat.aspects.retry`
 
 Automatically retries commands on transient failures.
 
@@ -308,7 +308,7 @@ class RetryAspectConfig:
 
 ### `TimeoutAspect`
 
-**Location:** `automojo.sysman.linux.redhat.aspects.timeout`
+**Location:** `ccai.sysman.linux.redhat.aspects.timeout`
 
 Enforces a global timeout policy.
 
@@ -530,7 +530,7 @@ class SSHConnectionError(Exception):
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 ├── runners/
 │   ├── __init__.py
@@ -550,7 +550,7 @@ source/packages/automojo/sysman/linux/redhat/
     └── json.py               ← JSON file storage backend
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     ├── runners/
     │   ├── test_local.py
     │   └── test_ssh.py
@@ -611,7 +611,7 @@ The implementation uses the `hypothesis` library for property-based testing. Key
 ### Local Execution
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
 
 config = LocalRunnerConfig(dry_run=False)
 runner = LocalCommandRunner(config)
@@ -624,9 +624,9 @@ print(f"Output: {result.stdout}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
 
 # Configure SSH runner
 ssh_config = SSHRunnerConfig(
@@ -658,8 +658,8 @@ print(f"Average duration: {metrics.avg_duration_ms}ms")
 ### Feature Integration
 
 ```python
-from automojo.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
 
 # Create SSH runner for remote system
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

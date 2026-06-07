@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.filesystemquotas import (
+from ccai.sysman.linux.redhat.filesystemquotas import (
     FilesystemQuotaActionResult,
     FilesystemQuotaManager,
     FilesystemQuotaManagerConfig,
@@ -23,7 +23,7 @@ from automojo.sysman.linux.redhat.filesystemquotas import (
     _parse_repquota_output,
     _parse_xfs_state,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

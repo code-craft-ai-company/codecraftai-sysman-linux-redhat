@@ -3,7 +3,7 @@
 ## Overview
 
 The certificate trust management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.certificatetrustmanagement`, that exposes a
+`ccai.sysman.linux.redhat.certificatetrustmanagement`, that exposes a
 `CertificateTrustManager` class. The coordinator instantiates
 `CertificateTrustManager` and calls its methods to install, remove, inspect, and
 verify CA trust anchors on Red Hat Linux systems.
@@ -42,7 +42,7 @@ configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            CertificateTrustManager                          │
-│  automojo.sysman.linux.redhat.certificatetrustmanagement    │
+│  ccai.sysman.linux.redhat.certificatetrustmanagement    │
 │                                                             │
 │  install_anchor()         remove_anchor()                   │
 │  list_anchors()           refresh_trust_store()             │
@@ -84,7 +84,7 @@ configuration.
 
 ### `CertificateTrustManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/certificatetrustmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/certificatetrustmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an
 `IFileOperator`, and a `CertificateTrustManagerConfig`.
@@ -105,7 +105,7 @@ The primary public class. Constructed with an `ICommandRunner`, an
 
 ### `CertificateTrustManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/certificatetrustmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/certificatetrustmanagement.py`
 
 A dataclass holding runtime configuration for `CertificateTrustManager`.
 
@@ -311,7 +311,7 @@ them.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `CertificateTrustManager` depends on this interface, injected at construction
 time.
@@ -326,7 +326,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `CertificateTrustManager` depends on this interface, injected at construction
 time. Used for reading, writing, enumerating, and deleting files under
@@ -349,7 +349,7 @@ class IFileOperator(Protocol):
     def listdir(self, path: str) -> list[str]: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -434,12 +434,12 @@ the desired state.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── certificatetrustmanagement.py   ← CertificateTrustManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_certificatetrustmanagement.py   ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -515,9 +515,9 @@ correctness across many inputs.
 ### Local Execution (Install Internal CA and Refresh)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.certificatetrustmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.certificatetrustmanagement import (
     CertificateTrustManager,
     CertificateTrustManagerConfig,
 )
@@ -545,9 +545,9 @@ print(f"Refresh: {refresh_result.status}")
 ### SSH Execution with Reliability Tracking (Deploy CA Bundle to Fleet)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.certificatetrustmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.certificatetrustmanagement import (
     CertificateTrustManager,
     CertificateTrustManagerConfig,
 )
@@ -594,14 +594,14 @@ if metrics.last_error is not None:
 ### SSH Execution with Aspects (Persistence + Retry + Timeout)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, RetryAspect, TimeoutAspect,
     PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.certificatetrustmanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.certificatetrustmanagement import (
     CertificateTrustManager,
     CertificateTrustManagerConfig,
 )

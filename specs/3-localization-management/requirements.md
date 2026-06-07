@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The localization management feature provides the `automojo-sysman-linux-redhat`
+The localization management feature provides the `codecraftai-sysman-linux-redhat`
 package with the ability to manage locale, timezone, keyboard, and real-time-clock
 settings on Red Hat Linux systems using `localectl` and `timedatectl`. Network time
 synchronization (Chrony / NTP servers) remains the responsibility of the
@@ -10,9 +10,9 @@ synchronization (Chrony / NTP servers) remains the responsibility of the
 
 A maintenance coordinator uses this feature to apply a declared localization posture
 to the target system. All system commands (`timedatectl`, `localectl`) are executed
-through the `automojo-interfaces` command-runner abstraction. Any file reads or
+through the `codecraftai-interfaces` command-runner abstraction. Any file reads or
 writes under `/etc/locale.conf`, `/etc/vconsole.conf`, `/etc/X11/xorg.conf.d/`, or
-`/etc/localtime` use the `automojo-interfaces` file-operator abstraction. All
+`/etc/localtime` use the `codecraftai-interfaces` file-operator abstraction. All
 mutating operations respect dry-run mode.
 
 ---

@@ -2,16 +2,16 @@
 
 ## Introduction
 
-The kdump management feature provides the `automojo-sysman-linux-redhat` package with
+The kdump management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to manage the kernel crash-dump capture subsystem on Red Hat Linux systems:
 the `kdump.service` lifecycle, the `/etc/kdump.conf` configuration, the `crashkernel`
 kernel command-line reservation, and the kdump initramfs.
 
 A maintenance coordinator uses this feature to bring a system into a state where a
 kernel panic produces a usable crash dump. All system commands (`systemctl`,
-`kdumpctl`, `kexec`, `grubby`) are executed through the `automojo-interfaces`
+`kdumpctl`, `kexec`, `grubby`) are executed through the `codecraftai-interfaces`
 command-runner abstraction. All reads and writes against `/etc/kdump.conf` and
-`/etc/sysconfig/kdump` use the `automojo-interfaces` file-operator abstraction. All
+`/etc/sysconfig/kdump` use the `codecraftai-interfaces` file-operator abstraction. All
 mutating operations respect dry-run mode.
 
 This feature uses the existing `boot-management` feature for kernel-command-line

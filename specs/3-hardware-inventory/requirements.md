@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The hardware inventory feature provides the `automojo-sysman-linux-redhat` package
+The hardware inventory feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to query and aggregate hardware and low-level system identity
 information on Red Hat Linux systems: DMI/SMBIOS, CPU topology, memory, block
 devices, PCI/USB buses, network interfaces, firmware, and OS release.
@@ -11,7 +11,7 @@ A maintenance coordinator uses this feature to produce a machine-readable hardwa
 snapshot for maintenance reporting and to make capability-dependent decisions. All
 system commands (`dmidecode`, `lscpu`, `lsblk`, `lsmem`, `lspci`, `lsusb`, `ip`,
 `uname`, `hostnamectl`) and `/proc` / `/sys` reads are executed through the
-`automojo-interfaces` command-runner and file-operator abstractions. This feature
+`codecraftai-interfaces` command-runner and file-operator abstractions. This feature
 does not mutate system state and therefore has no dry-run behavior distinct from
 its normal behavior; all operations are read-only.
 

@@ -70,7 +70,7 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 24. **automojo-* reuse check**: `3-boot-management` for
+- [ ] 24. **codecraftai-* reuse check**: `3-boot-management` for
   `crashkernel=` delegation (task 12); consider whether
   `3-service-management` should be used for the `systemctl enable/disable`
   dispatches rather than re-spelling them.

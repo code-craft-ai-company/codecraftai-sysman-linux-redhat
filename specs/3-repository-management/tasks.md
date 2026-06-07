@@ -94,6 +94,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 33. **automojo-* reuse check**: `3-package-management` /
+- [ ] 33. **codecraftai-* reuse check**: `3-package-management` /
   `3-subscription-management` interact here; confirm the seams remain
   clean when RHSM-managed repos are involved.

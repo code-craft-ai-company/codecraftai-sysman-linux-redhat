@@ -98,7 +98,7 @@ config management lives in `3-ssh-server-configuration`.
 
 ## Follow-ups
 
-- [ ] 29. **automojo-* reuse check**: `3-selinux-management`,
+- [ ] 29. **codecraftai-* reuse check**: `3-selinux-management`,
   `3-ssh-server-configuration`, `3-firewall-management`, and
   `3-audit-management` cover the fine-grained control surfaces.
   When `run_compliance_suite` is built (task 14) it should compose

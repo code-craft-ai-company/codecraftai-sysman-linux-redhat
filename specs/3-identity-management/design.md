@@ -3,7 +3,7 @@
 ## Overview
 
 The identity management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.identitymanagement`, exposing an
+`ccai.sysman.linux.redhat.identitymanagement`, exposing an
 `IdentityManager` class that wraps `realm`, `adcli`, `sssctl`,
 `kinit`, `klist`, `kdestroy`, and `sss_cache` through the
 `ICommandRunner` abstraction.  It also owns the narrow edits to
@@ -21,7 +21,7 @@ through runner `stdin`, never argv.
 - `3-certificate-trust-management` for the enterprise-CA anchors
   required by LDAPS / Kerberos-over-TLS setups.
 - `3-service-management` for `sssd.service` lifecycle.
-- `automojo-credentials` for password / keytab handling.
+- `codecraftai-credentials` for password / keytab handling.
 
 ---
 
@@ -82,7 +82,7 @@ testable.
 
 ### `IdentityManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/identitymanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/identitymanagement.py`
 
 | Method | Description |
 |---|---|
@@ -295,11 +295,11 @@ class KrbTicket:
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 └── identitymanagement.py
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_identitymanagement.py
 ```
 
@@ -313,4 +313,4 @@ source/testroots/testbase/
 | SSSD service lifecycle | `3-service-management` | `restart_sssd` delegates |
 | Per-user Kerberos tickets after local account creation | `3-user-group-management` | This feature exposes `kinit`; coordinator composes |
 | Enterprise CA trust for LDAPS / Kerberos-over-TLS | `3-certificate-trust-management` | Coordinator installs the anchor first, then this feature joins |
-| Credential objects | `automojo-credentials` | `join`, `kinit` accept credential objects; passwords never on argv |
+| Credential objects | `codecraftai-credentials` | `join`, `kinit` accept credential objects; passwords never on argv |

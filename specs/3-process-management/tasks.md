@@ -86,6 +86,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 32. **automojo-* reuse check**: `automojo-interop` may expose
+- [ ] 32. **codecraftai-* reuse check**: `codecraftai-interop` may expose
   `/proc` parsing helpers; verify before extending the raw-`ps`
   approach.

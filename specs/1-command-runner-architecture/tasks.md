@@ -7,7 +7,7 @@ items (`[ ]`) identify remaining work.
 
 - [x] 1. Create runner/aspect/storage sub-packages with `__init__.py` re-exports
   - `runners/`, `aspects/`, `storage/` under
-    `source/packages/automojo/sysman/linux/redhat/`
+    `source/packages/ccai/sysman/linux/redhat/`
   - Each `__init__.py` re-exports the public API
   - _Requirements: All_
 
@@ -207,7 +207,7 @@ items (`[ ]`) identify remaining work.
   - _Requirements: 12.1–12.4, 12.6, 12.7, 12.8_
 
 - [ ] 32. Add test confirming SSH runner skips `_ensure_agent` entirely
-  when `dry_run=True` (no import of `automojo.interop` is attempted)
+  when `dry_run=True` (no import of `ccai.interop` is attempted)
   - _Requirements: 2.7, 11.4_
 
 - [ ] 33. Add test for `reset_metrics()` clearing all counters

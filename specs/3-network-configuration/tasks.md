@@ -120,6 +120,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 40. **automojo-* reuse check**: `automojo-networking` is a
+- [ ] 40. **codecraftai-* reuse check**: `codecraftai-networking` is a
   sibling package — verify it is not duplicating any of this feature's
   responsibilities (hostname, /etc/hosts, DNS, NTP, NetworkManager).

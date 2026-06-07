@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/dnsservermanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/dnsservermanagement.py`
 - [ ] 2. Define `DnsActionStatus` enum and `DnsServerBackend` enum
   (BIND / UNBOUND / DNSMASQ)
 - [ ] 3. Define `DnsServerManagerConfig` dataclass with per-backend
@@ -113,5 +113,5 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 33. **automojo-* reuse check**: nothing obvious in sibling
+- [ ] 33. **codecraftai-* reuse check**: nothing obvious in sibling
   packages for DNS-server plumbing; verify before extending.

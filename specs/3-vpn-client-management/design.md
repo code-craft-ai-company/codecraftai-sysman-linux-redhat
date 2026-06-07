@@ -3,9 +3,9 @@
 ## Overview
 
 The vpn-client-management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.vpnclientmanagement`, that exposes a
+`ccai.sysman.linux.redhat.vpnclientmanagement`, that exposes a
 `RedHatVPNClientManager` class subclassing `VPNClientManagementBase` from
-`automojo-sysman-common`. The manager installs and lifecycles **Tailscale**
+`codecraftai-sysman-common`. The manager installs and lifecycles **Tailscale**
 (`tailscaled`) via the official `pkgs.tailscale.com` yum/dnf repository, and
 the **Twingate Connector** via the official Twingate yum repository.
 `systemctl` controls the daemons.
@@ -15,14 +15,14 @@ file writes via `tee`, `systemctl` calls, and `tailscale` / `twingate` CLI
 invocations. No direct subprocess use, no direct filesystem writes.
 
 **See Also:**
-- [vpn-client-management contract](../../../automojo-sysman-common/specs/contracts/vpn-client-management/contract.md)
-- [vpn-client-management-base](../../../automojo-sysman-common/specs/vpn-client-management-base/design.md)
+- [vpn-client-management contract](../../../codecraftai-sysman-common/specs/contracts/vpn-client-management/contract.md)
+- [vpn-client-management-base](../../../codecraftai-sysman-common/specs/vpn-client-management-base/design.md)
 - [1-command-execution](../1-command-execution/design.md)
 - [2-maintenance-reporting](../2-maintenance-reporting/design.md)
 - [3-package-management](../3-package-management/design.md)
 - [3-repository-management](../3-repository-management/design.md)
 - [3-service-management](../3-service-management/design.md)
-- [Ubuntu sibling impl](../../../automojo-sysman-linux-ubuntu/specs/3-vpn-client-management/design.md)
+- [Ubuntu sibling impl](../../../codecraftai-sysman-linux-ubuntu/specs/3-vpn-client-management/design.md)
 
 ---
 
@@ -39,7 +39,7 @@ invocations. No direct subprocess use, no direct filesystem writes.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            RedHatVPNClientManager                           │
-│  automojo.sysman.linux.redhat.vpnclientmanagement           │
+│  ccai.sysman.linux.redhat.vpnclientmanagement           │
 │  inherits VPNClientManagementBase                           │
 │                                                             │
 │  install_tailscale()  install_twingate_connector()          │
@@ -68,7 +68,7 @@ invocations. No direct subprocess use, no direct filesystem writes.
 
 ### `RedHatVPNClientManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/vpnclientmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/vpnclientmanagement.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -176,12 +176,12 @@ RedHatVPNClientQueryError = VPNClientQueryError
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── vpnclientmanagement.py     ← RedHatVPNClientManager, config, aliases
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_vpnclientmanagement.py
 ```
 
@@ -189,8 +189,8 @@ source/testroots/testbase/
 
 ## See Also
 
-- [vpn-client-management contract](../../../automojo-sysman-common/specs/contracts/vpn-client-management/contract.md)
-- [vpn-client-management-base](../../../automojo-sysman-common/specs/vpn-client-management-base/design.md)
+- [vpn-client-management contract](../../../codecraftai-sysman-common/specs/contracts/vpn-client-management/contract.md)
+- [vpn-client-management-base](../../../codecraftai-sysman-common/specs/vpn-client-management-base/design.md)
 - [3-firewall-management](../3-firewall-management/design.md) — sibling sysman feature pattern
 - [3-service-management](../3-service-management/design.md) — `systemctl` reused
 

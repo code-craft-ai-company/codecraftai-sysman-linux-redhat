@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `environmentconfiguration` module
-  - `source/packages/automojo/sysman/linux/redhat/environmentconfiguration.py`
+  - `source/packages/ccai/sysman/linux/redhat/environmentconfiguration.py`
     exists
 
 - [x] 2. Define `EnvActionStatus` enum (SUCCESS / FAILED / SKIPPED /
@@ -116,9 +116,9 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 36. **automojo-* reuse check**: if `automojo-configuration`
+- [ ] 36. **codecraftai-* reuse check**: if `codecraftai-configuration`
   exposes a shell-style config parser, prefer it over the local regex
-  approach.  Also verify `automojo-interop` doesn't have a
+  approach.  Also verify `codecraftai-interop` doesn't have a
   `getent`-style user lookup helper before keeping the local one.
 
 - [ ] 37. `traceDb.md` exists in this spec folder — unusual; review
