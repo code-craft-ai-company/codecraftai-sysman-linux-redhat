@@ -1,14 +1,14 @@
 # Proposed Features
 
 Concrete proposals for new feature specs that fill real gaps in the
-`automojo-sysman-linux-redhat` package at the layers this package owns
+`codecraftai-sysman-linux-redhat` package at the layers this package owns
 (Layers 1 / 2 / 3 of the architecture model).
 
 **Out of scope for this package — not listed here:**
 
 - Layer 4 (Application Service) — coordinator / `MaintenanceSession` /
   declarative "apply this posture" engines belong in a calling package
-  such as `automojo-provisioning`.
+  such as `codecraftai-provisioning`.
 - Layer 6 (Presentation) — CLI / REST API / TUI belong in a separate
   presentation package that consumes this library.
 - Layer 5 (Cross-Cutting / presentation-facing) — i18n, theming, UX
@@ -251,7 +251,7 @@ decision is explicit.
 - **Tools:** `pcs`, `crm_mon`, `pcsd`; config `/etc/corosync/`,
   `/var/lib/pacemaker/`.
 - **Recommendation:** defer, or create a dedicated
-  `automojo-sysman-linux-redhat-cluster` package.
+  `codecraftai-sysman-linux-redhat-cluster` package.
 
 ---
 
@@ -275,7 +275,7 @@ Currently every Layer 3 feature defines its own identical
 `dry_run` + `elevated`), and a `_dispatch` helper implementing the
 same dry-run-short-circuit + runner-result mapping.
 
-Proposed module: `source/packages/automojo/sysman/linux/redhat/_feature_base.py`
+Proposed module: `source/packages/ccai/sysman/linux/redhat/_feature_base.py`
 
 - `ActionStatus` enum (SUCCESS / FAILED / SKIPPED / DRY_RUN) — shared
 - `FeatureConfig` dataclass with `dry_run: bool = False` +
@@ -377,9 +377,9 @@ seams landed; see commits `4d3ecd7`, `abf6efb`, `19100ef`, `3bda624`.
 | `3-tuned-management` | `3-service-management` for `tuned.service` lifecycle | `TunedManager.enable` / `disable` / `is_active` delegate through `ServiceManager`; SKIPPED semantics inherited | ✅ |
 | `3-kdump-management` | `3-service-management` for `kdump.service` lifecycle | `KdumpManager.enable` / `disable` / `query_status` delegate through `ServiceManager` | ✅ |
 | `3-security-compliance.run_compliance_suite()` (to build) | `3-selinux-management`, `3-ssh-server-configuration`, `3-firewall-management`, `3-audit-management` | New `run_compliance_suite()` aggregator returns `ComplianceReport` with per-category findings; injectable sibling managers for test composition | ✅ |
-| `3-subscription-management` | `automojo-credentials` for password handling | `SubscriptionManager.register(credential=...)` routes password through runner `stdin`; `--password` never on argv | ✅ |
-| `3-container-management` | `automojo-credentials` for registry login | New `ContainerManager.registry_login(registry, credential)` uses `podman login --password-stdin`; `registry_logout()` added for symmetry | ✅ |
-| `3-user-group-management` | `automojo-credentials` for password setting | New `UserManager.set_password(username, credential)` uses `chpasswd` with `<user>:<pw>` on stdin | ✅ |
+| `3-subscription-management` | `codecraftai-credentials` for password handling | `SubscriptionManager.register(credential=...)` routes password through runner `stdin`; `--password` never on argv | ✅ |
+| `3-container-management` | `codecraftai-credentials` for registry login | New `ContainerManager.registry_login(registry, credential)` uses `podman login --password-stdin`; `registry_logout()` added for symmetry | ✅ |
+| `3-user-group-management` | `codecraftai-credentials` for password setting | New `UserManager.set_password(username, credential)` uses `chpasswd` with `<user>:<pw>` on stdin | ✅ |
 
 ---
 

@@ -10,7 +10,7 @@ match.
 ## Module and Models
 
 - [x] 1. Create the `certificatetrust` module
-  - `source/packages/automojo/sysman/linux/redhat/certificatetrust.py`
+  - `source/packages/ccai/sysman/linux/redhat/certificatetrust.py`
     exists
 
 - [x] 2. Define `TrustActionStatus` enum (SUCCESS / FAILED / SKIPPED /
@@ -82,6 +82,6 @@ match.
 
 ## Follow-ups
 
-- [ ] 21. **automojo-* reuse check**: `automojo-credentials` may already
+- [ ] 21. **codecraftai-* reuse check**: `codecraftai-credentials` may already
   have certificate inspection helpers; evaluate before implementing
   tasks 10 / 11.

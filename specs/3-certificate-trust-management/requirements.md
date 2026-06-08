@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The certificate trust management feature provides the `automojo-sysman-linux-redhat`
+The certificate trust management feature provides the `codecraftai-sysman-linux-redhat`
 package with the ability to manage the system-wide CA trust store on Red Hat Linux
 systems: installing and removing trust anchors under
 `/etc/pki/ca-trust/source/anchors/`, refreshing the consolidated trust bundle via
@@ -11,8 +11,8 @@ certificate metadata.
 
 A maintenance coordinator uses this feature to apply a declared CA posture to the
 target system. All system commands (`update-ca-trust`, `openssl`, `trust`) are
-executed through the `automojo-interfaces` command-runner abstraction. All reads and
-writes under `/etc/pki/ca-trust/source/` use the `automojo-interfaces` file-operator
+executed through the `codecraftai-interfaces` command-runner abstraction. All reads and
+writes under `/etc/pki/ca-trust/source/` use the `codecraftai-interfaces` file-operator
 abstraction. All mutating operations respect dry-run mode.
 
 ---

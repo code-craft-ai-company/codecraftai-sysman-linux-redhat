@@ -3,7 +3,7 @@
 ## Overview
 
 The storage management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.storagemanagement`, that exposes a `StorageManager` class.
+`ccai.sysman.linux.redhat.storagemanagement`, that exposes a `StorageManager` class.
 The coordinator instantiates `StorageManager` and calls its methods to perform discrete
 block-level storage actions: block-device discovery, partition-table creation,
 partitioning, filesystem creation, LVM (physical volumes, volume groups, logical
@@ -47,7 +47,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            StorageManager                                   │
-│  automojo.sysman.linux.redhat.storagemanagement             │
+│  ccai.sysman.linux.redhat.storagemanagement             │
 │                                                             │
 │  list_block_devices()   query_partition_table()             │
 │  create_partition_table()  create_partition()               │
@@ -92,7 +92,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `StorageManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/storagemanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/storagemanagement.py`
 
 The primary public class.  Constructed with an `ICommandRunner`, an `IFileOperator`,
 and a `StorageManagerConfig`.
@@ -124,7 +124,7 @@ and a `StorageManagerConfig`.
 
 ### `StorageManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/storagemanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/storagemanagement.py`
 
 A dataclass holding runtime configuration for `StorageManager`.
 
@@ -402,7 +402,7 @@ runner.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `StorageManager` depends on this interface, injected at construction time.
 
@@ -416,7 +416,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `StorageManager` depends on this interface, injected at construction time, for all
 writes under `/etc/` (notably `/etc/mdadm.conf`).
@@ -437,7 +437,7 @@ class IFileOperator(Protocol):
     def stat(self, path: str, elevated: bool = False) -> FileStat: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -541,12 +541,12 @@ If the system is already in the desired state and `force=False`, the method retu
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── storagemanagement.py          ← StorageManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_storagemanagement.py ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -613,9 +613,9 @@ across many inputs.
 ### Local Execution: Create PV + VG + LV on /dev/sdb
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.storagemanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.storagemanagement import (
     StorageManager, StorageManagerConfig,
 )
 
@@ -639,9 +639,9 @@ print(f"PV: {pv_result.status}, VG: {vg_result.status}, LV: {lv_result.status}")
 ### SSH Execution with Reliability: Extend LV with Filesystem Resize
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.storagemanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.storagemanagement import (
     StorageManager, StorageManagerConfig,
 )
 
@@ -682,14 +682,14 @@ if metrics.last_error is not None:
 ### SSH Execution with Aspects: Bulk Provisioning
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, RetryAspect, TimeoutAspect,
     PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.storagemanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.storagemanagement import (
     StorageManager, StorageManagerConfig,
 )
 

@@ -3,7 +3,7 @@
 ## Overview
 
 The encryption management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.encryptionmanagement`, exposing an
+`ccai.sysman.linux.redhat.encryptionmanagement`, exposing an
 `EncryptionManager` class that wraps `cryptsetup`,
 `systemd-cryptenroll`, and `clevis` through the `ICommandRunner`
 abstraction.  It also owns read/write of `/etc/crypttab`.
@@ -18,7 +18,7 @@ flow through runner `stdin`, never argv.
 - `3-filesystem-management` for mounting the decrypted volume.
 - `3-boot-management` for `crashkernel=` and GRUB changes when the
   root filesystem is LUKS-encrypted (out of scope here).
-- `automojo-credentials` for passphrase handling.
+- `codecraftai-credentials` for passphrase handling.
 
 ---
 
@@ -64,7 +64,7 @@ flow through runner `stdin`, never argv.
 
 ### `EncryptionManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/encryptionmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/encryptionmanagement.py`
 
 | Method | Description |
 |---|---|
@@ -293,11 +293,11 @@ Dry-run allows: `query_header`, `list_bindings`, `list_crypttab`
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 └── encryptionmanagement.py
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_encryptionmanagement.py
 ```
 
@@ -309,5 +309,5 @@ source/testroots/testbase/
 |---|---|---|
 | Partitioning / LVM / RAID | `3-storage-management` | Coordinator invokes storage first; this feature LUKS-formats the partition; coordinator invokes storage again for PV/VG/LV on the mapped device |
 | `/etc/fstab` mounts | `3-filesystem-management` | Coordinator mounts `/dev/mapper/<name>` after this feature opens it |
-| Credential / passphrase handling | `automojo-credentials` | This feature accepts a credential object; passphrase bytes flow via `stdin` |
+| Credential / passphrase handling | `codecraftai-credentials` | This feature accepts a credential object; passphrase bytes flow via `stdin` |
 | Boot-time unlock via TPM2 / Clevis | This feature | Writes to `/etc/crypttab` with `tpm2-device=` or `clevis` options; no changes to kernel/initramfs (handled by `3-boot-management` when required) |

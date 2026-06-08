@@ -6,14 +6,14 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 from unittest import mock
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.commandexecution import (
+from ccai.sysman.linux.redhat.commandexecution import (
     CommandExecutor,
     CommandExecutorConfig,
     CommandSpec,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass

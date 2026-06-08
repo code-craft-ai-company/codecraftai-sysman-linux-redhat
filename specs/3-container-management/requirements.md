@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The container management feature provides the `automojo-sysman-linux-redhat` package
+The container management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to manage containers and images using Podman — the default container
 engine on Red Hat Enterprise Linux. It covers image lifecycle, container lifecycle,
 container registry configuration, registry authentication, and the generation of
@@ -10,9 +10,9 @@ systemd units for containers (Quadlet).
 
 A maintenance coordinator uses this feature to deploy and manage containerized
 workloads on the target system. All system commands (`podman`, `skopeo` where noted)
-are executed through the `automojo-interfaces` command-runner abstraction. All reads
+are executed through the `codecraftai-interfaces` command-runner abstraction. All reads
 and writes against `/etc/containers/*` and systemd unit locations use the
-`automojo-interfaces` file-operator abstraction. All mutating operations respect
+`codecraftai-interfaces` file-operator abstraction. All mutating operations respect
 dry-run mode.
 
 Container dependencies delivered as RPMs remain the responsibility of the

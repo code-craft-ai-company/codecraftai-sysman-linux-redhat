@@ -3,7 +3,7 @@
 ## Overview
 
 The repository management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.repositorymanagement`, that exposes a `RepositoryManager`
+`ccai.sysman.linux.redhat.repositorymanagement`, that exposes a `RepositoryManager`
 class. The coordinator instantiates `RepositoryManager` and calls its methods to perform
 discrete maintenance actions against the `/etc/yum.repos.d/` directory and the `dnf`
 toolchain.
@@ -37,7 +37,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │          RepositoryManager                                  │
-│  automojo.sysman.linux.redhat.repositorymanagement         │
+│  ccai.sysman.linux.redhat.repositorymanagement         │
 │                                                             │
 │  add()           remove()                                   │
 │  enable()        disable()                                  │
@@ -77,7 +77,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `RepositoryManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/repositorymanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/repositorymanagement.py`
 
 The primary public class.  Constructed with an `ICommandRunner` and a
 `RepositoryManagerConfig`.
@@ -95,7 +95,7 @@ The primary public class.  Constructed with an `ICommandRunner` and a
 
 ### `RepositoryManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/repositorymanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/repositorymanagement.py`
 
 A dataclass holding runtime configuration for `RepositoryManager`.
 
@@ -245,7 +245,7 @@ class RepoInfo:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `RepositoryManager` depends on this interface, injected at construction time.  File write
 and delete operations are expressed as `tee` and `rm` commands so they flow through the
@@ -261,7 +261,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -337,12 +337,12 @@ failures.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── repositorymanagement.py       ← RepositoryManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_repositorymanagement.py  ← unit tests using MockCommandRunner
 ```
 
@@ -355,8 +355,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.repositorymanagement import RepositoryManager, RepositoryManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.repositorymanagement import RepositoryManager, RepositoryManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -378,8 +378,8 @@ for repo in repos:
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.repositorymanagement import RepositoryManager, RepositoryManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.repositorymanagement import RepositoryManager, RepositoryManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -410,11 +410,11 @@ if metrics.last_error:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.repositorymanagement import RepositoryManager, RepositoryManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.repositorymanagement import RepositoryManager, RepositoryManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

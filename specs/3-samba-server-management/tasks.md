@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/sambaservermanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/sambaservermanagement.py`
 - [ ] 2. Define `SambaActionStatus`, `SambaServerManagerConfig`,
   `SambaActionResult`, `ShareSpec`, `ShareInfo`,
   `SambaValidateResult`, `SambaUserInfo` dataclasses
@@ -118,8 +118,8 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 34. **automojo-* reuse check**: route `admin_credential` /
+- [ ] 34. **codecraftai-* reuse check**: route `admin_credential` /
   Samba-user passwords through
-  `automojo.credentials.sshcredential.SshCredential` (or an
+  `ccai.credentials.sshcredential.SshCredential` (or an
   equivalent credential abstraction).  Do NOT accept plaintext
   passphrase strings on the public API.

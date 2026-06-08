@@ -3,7 +3,7 @@
 ## Overview
 
 The boot management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.bootmanagement`, that exposes a `BootManager` class.
+`ccai.sysman.linux.redhat.bootmanagement`, that exposes a `BootManager` class.
 The coordinator instantiates `BootManager` and calls its methods to perform discrete
 boot-configuration actions: querying and setting the default systemd target, listing
 kernels known to GRUB2, querying and setting the default kernel, adding or removing
@@ -43,7 +43,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    BootManager                              │
-│  automojo.sysman.linux.redhat.bootmanagement                │
+│  ccai.sysman.linux.redhat.bootmanagement                │
 │                                                             │
 │  get_default_target()    set_default_target()               │
 │  list_kernels()          get_default_kernel()               │
@@ -88,7 +88,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `BootManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/bootmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/bootmanagement.py`
 
 The primary public class.  Constructed with an `ICommandRunner`, an `IFileOperator`,
 and a `BootManagerConfig`.
@@ -113,7 +113,7 @@ and a `BootManagerConfig`.
 
 ### `BootManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/bootmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/bootmanagement.py`
 
 A dataclass holding runtime configuration for `BootManager`.
 
@@ -315,7 +315,7 @@ match the expected command format specified in the Command Mappings table below.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `BootManager` depends on this interface, injected at construction time.
 
@@ -329,7 +329,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `BootManager` depends on this interface, injected at construction time. Used for
 reads of `/proc/cmdline`, `/etc/default/grub`, and the `/sys/firmware/efi` existence
@@ -350,7 +350,7 @@ class IFileOperator(Protocol):
     ) -> None: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -445,12 +445,12 @@ multiple times.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── bootmanagement.py             ← BootManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_bootmanagement.py    ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -513,9 +513,9 @@ inputs.
 ### Local Execution (Add IOMMU Kernel Argument and Regenerate Config)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
 
 # Create local runner and file operator
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -537,9 +537,9 @@ print(f"Regenerate: {regen_result.status} at {regen_result.target_path}")
 ### SSH Execution with Reliability Tracking (Set Default Target to multi-user)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
 
 # Create SSH runner and file operator for remote system
 ssh_runner_config = SSHRunnerConfig(
@@ -575,12 +575,12 @@ print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
 ### SSH Execution with Aspects (Persistence + Retry + Timeout)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.bootmanagement import BootManager, BootManagerConfig
 
 # Create SSH runner + file operator
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

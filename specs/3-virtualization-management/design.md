@@ -4,7 +4,7 @@
 
 The virtualization management feature is implemented as a single
 module,
-`automojo.sysman.linux.redhat.virtualizationmanagement`, exposing a
+`ccai.sysman.linux.redhat.virtualizationmanagement`, exposing a
 `VirtualizationManager` class that wraps `virsh`, `virt-install`,
 and `virt-clone` through the `ICommandRunner` abstraction.
 

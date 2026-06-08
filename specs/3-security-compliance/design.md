@@ -3,7 +3,7 @@
 ## Overview
 
 The security compliance feature is implemented as a single module,
-`automojo.sysman.linux.redhat.securitycompliance`, exposing a
+`ccai.sysman.linux.redhat.securitycompliance`, exposing a
 `SecurityComplianceManager` class.  The manager provides five capabilities: SELinux
 status querying and mode enforcement, file permission auditing and remediation, SSH
 daemon configuration auditing and hardening, world-writable and SUID/SGID file
@@ -28,7 +28,7 @@ file system access is performed directly.  The module has no third-party depende
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              SecurityComplianceManager                      │
-│  automojo.sysman.linux.redhat.securitycompliance           │
+│  ccai.sysman.linux.redhat.securitycompliance           │
 │                                                             │
 │  check_selinux()            set_selinux_mode()              │
 │  check_file_permissions()   remediate_file_permissions()    │
@@ -69,7 +69,7 @@ file system access is performed directly.  The module has no third-party depende
 
 ### `SecurityComplianceManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/securitycompliance.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/securitycompliance.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -542,12 +542,12 @@ A non-zero exit code for any path raises `SecurityQueryError`.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── securitycompliance.py   ← SecurityComplianceManager, models, config, exception
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_securitycompliance.py
 ```
 

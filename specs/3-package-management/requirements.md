@@ -2,14 +2,14 @@
 
 ## Introduction
 
-The package management feature provides the `automojo-sysman-linux-redhat` package with the
+The package management feature provides the `codecraftai-sysman-linux-redhat` package with the
 ability to install, remove, update, query, and otherwise manage RPM software packages on
 Red Hat Linux systems using `dnf` and `rpm` as the underlying package tools.
 
 A maintenance coordinator running in an external package drives all operations by calling
 into this feature's public interfaces.  The feature does not decide *what* to do — it
 provides the capability to *do it* reliably, idempotently, and with full auditability.
-All system commands are executed exclusively through the `automojo-interfaces` command-runner
+All system commands are executed exclusively through the `codecraftai-interfaces` command-runner
 abstraction, enabling dry-run simulation, command auditing, and test mocking without altering
 the maintenance logic.
 
@@ -25,7 +25,7 @@ specific version, so that the target system has the required software available 
 #### Acceptance Criteria
 
 1. WHEN the coordinator requests installation of a package by name THE SYSTEM SHALL invoke
-   `dnf install -y <package>` via the automojo-interfaces command runner.
+   `dnf install -y <package>` via the codecraftai-interfaces command runner.
 2. WHEN the coordinator requests installation of a package at a specific version THE SYSTEM
    SHALL invoke `dnf install -y <package>-<version>` via the command runner.
 3. WHEN the requested package is already installed at the requested version THE SYSTEM SHALL

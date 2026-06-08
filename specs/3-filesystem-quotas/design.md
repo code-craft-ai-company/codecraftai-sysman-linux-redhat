@@ -3,7 +3,7 @@
 ## Overview
 
 The filesystem-quotas feature is implemented as a single module,
-`automojo.sysman.linux.redhat.filesystemquotas`, exposing a
+`ccai.sysman.linux.redhat.filesystemquotas`, exposing a
 `FilesystemQuotasManager` class that wraps `quota`, `repquota`,
 `edquota`, `setquota`, `quotaon`/`quotaoff`, `quotacheck`, and
 `xfs_quota` through the `ICommandRunner` abstraction.  It also

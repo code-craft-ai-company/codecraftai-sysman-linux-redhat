@@ -3,16 +3,16 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.kernelparameters import (
+from ccai.sysman.linux.redhat.kernelparameters import (
     KernelManagerConfig,
     KernelModuleActionStatus,
     KernelModuleManager,
     KernelParamActionStatus,
     KernelParamManager,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass

@@ -4,16 +4,16 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 from unittest import mock
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.packagemanagement import (
+from ccai.sysman.linux.redhat.packagemanagement import (
     PackageActionStatus,
     PackageFileNotFoundError,
     PackageManager,
     PackageManagerConfig,
     PackageQueryError,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass
@@ -322,7 +322,7 @@ def test_install_local_invokes_dnf_install_with_filepath():
     ))
     pm = PackageManager(runner, PackageManagerConfig(elevated=True))
     with mock.patch(
-        "automojo.sysman.linux.redhat.packagemanagement.Path.exists",
+        "ccai.sysman.linux.redhat.packagemanagement.Path.exists",
         return_value=True,
     ):
         result = pm.install_local("/tmp/pkg.rpm")

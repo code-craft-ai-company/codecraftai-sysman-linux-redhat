@@ -4,9 +4,9 @@ import json
 import os
 import tempfile
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.maintenancereporting import (
+from ccai.sysman.linux.redhat.maintenancereporting import (
     ActionRecord,
     ActionStatus,
     MaintenanceReport,

@@ -3,14 +3,14 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.aspects.persistence import (
+from ccai.sysman.linux.redhat.aspects.persistence import (
     PersistenceAspect,
     PersistenceAspectConfig,
 )
-from automojo.sysman.linux.redhat.runners.models import ExecutionContext, RunResult
-from automojo.sysman.linux.redhat.storage.base import CommandLogEntry
+from ccai.sysman.linux.redhat.runners.models import ExecutionContext, RunResult
+from ccai.sysman.linux.redhat.storage.base import CommandLogEntry
 
 
 @dataclass

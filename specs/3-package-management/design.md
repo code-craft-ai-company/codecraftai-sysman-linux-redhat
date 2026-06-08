@@ -3,7 +3,7 @@
 ## Overview
 
 The package management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.packagemanagement`, that exposes a `PackageManager` class.
+`ccai.sysman.linux.redhat.packagemanagement`, that exposes a `PackageManager` class.
 The coordinator instantiates `PackageManager` and calls its methods to perform discrete
 maintenance actions.
 
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            PackageManager                                   │
-│  automojo.sysman.linux.redhat.packagemanagement             │
+│  ccai.sysman.linux.redhat.packagemanagement             │
 │                                                             │
 │  install()   remove()   update()                            │
 │  query()     list_updates()                                 │
@@ -77,7 +77,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `PackageManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/packagemanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/packagemanagement.py`
 
 The primary public class.  Constructed with an `ICommandRunner` and a `PackageManagerConfig`.
 
@@ -96,7 +96,7 @@ The primary public class.  Constructed with an `ICommandRunner` and a `PackageMa
 
 ### `PackageManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/packagemanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/packagemanagement.py`
 
 A dataclass holding runtime configuration for `PackageManager`.
 
@@ -231,7 +231,7 @@ class PackageUpdateInfo:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `PackageManager` depends on this interface, injected at construction time.
 
@@ -245,7 +245,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -314,12 +314,12 @@ invoking `dnf`.  This makes all write operations safe to call multiple times.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── packagemanagement.py          ← PackageManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_packagemanagement.py ← unit tests using MockCommandRunner
 ```
 
@@ -368,8 +368,8 @@ Both unit tests and property-based tests are complementary: unit tests verify sp
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -386,8 +386,8 @@ print(f"Installation: {result.status}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -418,11 +418,11 @@ if metrics.last_error:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.packagemanagement import PackageManager, PackageManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

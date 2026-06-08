@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The command execution feature provides the `automojo-sysman-linux-redhat` package with
+The command execution feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to run arbitrary shell commands on a Red Hat Linux system as part of a
 maintenance workflow.  It covers one-shot command execution, ordered sequences of commands
 with configurable failure handling, and interactive shell script execution via a temporary
@@ -12,7 +12,7 @@ A maintenance coordinator drives all operations by calling into this feature's p
 interfaces.  The feature does not decide *which* commands to run — it provides the
 primitives needed to run them reliably, capture their output, and surface pass/fail
 outcomes in a structured, auditable form.  All system commands are executed exclusively
-through the `automojo-interfaces` command-runner abstraction, enabling dry-run simulation,
+through the `codecraftai-interfaces` command-runner abstraction, enabling dry-run simulation,
 auditing, and test mocking without requiring a live system.
 
 ---

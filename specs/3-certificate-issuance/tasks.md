@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/certificateissuance.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/certificateissuance.py`
 - [ ] 2. Define `CertificateActionStatus`,
   `CertificateIssuanceConfig`, `CertificateActionResult`,
   `SubjectSpec`, `CsrSpec`, `CsrInfo`, `CertificateInfo`,
@@ -108,7 +108,7 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 31. **automojo-* reuse check**: route every `credential`
+- [ ] 31. **codecraftai-* reuse check**: route every `credential`
   parameter through
-  `automojo.credentials.sshcredential.SshCredential` (or an
+  `ccai.credentials.sshcredential.SshCredential` (or an
   equivalent credential abstraction).

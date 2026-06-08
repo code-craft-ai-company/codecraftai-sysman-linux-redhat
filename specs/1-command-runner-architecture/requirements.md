@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The command runner architecture provides the foundational abstraction for executing commands on Red Hat Linux systems, supporting both local and remote (SSH) execution modes. This architecture enables all system management features in the `automojo-sysman-linux-redhat` package to operate transparently across local and remote systems while maintaining reliability, auditability, and testability.
+The command runner architecture provides the foundational abstraction for executing commands on Red Hat Linux systems, supporting both local and remote (SSH) execution modes. This architecture enables all system management features in the `codecraftai-sysman-linux-redhat` package to operate transparently across local and remote systems while maintaining reliability, auditability, and testability.
 
 The architecture introduces three key concepts:
 
@@ -46,7 +46,7 @@ A maintenance coordinator instantiates a command runner (local or SSH) and injec
 
 #### Acceptance Criteria
 
-1. WHEN an `SSHCommandRunner` is instantiated with `dry_run=False` THE SYSTEM SHALL lazily import the SSH dependencies (`automojo.interop.protocols.ssh.sshagent.SshAgent`, `automojo.interop.aspects.AspectsCmd`, `automojo.credentials.sshcredential.SshCredential`, `paramiko`) and construct an `SshAgent`.
+1. WHEN an `SSHCommandRunner` is instantiated with `dry_run=False` THE SYSTEM SHALL lazily import the SSH dependencies (`ccai.interop.protocols.ssh.sshagent.SshAgent`, `ccai.interop.aspects.AspectsCmd`, `ccai.credentials.sshcredential.SshCredential`, `paramiko`) and construct an `SshAgent`.
 2. WHEN the caller supplies a pre-built `agent` in the config THE SYSTEM SHALL use that agent and SHALL NOT construct credentials from the remaining config fields.
 3. WHEN no pre-built agent is supplied THE SYSTEM SHALL build an `SshCredential` from the config's `username`, `password`, `key_filename`, and `credential_identifier` fields (defaulting `allow_agent=True`).
 4. WHEN `host` is not provided and no pre-built agent is supplied THE SYSTEM SHALL raise `ValueError`.

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The scheduled tasks feature provides the `automojo-sysman-linux-redhat` package with the
+The scheduled tasks feature provides the `codecraftai-sysman-linux-redhat` package with the
 ability to manage recurring and one-time task schedules on Red Hat Linux systems.  Two
 scheduling mechanisms are supported: **cron jobs** (entries written to drop-in files
 under `/etc/cron.d/`) and **systemd timers** (`.timer` + `.service` unit-file pairs
@@ -10,9 +10,9 @@ managed under `/etc/systemd/system/`).
 
 A maintenance coordinator uses this feature to install, remove, enable, disable, list,
 and query scheduled tasks without needing to know the exact file paths or `systemctl`
-commands involved.  All file writes are performed through the `automojo-interfaces`
+commands involved.  All file writes are performed through the `codecraftai-interfaces`
 file-operator abstraction.  All runtime commands (`systemctl`) are executed through the
-`automojo-interfaces` command-runner abstraction.  The feature does not invoke a shell
+`codecraftai-interfaces` command-runner abstraction.  The feature does not invoke a shell
 directly, and all write operations respect dry-run mode.
 
 ---

@@ -108,6 +108,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 40. **automojo-* reuse check**: `automojo-errors` / structured
+- [ ] 40. **codecraftai-* reuse check**: `codecraftai-errors` / structured
   log abstractions in sibling packages could replace the bespoke
   `LogManagementError` / parsing helpers — verify.

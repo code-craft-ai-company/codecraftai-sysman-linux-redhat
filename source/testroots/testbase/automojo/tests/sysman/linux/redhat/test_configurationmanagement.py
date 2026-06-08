@@ -3,16 +3,16 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.configurationmanagement import (
+from ccai.sysman.linux.redhat.configurationmanagement import (
     ConfigActionStatus,
     ConfigTemplateError,
     ConfigValidatorNotRegisteredError,
     ConfigurationManager,
     ConfigurationManagerConfig,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass

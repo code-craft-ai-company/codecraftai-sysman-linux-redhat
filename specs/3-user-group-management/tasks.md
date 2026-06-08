@@ -89,7 +89,7 @@ sharing a single `UserGroupManagerConfig`.
 - [ ] 26. `set_password(username, password)` — currently only
   `expire_password` / `set_password_age` are exposed; plain-text
   `passwd` input is missing (needs `chpasswd` via stdin + secrets
-  via `automojo-credentials`)
+  via `codecraftai-credentials`)
 
 - [ ] 27. Idempotency for `modify()` — currently always dispatches
   `usermod` even when all fields already match
@@ -138,7 +138,7 @@ sharing a single `UserGroupManagerConfig`.
 
 ## Follow-ups
 
-- [ ] 54. **automojo-* reuse check**: `automojo-credentials` for
+- [ ] 54. **codecraftai-* reuse check**: `codecraftai-credentials` for
   task 26 (set_password routing); `3-ssh-server-configuration`
   owns system-wide sshd config — per-user `authorized_keys` cleanly
   belongs here.

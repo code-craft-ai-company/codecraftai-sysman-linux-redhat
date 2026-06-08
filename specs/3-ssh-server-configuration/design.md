@@ -3,7 +3,7 @@
 ## Overview
 
 The SSH server configuration feature is implemented as a single module,
-`automojo.sysman.linux.redhat.sshserverconfiguration`, that exposes a
+`ccai.sysman.linux.redhat.sshserverconfiguration`, that exposes a
 `SshServerManager` class. The coordinator instantiates `SshServerManager` and
 calls its methods to manage the OpenSSH server on a Red Hat Linux system: the
 sshd service lifecycle, effective configuration queries, drop-in files under
@@ -21,7 +21,7 @@ This feature **complements but does not duplicate** two other features:
   server-wide configuration under `/etc/ssh/`.
 
 All system interaction is delegated to two injected interfaces from
-`automojo-interfaces`:
+`codecraftai-interfaces`:
 
 - `ICommandRunner` for process execution (`sshd`, `systemctl`, `ssh-keygen`).
 - `IFileOperator` for reads, writes, and deletes under `/etc/ssh/`.
@@ -57,7 +57,7 @@ configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            SshServerManager                                 │
-│  automojo.sysman.linux.redhat.sshserverconfiguration        │
+│  ccai.sysman.linux.redhat.sshserverconfiguration        │
 │                                                             │
 │  get_service_state()       validate_config()                │
 │  get_effective_directive() reload_config()                  │
@@ -100,7 +100,7 @@ configuration.
 
 ### `SshServerManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/sshserverconfiguration.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/sshserverconfiguration.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an
 `IFileOperator`, and a `SshServerManagerConfig`.
@@ -124,7 +124,7 @@ The primary public class. Constructed with an `ICommandRunner`, an
 
 ### `SshServerManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/sshserverconfiguration.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/sshserverconfiguration.py`
 
 A dataclass holding runtime configuration for `SshServerManager`.
 
@@ -332,7 +332,7 @@ the unit is not known to systemd.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `SshServerManager` depends on this interface, injected at construction time.
 
@@ -346,7 +346,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `SshServerManager` depends on this interface, injected at construction time.
 
@@ -368,7 +368,7 @@ class IFileOperator(Protocol):
     def stat(self, path: str, elevated: bool = False) -> FileStat: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -475,12 +475,12 @@ unit is not known to systemd. `SshServerManager` treats this as
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── sshserverconfiguration.py        ← SshServerManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_sshserverconfiguration.py  ← unit + property tests using mocks
 ```
 
@@ -553,9 +553,9 @@ correctness across many inputs.
 ### Local Execution — Disable Root Login via Drop-In
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.sshserverconfiguration import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.sshserverconfiguration import (
     SshServerManager,
     SshServerManagerConfig,
     SshdActionStatus,
@@ -590,9 +590,9 @@ else:
 ### SSH Execution with Reliability Tracking — Rotate Host Keys Across a Fleet
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.sshserverconfiguration import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.sshserverconfiguration import (
     SshServerManager,
     SshServerManagerConfig,
 )
@@ -636,14 +636,14 @@ for host in hosts:
 ### SSH Execution with Aspects — Applying a Baseline Hardening Drop-In
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, RetryAspect, TimeoutAspect,
     PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.sshserverconfiguration import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.sshserverconfiguration import (
     SshServerManager,
     SshServerManagerConfig,
 )

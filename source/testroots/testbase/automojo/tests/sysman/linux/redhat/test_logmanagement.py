@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.logmanagement import (
+from ccai.sysman.linux.redhat.logmanagement import (
     JournalQueryParams,
     LogActionStatus,
     LogManagementError,
@@ -13,7 +13,7 @@ from automojo.sysman.linux.redhat.logmanagement import (
     LogManagerConfig,
     LogrotateConfig,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass

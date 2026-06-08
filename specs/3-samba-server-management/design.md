@@ -3,7 +3,7 @@
 ## Overview
 
 The Samba server management feature is implemented as a single
-module, `automojo.sysman.linux.redhat.sambaservermanagement`,
+module, `ccai.sysman.linux.redhat.sambaservermanagement`,
 exposing a `SambaServerManager` class that manages the content of
 `/etc/samba/smb.conf`, validates via `testparm`, drives
 `smbpasswd` / `pdbedit` / `net ads` / `wbinfo` through the
@@ -22,7 +22,7 @@ returned `SambaActionResult.command` field is sanitised.
   this feature exposes `net ads` as the Samba-native alternative.
 - `3-user-group-management` — local POSIX accounts backing
   Samba users.
-- `automojo-credentials` — passphrase / AD-admin credential
+- `codecraftai-credentials` — passphrase / AD-admin credential
   objects.
 
 ---
@@ -227,4 +227,4 @@ run freely.
 | SMB ports through the firewall | `3-firewall-management` | Out of scope here |
 | AD join via SSSD / realmd | `3-identity-management` | Alternative path; coordinator chooses |
 | Local POSIX accounts | `3-user-group-management` | Samba users must exist as POSIX users first for security modes that require it |
-| Credential material | `automojo-credentials` | Credential objects accepted; passphrases on stdin |
+| Credential material | `codecraftai-credentials` | Credential objects accepted; passphrases on stdin |

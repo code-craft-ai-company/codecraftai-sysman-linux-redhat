@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/nfsservermanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/nfsservermanagement.py`
 - [ ] 2. Define `NfsActionStatus`, `NfsServerManagerConfig`,
   `NfsActionResult`, `ClientSpec`, `ExportEntry`, `NfsServerStats`
   dataclasses
@@ -103,5 +103,5 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 30. **automojo-* reuse check**: no obvious sibling helpers
+- [ ] 30. **codecraftai-* reuse check**: no obvious sibling helpers
   for NFS; verify before extending.

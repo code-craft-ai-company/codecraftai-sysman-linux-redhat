@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The boot management feature provides the `automojo-sysman-linux-redhat` package with
+The boot management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to manage boot-time behavior on Red Hat Linux systems: the default systemd
 boot target, the installed kernels known to the bootloader, the default kernel, kernel
 command-line arguments, and the GRUB2 configuration.
@@ -10,9 +10,9 @@ command-line arguments, and the GRUB2 configuration.
 A maintenance coordinator uses this feature to apply a declared boot posture to the
 target system. All commands (`systemctl get-default`, `systemctl set-default`,
 `grubby`, `grub2-mkconfig`, `grub2-editenv`, `bootctl`) are executed through the
-`automojo-interfaces` command-runner abstraction. All reads and writes against
+`codecraftai-interfaces` command-runner abstraction. All reads and writes against
 `/etc/default/grub`, `/etc/default/grub.d/*.cfg`, `/boot/grub2/grub.cfg`, and
-`/boot/efi/EFI/redhat/grub.cfg` use the `automojo-interfaces` file-operator
+`/boot/efi/EFI/redhat/grub.cfg` use the `codecraftai-interfaces` file-operator
 abstraction. All mutating operations respect dry-run mode.
 
 ---

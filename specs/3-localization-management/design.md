@@ -3,7 +3,7 @@
 ## Overview
 
 The localization management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.localizationmanagement`, that exposes a
+`ccai.sysman.linux.redhat.localizationmanagement`, that exposes a
 `LocalizationManager` class. The coordinator instantiates `LocalizationManager`
 and calls its methods to query or apply locale, timezone, real-time-clock, and
 keyboard settings on Red Hat Linux systems.
@@ -48,7 +48,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            LocalizationManager                              │
-│  automojo.sysman.linux.redhat.localizationmanagement        │
+│  ccai.sysman.linux.redhat.localizationmanagement        │
 │                                                             │
 │  get_time_state()      set_timezone()                       │
 │  list_timezones()      set_local_rtc()                      │
@@ -91,7 +91,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `LocalizationManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/localizationmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/localizationmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner` and a
 `LocalizationManagerConfig`.
@@ -114,7 +114,7 @@ The primary public class. Constructed with an `ICommandRunner` and a
 
 ### `LocalizationManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/localizationmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/localizationmanagement.py`
 
 A dataclass holding runtime configuration for `LocalizationManager`.
 
@@ -293,7 +293,7 @@ exit code and stderr.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `LocalizationManager` depends on this interface, injected at construction time.
 
@@ -307,7 +307,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -397,12 +397,12 @@ When validation fails, the runner is NOT invoked and a
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── localizationmanagement.py          ← LocalizationManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_localizationmanagement.py ← unit tests using MockCommandRunner
 ```
 
@@ -467,8 +467,8 @@ correctness across many inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.localizationmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.localizationmanagement import (
     LocalizationManager,
     LocalizationManagerConfig,
 )
@@ -491,8 +491,8 @@ print(f"Locale: {locale_result.status}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.localizationmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.localizationmanagement import (
     LocalizationManager,
     LocalizationManagerConfig,
 )
@@ -526,11 +526,11 @@ if metrics.last_error:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.localizationmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.localizationmanagement import (
     LocalizationManager,
     LocalizationManagerConfig,
 )

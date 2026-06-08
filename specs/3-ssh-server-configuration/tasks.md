@@ -85,7 +85,7 @@ Complements `3-security-compliance` (hardening checks) and
 
 ## Follow-ups
 
-- [ ] 27. **automojo-* reuse check**: `3-service-management` is the
+- [ ] 27. **codecraftai-* reuse check**: `3-service-management` is the
   canonical systemd surface; delegating `reload_config` would keep
   restart/reload semantics consistent.  Cross-cutting with
   `3-security-compliance.apply_ssh_hardening` — keep the seam clear.

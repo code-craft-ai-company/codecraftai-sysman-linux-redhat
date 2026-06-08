@@ -3,7 +3,7 @@
 ## Overview
 
 The subscription management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.subscriptionmanagement`, that exposes a `SubscriptionManager`
+`ccai.sysman.linux.redhat.subscriptionmanagement`, that exposes a `SubscriptionManager`
 class. The coordinator instantiates `SubscriptionManager` and calls its methods to perform
 discrete maintenance actions against Red Hat Subscription Management (RHSM).
 
@@ -38,7 +38,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            SubscriptionManager                              │
-│  automojo.sysman.linux.redhat.subscriptionmanagement        │
+│  ccai.sysman.linux.redhat.subscriptionmanagement        │
 │                                                             │
 │  register()    unregister()    identity()                   │
 │  status()      attach()        remove()                     │
@@ -79,7 +79,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `SubscriptionManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/subscriptionmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/subscriptionmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner` and a
 `SubscriptionManagerConfig`.
@@ -103,7 +103,7 @@ The primary public class. Constructed with an `ICommandRunner` and a
 
 ### `SubscriptionManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/subscriptionmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/subscriptionmanagement.py`
 
 A dataclass holding runtime configuration for `SubscriptionManager`.
 
@@ -295,7 +295,7 @@ string replaced with the same token before being returned.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `SubscriptionManager` depends on this interface, injected at construction time.
 
@@ -309,7 +309,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -395,12 +395,12 @@ either field is attached to the returned result.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── subscriptionmanagement.py          ← SubscriptionManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_subscriptionmanagement.py ← unit tests using MockCommandRunner
 ```
 
@@ -468,8 +468,8 @@ inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.subscriptionmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.subscriptionmanagement import (
     SubscriptionManager,
     SubscriptionManagerConfig,
 )
@@ -495,8 +495,8 @@ print(f"Enable repo: {enable_result.status}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.subscriptionmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.subscriptionmanagement import (
     SubscriptionManager,
     SubscriptionManagerConfig,
 )
@@ -533,19 +533,19 @@ if metrics.last_error:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect,
     RetryAspect,
     TimeoutAspect,
 )
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspectConfig,
     RetryAspectConfig,
     TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.subscriptionmanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.subscriptionmanagement import (
     SubscriptionManager,
     SubscriptionManagerConfig,
 )

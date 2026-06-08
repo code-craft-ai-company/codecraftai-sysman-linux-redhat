@@ -5,7 +5,7 @@ implementation.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/encryptionmanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/encryptionmanagement.py`
   - _Requirements: All_
 
 - [ ] 2. Define `EncryptionActionStatus` enum (SUCCESS / FAILED /
@@ -193,7 +193,7 @@ implementation.
 
 ## Follow-ups
 
-- [ ] 46. **automojo-* reuse check**: route every `credential`
-  parameter through `automojo.credentials.sshcredential.SshCredential`
+- [ ] 46. **codecraftai-* reuse check**: route every `credential`
+  parameter through `ccai.credentials.sshcredential.SshCredential`
   (or an equivalent credential abstraction).  Do NOT accept raw
   passphrase strings on the public API.

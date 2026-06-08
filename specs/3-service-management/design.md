@@ -3,7 +3,7 @@
 ## Overview
 
 The service management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.servicemanagement`, that exposes a `ServiceManager` class.
+`ccai.sysman.linux.redhat.servicemanagement`, that exposes a `ServiceManager` class.
 The coordinator instantiates `ServiceManager` and calls its methods to perform discrete
 maintenance actions against the `systemd` service manager via `systemctl` and `journalctl`.
 
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            ServiceManager                                   │
-│  automojo.sysman.linux.redhat.servicemanagement             │
+│  ccai.sysman.linux.redhat.servicemanagement             │
 │                                                             │
 │  start()        stop()                                      │
 │  restart()      reload()                                    │
@@ -78,7 +78,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `ServiceManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/servicemanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/servicemanagement.py`
 
 The primary public class.  Constructed with an `ICommandRunner` and a
 `ServiceManagerConfig`.
@@ -99,7 +99,7 @@ The primary public class.  Constructed with an `ICommandRunner` and a
 
 ### `ServiceManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/servicemanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/servicemanagement.py`
 
 A dataclass holding runtime configuration for `ServiceManager`.
 
@@ -232,7 +232,7 @@ class ServiceInfo:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `ServiceManager` depends on this interface, injected at construction time.
 
@@ -246,7 +246,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -338,12 +338,12 @@ All other failures from write operations are surfaced as a `ServiceActionResult`
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── servicemanagement.py          ← ServiceManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_servicemanagement.py ← unit tests using MockCommandRunner
 ```
 
@@ -356,8 +356,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -378,8 +378,8 @@ print(f"Active: {info.active}, Enabled: {info.enabled}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -410,11 +410,11 @@ if metrics.last_error:
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.servicemanagement import ServiceManager, ServiceManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

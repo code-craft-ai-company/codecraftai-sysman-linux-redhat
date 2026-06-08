@@ -62,7 +62,7 @@ items (`[ ]`) identify remaining work.
   reports registered
 
 - [ ] 19. Credential handling currently passes `password` directly
-  on the argument vector; route through `automojo-credentials` so
+  on the argument vector; route through `codecraftai-credentials` so
   secrets aren't exposed in process listings / audit logs
 
 ## Tests — Implemented
@@ -87,7 +87,7 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 29. **automojo-* reuse check**: `automojo-credentials` for
+- [ ] 29. **codecraftai-* reuse check**: `codecraftai-credentials` for
   task 19 (secrets in register).  `3-repository-management`
   overlaps on the repos-enable/-disable surface — document the seam
   (RHSM-managed repos owned here; `.repo` files under

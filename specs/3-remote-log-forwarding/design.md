@@ -4,7 +4,7 @@
 
 The remote log forwarding feature is implemented as a single
 module,
-`automojo.sysman.linux.redhat.remotelogforwarding`, exposing a
+`ccai.sysman.linux.redhat.remotelogforwarding`, exposing a
 `RemoteLogForwardingManager` class that manages rsyslog forward
 drop-ins under `/etc/rsyslog.d/`, the
 `/etc/systemd/journal-upload.conf` file, and journald-forward

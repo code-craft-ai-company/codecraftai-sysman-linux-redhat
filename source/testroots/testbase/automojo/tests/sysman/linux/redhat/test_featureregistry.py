@@ -1,8 +1,8 @@
 # Tests for the FeatureRegistry.
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.featureregistry import (
+from ccai.sysman.linux.redhat.featureregistry import (
     FeatureDescriptor,
     FeatureNotRegisteredError,
     FeatureRegistry,
@@ -18,7 +18,7 @@ def test_register_and_describe_round_trip():
     descriptor = FeatureDescriptor(
         name="sample",
         layer=3,
-        module="automojo.sysman.linux.redhat.auditmanagement",
+        module="ccai.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="sample summary",
     )
@@ -38,7 +38,7 @@ def test_register_duplicate_raises():
     descriptor = FeatureDescriptor(
         name="dup",
         layer=3,
-        module="automojo.sysman.linux.redhat.auditmanagement",
+        module="ccai.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="",
     )
@@ -75,7 +75,7 @@ def test_resolve_imports_manager_class():
     descriptor = FeatureDescriptor(
         name="audit",
         layer=3,
-        module="automojo.sysman.linux.redhat.auditmanagement",
+        module="ccai.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="",
     )
@@ -93,7 +93,7 @@ def test_resolve_caches_class():
     descriptor = FeatureDescriptor(
         name="audit",
         layer=3,
-        module="automojo.sysman.linux.redhat.auditmanagement",
+        module="ccai.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="",
     )
@@ -112,7 +112,7 @@ def test_unregister_removes_descriptor_and_cache():
     descriptor = FeatureDescriptor(
         name="audit",
         layer=3,
-        module="automojo.sysman.linux.redhat.auditmanagement",
+        module="ccai.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="",
     )
@@ -137,14 +137,14 @@ def test_by_layer_filters_correctly():
     registry.register(descriptor=FeatureDescriptor(
         name="l1",
         layer=1,
-        module="automojo.sysman.linux.redhat.commandexecution",
+        module="ccai.sysman.linux.redhat.commandexecution",
         class_name="CommandExecutor",
         summary="",
     ))
     registry.register(descriptor=FeatureDescriptor(
         name="l3",
         layer=3,
-        module="automojo.sysman.linux.redhat.auditmanagement",
+        module="ccai.sysman.linux.redhat.auditmanagement",
         class_name="AuditManager",
         summary="",
     ))

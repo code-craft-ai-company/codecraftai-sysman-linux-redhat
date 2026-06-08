@@ -3,7 +3,7 @@
 ## Overview
 
 The process management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.processmanagement`, that exposes a `ProcessManager`
+`ccai.sysman.linux.redhat.processmanagement`, that exposes a `ProcessManager`
 class. The coordinator instantiates `ProcessManager` and calls its methods to
 enumerate, inspect, signal, and adjust running processes on Red Hat Linux
 systems.
@@ -47,7 +47,7 @@ configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            ProcessManager                                   │
-│  automojo.sysman.linux.redhat.processmanagement             │
+│  ccai.sysman.linux.redhat.processmanagement             │
 │                                                             │
 │  list_processes()     query_process()                       │
 │  find_processes()     signal_pid()                          │
@@ -91,7 +91,7 @@ configuration.
 
 ### `ProcessManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/processmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/processmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an
 `IFileOperator`, and a `ProcessManagerConfig`.
@@ -112,7 +112,7 @@ The primary public class. Constructed with an `ICommandRunner`, an
 
 ### `ProcessManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/processmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/processmanagement.py`
 
 A dataclass holding runtime configuration for `ProcessManager`.
 
@@ -335,7 +335,7 @@ supplied pattern, the returned list should be empty rather than
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `ProcessManager` depends on this interface, injected at construction time.
 
@@ -349,7 +349,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 Used for `/proc` reads (wait-for-exit polling) and the `lsof` fallback
 (`/proc/<pid>/fd/` and `/proc/<pid>/maps`).
@@ -362,7 +362,7 @@ class IFileOperator(Protocol):
     def read_link(self, path: str) -> str: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -465,12 +465,12 @@ these operations safe to call repeatedly.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── processmanagement.py            ← ProcessManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_processmanagement.py   ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -548,9 +548,9 @@ universal correctness across many inputs.
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator
-from automojo.sysman.linux.redhat.processmanagement import ProcessManager, ProcessManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator
+from ccai.sysman.linux.redhat.processmanagement import ProcessManager, ProcessManagerConfig
 
 # Create local runner and file operator
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -575,9 +575,9 @@ if len(matching_pids) > 0:
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator
-from automojo.sysman.linux.redhat.processmanagement import ProcessManager, ProcessManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator
+from ccai.sysman.linux.redhat.processmanagement import ProcessManager, ProcessManagerConfig
 
 # Create SSH runner and file operator for remote system
 ssh_config = SSHRunnerConfig(
@@ -609,12 +609,12 @@ print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
 ### SSH Execution with Aspects (Persistence + Retry + Timeout)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.processmanagement import ProcessManager, ProcessManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.processmanagement import ProcessManager, ProcessManagerConfig
 
 # Create SSH runner and file operator
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

@@ -3,7 +3,7 @@
 ## Introduction
 
 The resource control management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 systemd-cgroup-based resource limits on Red Hat Linux systems.  It
 covers setting transient and persistent `CPUQuota`, `MemoryMax`,
 `IOWeight`, `TasksMax`, and related directives on services and
@@ -12,7 +12,7 @@ slices; managing slice definitions under
 via `systemd-run`; and querying current resource usage via
 `systemd-cgtop` and `systemd-cgls`.
 
-All system commands are executed through the `automojo-interfaces`
+All system commands are executed through the `codecraftai-interfaces`
 command-runner abstraction.  Config-file reads and writes route
 through the runner (`cat`/`tee`).  All mutating operations respect
 dry-run mode.

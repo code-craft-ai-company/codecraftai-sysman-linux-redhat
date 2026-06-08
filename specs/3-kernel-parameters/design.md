@@ -3,7 +3,7 @@
 ## Overview
 
 The kernel parameters feature is implemented as two cooperating classes in a single module,
-`automojo.sysman.linux.redhat.kernelparameters`:
+`ccai.sysman.linux.redhat.kernelparameters`:
 
 - **`KernelParamManager`** — manages sysctl kernel parameters at runtime and in persisted
   drop-in files under `/etc/sysctl.d/`.
@@ -81,7 +81,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `KernelParamManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/kernelparameters.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/kernelparameters.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -173,7 +173,7 @@ class KernelModuleActionResult:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -303,13 +303,13 @@ All other failures from write operations are surfaced as action results with `st
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── kernelparameters.py           ← KernelParamManager, KernelModuleManager,
                                      config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_kernelparameters.py
 ```
 
@@ -322,8 +322,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -368,8 +368,8 @@ print(f"Loaded modules: {len(loaded)}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -407,11 +407,11 @@ print(f"Connection retries: {metrics.retry_count}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.kernelparameters import KernelParamManager, KernelModuleManager, KernelManagerConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

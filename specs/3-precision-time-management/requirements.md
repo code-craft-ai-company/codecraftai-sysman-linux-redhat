@@ -3,13 +3,13 @@
 ## Introduction
 
 The precision time management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 the IEEE 1588 Precision Time Protocol (PTP) stack on Red Hat Linux
 systems.  It covers `ptp4l` (the PTP daemon), `phc2sys` (PHC ↔
 system-clock synchronisation), and `pmc` (PTP management client).
 
 All system commands (`ptp4l`, `phc2sys`, `pmc`) are executed
-through the `automojo-interfaces` command-runner abstraction.
+through the `codecraftai-interfaces` command-runner abstraction.
 Config reads and writes (`/etc/linuxptp/ptp4l.conf`,
 `/etc/sysconfig/ptp4l`, `/etc/sysconfig/phc2sys`) route through
 the runner (`cat`/`tee`).  All mutating operations respect dry-run

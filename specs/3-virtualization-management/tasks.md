@@ -5,7 +5,7 @@ implementation.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/virtualizationmanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/virtualizationmanagement.py`
   - _Requirements: All_
 
 - [ ] 2. Define `VirtActionStatus` enum (SUCCESS / FAILED / SKIPPED
@@ -144,6 +144,6 @@ implementation.
 
 ## Follow-ups
 
-- [ ] 36. **automojo-* reuse check**: `automojo-interop` may
+- [ ] 36. **codecraftai-* reuse check**: `codecraftai-interop` may
   already wrap libvirt — confirm before extending `virsh` parsing
   here.

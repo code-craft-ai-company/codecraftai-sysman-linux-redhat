@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.resourcecontrolmanagement import (
+from ccai.sysman.linux.redhat.resourcecontrolmanagement import (
     CgroupUsage,
     ResourceActionResult,
     ResourceActionStatus,
@@ -21,7 +21,7 @@ from automojo.sysman.linux.redhat.resourcecontrolmanagement import (
     _strip_dropin_property,
     _value_for_key_in_dropin,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

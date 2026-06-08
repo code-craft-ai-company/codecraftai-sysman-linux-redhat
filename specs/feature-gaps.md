@@ -133,22 +133,22 @@ logic; features that re-spell `systemctl` miss it.
 
 ---
 
-## 3. automojo-* Reuse Opportunities
+## 3. codecraftai-* Reuse Opportunities
 
 Sibling packages that features in this repo could delegate to rather
 than reimplementing locally.
 
 | Sibling package | Current consumer | Opportunity |
 |---|---|---|
-| `automojo-configuration` | Every feature that reads/writes config files (~20 features) | Config parsing (INI/JSON/YAML/plain text) currently duplicated in `3-configuration-management`, `3-environment-configuration`, `3-network-configuration`, etc. — consider a shared parser surface |
-| `automojo-credentials` | `3-subscription-management` (password on argv!), `3-user-group-management` (SSH keys), `3-container-management` (registry auth) | Route secrets through credential objects, never on argv |
-| `automojo-errors` | `3-log-management`'s bespoke `LogManagementError`, many features' ad-hoc `*QueryError` classes | Unified error classification + reporting |
-| `automojo-interop` | `3-hardware-inventory` (PCI/USB/block parsing), `3-process-management` (/proc reads), SSH transport | Already used by `SSHCommandRunner` (`SshAgent`); evaluate for hardware/process helpers |
-| `automojo-networking` | `3-network-configuration` | Big overlap — hostname, /etc/hosts, DNS, NTP, NetworkManager.  Risk of double implementation with different semantics |
-| `automojo-storage-database` | `source/packages/.../storage/sqlite.py` | Built-in `SQLiteStorage` for persistence aspect — evaluate whether the sibling package offers a better-tested SQLite surface |
-| `automojo-uefi` | `3-boot-management` (EFI paths, bootctl) | The `automojo-sysman-uefi` companion likely provides EFI-specific helpers |
-| `automojo-landscaping` / `automojo-dataprofiles` | `3-hardware-inventory.collect_snapshot` | Snapshot schemas + landscape descriptions may already exist |
-| `automojo-provisioning` | Top-level maintenance coordinator (not in this package) | Coordinator workflows likely belong there |
+| `codecraftai-configuration` | Every feature that reads/writes config files (~20 features) | Config parsing (INI/JSON/YAML/plain text) currently duplicated in `3-configuration-management`, `3-environment-configuration`, `3-network-configuration`, etc. — consider a shared parser surface |
+| `codecraftai-credentials` | `3-subscription-management` (password on argv!), `3-user-group-management` (SSH keys), `3-container-management` (registry auth) | Route secrets through credential objects, never on argv |
+| `codecraftai-errors` | `3-log-management`'s bespoke `LogManagementError`, many features' ad-hoc `*QueryError` classes | Unified error classification + reporting |
+| `codecraftai-interop` | `3-hardware-inventory` (PCI/USB/block parsing), `3-process-management` (/proc reads), SSH transport | Already used by `SSHCommandRunner` (`SshAgent`); evaluate for hardware/process helpers |
+| `codecraftai-networking` | `3-network-configuration` | Big overlap — hostname, /etc/hosts, DNS, NTP, NetworkManager.  Risk of double implementation with different semantics |
+| `codecraftai-storage-database` | `source/packages/.../storage/sqlite.py` | Built-in `SQLiteStorage` for persistence aspect — evaluate whether the sibling package offers a better-tested SQLite surface |
+| `codecraftai-uefi` | `3-boot-management` (EFI paths, bootctl) | The `codecraftai-sysman-uefi` companion likely provides EFI-specific helpers |
+| `codecraftai-landscaping` / `codecraftai-dataprofiles` | `3-hardware-inventory.collect_snapshot` | Snapshot schemas + landscape descriptions may already exist |
+| `codecraftai-provisioning` | Top-level maintenance coordinator (not in this package) | Coordinator workflows likely belong there |
 
 Per the project memory: check before reimplementing.
 
@@ -224,7 +224,7 @@ Every feature exposes a bare Manager class.  There is no:
 - Composable "use-case" layer (e.g. "harden this machine for PCI
   compliance") that orchestrates multiple managers
 
-This is the kind of class that the `automojo-provisioning` sibling
+This is the kind of class that the `codecraftai-provisioning` sibling
 package might own.  Worth confirming before building one here.
 
 ### 5.2 Layer 6 (Presentation) is empty
@@ -332,12 +332,12 @@ If building from here, my recommended order:
    the `3-service-management` delegations and the
    `run_compliance_suite()` aggregator.  No new features, just
    consolidation.
-4. **`automojo-*` reuse sweep (section 3)** — per the project memory.
+4. **`codecraftai-*` reuse sweep (section 3)** — per the project memory.
    Delegate credential handling, error types, and (selectively)
    config parsing to the siblings.
 5. **Fill the high-priority feature gaps (1.1, 1.2)** —
    authentication/identity and LUKS.  Both are blockers for real
    RHEL admin use.
 6. **Decide on Layer 4 (5.1)** — either build a coordinator here or
-   confirm it belongs in `automojo-provisioning` and document the
+   confirm it belongs in `codecraftai-provisioning` and document the
    seam.

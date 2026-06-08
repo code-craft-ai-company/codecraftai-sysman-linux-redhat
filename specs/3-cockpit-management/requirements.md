@@ -2,16 +2,16 @@
 
 ## Introduction
 
-The Cockpit management feature provides the `automojo-sysman-linux-redhat` package
+The Cockpit management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to manage the Cockpit web management console on Red Hat Linux
 systems: the `cockpit.socket` lifecycle, the listening port, the installed Cockpit
 module set, and the main configuration file at `/etc/cockpit/cockpit.conf`.
 
 A maintenance coordinator uses this feature to bring Cockpit into a declared
 desired state on each target system. All system commands (`systemctl`, `cockpit-bridge`)
-are executed through the `automojo-interfaces` command-runner abstraction. All
+are executed through the `codecraftai-interfaces` command-runner abstraction. All
 reads and writes under `/etc/cockpit/` and `/etc/systemd/system/cockpit.socket.d/`
-use the `automojo-interfaces` file-operator abstraction. All mutating operations
+use the `codecraftai-interfaces` file-operator abstraction. All mutating operations
 respect dry-run mode.
 
 This feature does not install Cockpit packages; RPM installation remains the

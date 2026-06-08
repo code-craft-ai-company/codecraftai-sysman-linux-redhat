@@ -111,7 +111,7 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 45. **automojo-* reuse check**: `3-kdump-management`,
+- [ ] 45. **codecraftai-* reuse check**: `3-kdump-management`,
   `3-cockpit-management`, `3-scheduled-tasks` all spell out
   `systemctl` directly.  Evaluate delegating their systemd calls to
   `ServiceManager` to keep lifecycle semantics (especially SKIPPED

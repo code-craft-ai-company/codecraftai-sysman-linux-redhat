@@ -4,7 +4,7 @@
 
 The precision time management feature is implemented as a single
 module,
-`automojo.sysman.linux.redhat.precisiontimemanagement`, exposing
+`ccai.sysman.linux.redhat.precisiontimemanagement`, exposing
 a `PrecisionTimeManager` class that wraps `ptp4l`, `phc2sys`,
 and `pmc` through the `ICommandRunner` abstraction.  It also
 manages the content of `/etc/linuxptp/ptp4l.conf`,

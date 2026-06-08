@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `auditmanagement` module
-  - `source/packages/automojo/sysman/linux/redhat/auditmanagement.py` exists
+  - `source/packages/ccai/sysman/linux/redhat/auditmanagement.py` exists
   - _Requirements: All_
 
 - [x] 2. Define `AuditActionStatus` enum (SUCCESS / FAILED / SKIPPED /
@@ -116,8 +116,8 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 30. **automojo-* reuse check**: file reads currently route `cat` /
+- [ ] 30. **codecraftai-* reuse check**: file reads currently route `cat` /
   `tee` through the command runner.  Evaluate whether
-  `automojo-interfaces`' file-operator abstraction (if any) or another
+  `codecraftai-interfaces`' file-operator abstraction (if any) or another
   sibling package provides a higher-level file API that works over
   both local and SSH runners, and migrate if available.

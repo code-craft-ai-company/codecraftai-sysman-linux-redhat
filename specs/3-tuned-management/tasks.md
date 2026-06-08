@@ -69,5 +69,5 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 23. **automojo-* reuse check**: `3-service-management` for
+- [ ] 23. **codecraftai-* reuse check**: `3-service-management` for
   tuned.service lifecycle (task 12).

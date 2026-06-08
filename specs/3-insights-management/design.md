@@ -3,7 +3,7 @@
 ## Overview
 
 The insights management feature is implemented as a single module,
-`automojo.sysman.linux.redhat.insightsmanagement`, that exposes an `InsightsManager`
+`ccai.sysman.linux.redhat.insightsmanagement`, that exposes an `InsightsManager`
 class. The coordinator instantiates `InsightsManager` and calls its methods to perform
 discrete Red Hat Insights lifecycle actions: registration state queries, registration
 and unregistration, on-demand uploads, periodic check-ins, local collection without
@@ -55,7 +55,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            InsightsManager                                  │
-│  automojo.sysman.linux.redhat.insightsmanagement            │
+│  ccai.sysman.linux.redhat.insightsmanagement            │
 │                                                             │
 │  get_registration_state()   get_version()                   │
 │  register()   unregister()                                  │
@@ -101,7 +101,7 @@ for details on local/SSH execution, reliability tracking, and aspect configurati
 
 ### `InsightsManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/insightsmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/insightsmanagement.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`,
 and an `InsightsManagerConfig`.
@@ -124,7 +124,7 @@ and an `InsightsManagerConfig`.
 
 ### `InsightsManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/insightsmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/insightsmanagement.py`
 
 A dataclass holding runtime configuration for `InsightsManager`.
 
@@ -297,7 +297,7 @@ populated from the `RunResult`.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `InsightsManager` depends on this interface, injected at construction time.
 
@@ -311,7 +311,7 @@ class ICommandRunner(Protocol):
     ) -> RunResult: ...
 ```
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `InsightsManager` depends on this interface, injected at construction time.
 
@@ -330,7 +330,7 @@ class IFileOperator(Protocol):
     ) -> None: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -416,12 +416,12 @@ indicating `command not found` or `No such file or directory` is reclassified as
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── insightsmanagement.py              ← InsightsManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_insightsmanagement.py     ← unit tests using MockCommandRunner + MockFileOperator
 ```
 
@@ -491,9 +491,9 @@ across many inputs.
 ### Local Execution (Register + Configure Display Name + Upload)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.insightsmanagement import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileops import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.insightsmanagement import (
     InsightsManager,
     InsightsManagerConfig,
 )
@@ -522,9 +522,9 @@ print(f"Upload: {upload_result.status}")
 ### SSH Execution with Reliability Tracking (Fleet Check-in)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.insightsmanagement import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.insightsmanagement import (
     InsightsManager,
     InsightsManagerConfig,
 )
@@ -564,9 +564,9 @@ for host in hosts:
 ### SSH Execution with Aspects (Daily Check-in Sweep)
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileops import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect,
     PersistenceAspectConfig,
     RetryAspect,
@@ -574,8 +574,8 @@ from automojo.sysman.linux.redhat.aspects import (
     TimeoutAspect,
     TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.insightsmanagement import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.insightsmanagement import (
     InsightsManager,
     InsightsManagerConfig,
 )

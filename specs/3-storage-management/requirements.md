@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The storage management feature provides the `automojo-sysman-linux-redhat` package with
+The storage management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to manage block-level storage on Red Hat Linux systems: block-device
 discovery, partitioning, filesystem creation, LVM (physical volumes, volume groups,
 logical volumes), and software RAID (`mdadm`). It complements — and does not duplicate
@@ -13,8 +13,8 @@ A maintenance coordinator uses this feature to bring a system's storage stack in
 declared desired state. All commands (`lsblk`, `blkid`, `parted`, `sfdisk`, `wipefs`,
 `mkfs.*`, `pvcreate`, `pvs`, `vgcreate`, `vgextend`, `vgs`, `lvcreate`, `lvextend`,
 `lvreduce`, `lvremove`, `lvs`, `mdadm`, `cat /proc/mdstat`) are executed through the
-`automojo-interfaces` command-runner abstraction. All writes to LVM configuration and
-`mdadm.conf` use the `automojo-interfaces` file-operator abstraction. All mutating
+`codecraftai-interfaces` command-runner abstraction. All writes to LVM configuration and
+`mdadm.conf` use the `codecraftai-interfaces` file-operator abstraction. All mutating
 operations respect dry-run mode.
 
 ---

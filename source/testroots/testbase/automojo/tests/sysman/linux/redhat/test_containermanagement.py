@@ -5,15 +5,15 @@ import json
 from dataclasses import dataclass, field
 from typing import Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.containermanagement import (
+from ccai.sysman.linux.redhat.containermanagement import (
     ContainerActionStatus,
     ContainerManager,
     ContainerManagerConfig,
     ContainerSpec,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass
@@ -111,7 +111,7 @@ def test_list_containers_parses_json_output():
 
 class _StubCredential:
     """
-        Minimal duck-type of automojo-credentials' BasicCredential.
+        Minimal duck-type of codecraftai-credentials' BasicCredential.
     """
 
     def __init__(self, *, username: str, password: str) -> None:

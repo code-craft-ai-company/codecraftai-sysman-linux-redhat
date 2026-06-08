@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The audit management feature provides the `automojo-sysman-linux-redhat` package with
+The audit management feature provides the `codecraftai-sysman-linux-redhat` package with
 the ability to manage the Linux Audit subsystem (`auditd`) on Red Hat Linux systems: the
 audit daemon, the active and persistent rule sets, the daemon's configuration, and the
 audit-log search and reporting tools.
@@ -10,7 +10,7 @@ audit-log search and reporting tools.
 A maintenance coordinator uses this feature to apply a declared audit posture to the
 target system, verify it, and extract findings from the audit log. All system commands
 (`auditctl`, `augenrules`, `ausearch`, `aureport`, `systemctl`, `service`) are executed
-through the command-runner abstraction (`automojo.sysman.linux.redhat.runners.base.ICommandRunner`).
+through the command-runner abstraction (`ccai.sysman.linux.redhat.runners.base.ICommandRunner`).
 File reads and writes against `/etc/audit/auditd.conf`, `/etc/audit/audit.rules`, and
 files under `/etc/audit/rules.d/` are performed by routing `cat` / `tee` through the
 command runner (leveraging the runner's `stdin` channel for `tee`), so remote execution

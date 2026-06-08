@@ -11,9 +11,9 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.certificatetrustmanagement import (
+from ccai.sysman.linux.redhat.certificatetrustmanagement import (
     CertificateTrustActionResult,
     CertificateTrustManager,
     CertificateTrustManagerConfig,
@@ -25,7 +25,7 @@ from automojo.sysman.linux.redhat.certificatetrustmanagement import (
     TrustAnchor,
     TrustStoreState,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

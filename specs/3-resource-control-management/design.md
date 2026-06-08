@@ -4,7 +4,7 @@
 
 The resource control management feature is implemented as a single
 module,
-`automojo.sysman.linux.redhat.resourcecontrolmanagement`, exposing
+`ccai.sysman.linux.redhat.resourcecontrolmanagement`, exposing
 a `ResourceControlManager` class wrapping `systemctl set-property`,
 systemd drop-in files under `/etc/systemd/system/<unit>.d/`,
 `systemd-run`, `systemd-cgls`, `systemd-cgtop`, and the

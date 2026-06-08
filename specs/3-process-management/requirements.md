@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The process management feature provides the `automojo-sysman-linux-redhat` package
+The process management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to enumerate, inspect, signal, and adjust running processes on Red
 Hat Linux systems. It covers process listing, attribute queries, signal delivery,
 priority and CPU affinity adjustment, and owner-scoped operations.
@@ -10,7 +10,7 @@ priority and CPU affinity adjustment, and owner-scoped operations.
 A maintenance coordinator uses this feature to identify runaway or stale processes,
 terminate them, or adjust their scheduling priority. All system commands (`ps`,
 `pgrep`, `pkill`, `kill`, `renice`, `ionice`, `taskset`, `lsof`) and `/proc` reads
-are executed through the `automojo-interfaces` command-runner and file-operator
+are executed through the `codecraftai-interfaces` command-runner and file-operator
 abstractions. All mutating operations respect dry-run mode.
 
 This feature does not manage systemd services; service lifecycle remains the

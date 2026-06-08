@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `containermanagement` module
-  - `source/packages/automojo/sysman/linux/redhat/containermanagement.py`
+  - `source/packages/ccai/sysman/linux/redhat/containermanagement.py`
     exists
 
 - [x] 2. Define `ContainerActionStatus` enum (SUCCESS / FAILED / SKIPPED
@@ -55,7 +55,7 @@ items (`[ ]`) identify remaining work.
   `/etc/containers/registries.conf`, `registries.d/`
 
 - [ ] 16. Registry authentication — `podman login` / `logout` with
-  credentials routed through `automojo-credentials`
+  credentials routed through `codecraftai-credentials`
 
 - [ ] 17. Quadlet systemd-unit generation for containers
   (`podman generate systemd` or Quadlet `.container` files under
@@ -104,6 +104,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 33. **automojo-* reuse check**: `automojo-credentials` for
-  registry login (task 16); check `automojo-interop` for any container
+- [ ] 33. **codecraftai-* reuse check**: `codecraftai-credentials` for
+  registry login (task 16); check `codecraftai-interop` for any container
   / podman helpers before expanding the wrapper.

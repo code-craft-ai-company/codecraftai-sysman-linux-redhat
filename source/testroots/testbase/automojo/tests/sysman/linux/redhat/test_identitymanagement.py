@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.identitymanagement import (
+from ccai.sysman.linux.redhat.identitymanagement import (
     IdentityActionStatus,
     IdentityCredentialError,
     IdentityManager,
@@ -18,7 +18,7 @@ from automojo.sysman.linux.redhat.identitymanagement import (
     SssdConfigCheckResult,
     SssdStatus,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 # ----------------------------------------------------------------------

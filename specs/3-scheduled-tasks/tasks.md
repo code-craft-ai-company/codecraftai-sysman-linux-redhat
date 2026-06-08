@@ -91,6 +91,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 31. **automojo-* reuse check**: `3-service-management` already
+- [ ] 31. **codecraftai-* reuse check**: `3-service-management` already
   exposes `daemon_reload()`, `enable()`, `disable()` — evaluate
   delegating to it rather than re-spelling `systemctl` here.

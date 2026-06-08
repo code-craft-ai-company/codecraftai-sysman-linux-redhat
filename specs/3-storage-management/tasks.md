@@ -98,5 +98,5 @@ LVM, and RAID.
 
 ## Follow-ups
 
-- [ ] 35. **automojo-* reuse check**: no obvious sibling-package
+- [ ] 35. **codecraftai-* reuse check**: no obvious sibling-package
   reuse for raw LVM; verify before building out tasks 17–22.

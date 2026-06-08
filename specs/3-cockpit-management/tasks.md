@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `cockpitmanagement` module
-  - `source/packages/automojo/sysman/linux/redhat/cockpitmanagement.py`
+  - `source/packages/ccai/sysman/linux/redhat/cockpitmanagement.py`
     exists
 
 - [x] 2. Define `CockpitActionStatus` enum (SUCCESS / FAILED / SKIPPED /
@@ -86,7 +86,7 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 26. **automojo-* reuse check**: evaluate whether firewall ops
+- [ ] 26. **codecraftai-* reuse check**: evaluate whether firewall ops
   should delegate to `3-firewall-management`'s `FirewallManager` rather
   than spelling out `firewall-cmd` here — reduces drift between the two
   features.

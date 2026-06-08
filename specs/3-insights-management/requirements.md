@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Insights management feature provides the `automojo-sysman-linux-redhat` package
+The Insights management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to manage the Red Hat Insights client (`insights-client`) on Red
 Hat Enterprise Linux systems: registration state, inventory uploads, check-ins,
 client configuration, and connection testing.
@@ -10,9 +10,9 @@ client configuration, and connection testing.
 A maintenance coordinator uses this feature to enroll systems with Red Hat Insights,
 trigger or pause telemetry uploads, and verify that the client can reach the
 Insights service. All system commands (`insights-client`) are executed through the
-`automojo-interfaces` command-runner abstraction. All reads and writes against
+`codecraftai-interfaces` command-runner abstraction. All reads and writes against
 `/etc/insights-client/insights-client.conf` and tag files use the
-`automojo-interfaces` file-operator abstraction. All mutating operations respect
+`codecraftai-interfaces` file-operator abstraction. All mutating operations respect
 dry-run mode.
 
 This feature depends on the `insights-client` RPM being installed; package

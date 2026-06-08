@@ -8,13 +8,13 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from hypothesis import given, settings as hyp_settings, strategies as st
 
-from automojo.aspects.aspects import Aspects
+from ccai.aspects.aspects import Aspects
 
-from automojo.sysman.common.vpnactionstatus import VPNActionStatus
-from automojo.sysman.common.vpnprovider import VPNProvider
-from automojo.sysman.common.vpnclientqueryerror import VPNClientQueryError
+from ccai.sysman.common.vpnactionstatus import VPNActionStatus
+from ccai.sysman.common.vpnprovider import VPNProvider
+from ccai.sysman.common.vpnclientqueryerror import VPNClientQueryError
 
-from automojo.sysman.linux.redhat.vpnclientmanagement import (
+from ccai.sysman.linux.redhat.vpnclientmanagement import (
     RedHatVPNClientManager,
     RedHatVPNClientManagerConfig,
     _parse_tailscale_status_json,

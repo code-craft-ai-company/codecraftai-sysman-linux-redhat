@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The backup and restore feature provides the `automojo-sysman-linux-redhat` package
+The backup and restore feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to produce, verify, restore, and prune file-tree archives of
 directories and configuration trees on Red Hat Linux systems. It covers archive
 creation (`tar`/`rsync`), manifest and checksum generation, restore into the same or
@@ -11,9 +11,9 @@ alternate locations, retention policy application, and archive content queries.
 A maintenance coordinator uses this feature to capture known-good snapshots of
 specified paths before destructive or risky changes, and to restore from those
 snapshots on demand. All system commands (`tar`, `rsync`, `sha256sum`, `gzip`,
-`zstd`, `xz`, `openssl enc`) are executed through the `automojo-interfaces`
+`zstd`, `xz`, `openssl enc`) are executed through the `codecraftai-interfaces`
 command-runner abstraction. All reads and writes against the backup repository
-directory use the `automojo-interfaces` file-operator abstraction. All mutating
+directory use the `codecraftai-interfaces` file-operator abstraction. All mutating
 operations respect dry-run mode.
 
 This feature does not back up databases, block devices, or LVM snapshots;

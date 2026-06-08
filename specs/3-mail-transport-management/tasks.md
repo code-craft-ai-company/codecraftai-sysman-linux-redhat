@@ -4,7 +4,7 @@ All tasks are unchecked — new feature.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/mailtransportmanagement.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/mailtransportmanagement.py`
 - [ ] 2. Define `MailActionStatus`, `MailTransportManagerConfig`,
   `MailActionResult`, `MasterCfService`, `QueuedMessage`
   dataclasses
@@ -133,5 +133,5 @@ All tasks are unchecked — new feature.
 
 ## Follow-ups
 
-- [ ] 37. **automojo-* reuse check**: nothing obvious in sibling
+- [ ] 37. **codecraftai-* reuse check**: nothing obvious in sibling
   packages for MTA plumbing; verify before extending.

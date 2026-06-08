@@ -5,12 +5,12 @@ import sqlite3
 import tempfile
 import uuid
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.runners.models import RunResult
-from automojo.sysman.linux.redhat.storage.base import CommandLogEntry
-from automojo.sysman.linux.redhat.storage.json_store import JSONStorage
-from automojo.sysman.linux.redhat.storage.sqlite import SQLiteStorage
+from ccai.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.storage.base import CommandLogEntry
+from ccai.sysman.linux.redhat.storage.json_store import JSONStorage
+from ccai.sysman.linux.redhat.storage.sqlite import SQLiteStorage
 
 
 def _make_entry(entry_id: str) -> CommandLogEntry:

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The user and group management feature provides the `automojo-sysman-linux-redhat` package
+The user and group management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to create, modify, and delete local users and groups on Red Hat Linux
 systems.  It also manages group membership, SSH authorized keys, account lock state, and
 password expiry.
@@ -10,7 +10,7 @@ password expiry.
 A maintenance coordinator running in an external package drives all operations by calling
 into this feature's public interfaces.  The feature does not decide *which* users or groups
 to manage — it provides the capability to *do it* reliably, idempotently, and with full
-auditability.  All system commands are executed exclusively through the `automojo-interfaces`
+auditability.  All system commands are executed exclusively through the `codecraftai-interfaces`
 command-runner abstraction, enabling dry-run simulation, auditing, and test mocking without
 requiring a live system.
 

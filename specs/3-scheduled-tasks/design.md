@@ -3,7 +3,7 @@
 ## Overview
 
 The scheduled tasks feature is implemented as a single module,
-`automojo.sysman.linux.redhat.scheduledtasks`, exposing a `ScheduledTaskManager` class.
+`ccai.sysman.linux.redhat.scheduledtasks`, exposing a `ScheduledTaskManager` class.
 The manager covers two scheduling backends — **cron** (drop-in files in `/etc/cron.d/`)
 and **systemd timers** (`.timer` + `.service` unit-file pairs in `/etc/systemd/system/`)
 — through a unified public API.
@@ -28,7 +28,7 @@ process is spawned.  The module has no dependency on third-party libraries.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              ScheduledTaskManager                           │
-│  automojo.sysman.linux.redhat.scheduledtasks               │
+│  ccai.sysman.linux.redhat.scheduledtasks               │
 │                                                             │
 │  add_cron_job()           remove_cron_job()                 │
 │  list_cron_jobs()         validate_cron_expression()        │
@@ -69,7 +69,7 @@ process is spawned.  The module has no dependency on third-party libraries.
 
 ### `ScheduledTaskManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/scheduledtasks.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/scheduledtasks.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -170,7 +170,7 @@ Each managed cron drop-in file written to `<cron_dir>/<name>` has the form:
 
 ```
 # <comment>               ← omitted when CronJobEntry.comment is None
-# Managed by automojo-sysman. Do not edit manually.
+# Managed by codecraftai-sysman. Do not edit manually.
 <schedule> <user> <command>
 ```
 
@@ -178,7 +178,7 @@ Example for `name="nightly-backup"`:
 
 ```
 # Take nightly filesystem backup
-# Managed by automojo-sysman. Do not edit manually.
+# Managed by codecraftai-sysman. Do not edit manually.
 0 2 * * * root /usr/local/bin/backup.sh
 ```
 
@@ -490,12 +490,12 @@ The `UNIT` column contains `<name>.timer`.  The parser strips `.timer` suffix to
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── scheduledtasks.py   ← ScheduledTaskManager, models, config, exception
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_scheduledtasks.py
 ```
 

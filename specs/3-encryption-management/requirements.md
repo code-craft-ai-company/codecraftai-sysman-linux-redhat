@@ -3,7 +3,7 @@
 ## Introduction
 
 The encryption management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 block-level encryption on Red Hat Linux systems using LUKS (via
 `cryptsetup`), including TPM2-bound and Clevis-bound auto-unlock
 configurations, and the `/etc/crypttab` boot-time unlock table.
@@ -11,7 +11,7 @@ configurations, and the `/etc/crypttab` boot-time unlock table.
 A maintenance coordinator uses this feature to bring a system's
 disk-encryption posture into a declared desired state.  All commands
 (`cryptsetup`, `systemd-cryptenroll`, `clevis`, `clevis-luks-*`)
-are executed through the `automojo-interfaces` command-runner
+are executed through the `codecraftai-interfaces` command-runner
 abstraction.  Reads and writes against `/etc/crypttab` route through
 the runner (`cat`/`tee`).  All mutating operations respect dry-run
 mode.
@@ -24,7 +24,7 @@ typical stack is: `storage-management` partitions →
 `encryption-management` LUKS-formats and opens → `storage-management`
 creates PV/VG/LV on top → `filesystem-management` mounts.
 
-Passphrase material SHALL route through `automojo-credentials` (or
+Passphrase material SHALL route through `codecraftai-credentials` (or
 an equivalent credential object) and be delivered to underlying
 commands via runner `stdin`, never on argv.
 

@@ -5,7 +5,7 @@ implementation.
 
 ## Module and Models
 
-- [ ] 1. Create `source/packages/automojo/sysman/linux/redhat/filesystemquotas.py`
+- [ ] 1. Create `source/packages/ccai/sysman/linux/redhat/filesystemquotas.py`
   - _Requirements: All_
 
 - [ ] 2. Define `QuotaActionStatus` enum
@@ -142,5 +142,5 @@ implementation.
 
 ## Follow-ups
 
-- [ ] 35. **automojo-* reuse check**: nothing obvious in sibling
+- [ ] 35. **codecraftai-* reuse check**: nothing obvious in sibling
   packages for quota plumbing; verify before building.

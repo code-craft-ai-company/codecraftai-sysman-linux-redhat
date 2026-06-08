@@ -6,7 +6,7 @@ items (`[ ]`) identify remaining work.
 ## Module and Models
 
 - [x] 1. Create the `bootmanagement` module
-  - `source/packages/automojo/sysman/linux/redhat/bootmanagement.py` exists
+  - `source/packages/ccai/sysman/linux/redhat/bootmanagement.py` exists
 
 - [x] 2. Define `BootActionStatus` enum (SUCCESS / FAILED / SKIPPED /
   DRY_RUN)
@@ -89,6 +89,6 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 29. **automojo-* reuse check**: look for boot/bootloader helpers
-  in `automojo-sysman-uefi` or `automojo-interop` before expanding this
+- [ ] 29. **codecraftai-* reuse check**: look for boot/bootloader helpers
+  in `codecraftai-sysman-uefi` or `codecraftai-interop` before expanding this
   module (the `uefi` package is a particularly likely source).

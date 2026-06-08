@@ -3,7 +3,7 @@
 ## Introduction
 
 The authentication management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage the
+`codecraftai-sysman-linux-redhat` package with the ability to manage the
 local authentication stack on Red Hat Linux systems: the PAM module
 graph, the active `authselect` profile, password-quality policy,
 failed-login lockout, and resource limits.
@@ -11,7 +11,7 @@ failed-login lockout, and resource limits.
 A maintenance coordinator uses this feature to bring a system's
 authentication posture into a declared desired state.  All commands
 (`authselect`, `pam_pwquality` tooling, `faillock`) are executed
-through the `automojo-interfaces` command-runner abstraction.  All
+through the `codecraftai-interfaces` command-runner abstraction.  All
 reads and writes against `/etc/pam.d/*`,
 `/etc/security/faillock.conf`, `/etc/security/pwquality.conf`,
 `/etc/security/limits.conf`, and `/etc/security/limits.d/*` are

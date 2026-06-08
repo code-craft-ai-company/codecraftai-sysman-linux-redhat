@@ -3,7 +3,7 @@
 ## Overview
 
 The backup and restore feature is implemented as a single module,
-`automojo.sysman.linux.redhat.backuprestore`, that exposes a `BackupRestoreManager` class.
+`ccai.sysman.linux.redhat.backuprestore`, that exposes a `BackupRestoreManager` class.
 The coordinator instantiates `BackupRestoreManager` and calls its methods to produce,
 verify, restore, and prune file-tree archives on a Red Hat Linux system.
 
@@ -49,7 +49,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            BackupRestoreManager                             │
-│  automojo.sysman.linux.redhat.backuprestore                 │
+│  ccai.sysman.linux.redhat.backuprestore                 │
 │                                                             │
 │  init_repository()      create_archive()                    │
 │  create_rsync_mirror()  verify_archive()                    │
@@ -90,7 +90,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `BackupRestoreManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/backuprestore.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/backuprestore.py`
 
 The primary public class. Constructed with an `ICommandRunner`, an `IFileOperator`, and a
 `BackupRestoreManagerConfig`.
@@ -108,7 +108,7 @@ The primary public class. Constructed with an `ICommandRunner`, an `IFileOperato
 
 ### `BackupRestoreManagerConfig`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/backuprestore.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/backuprestore.py`
 
 A dataclass holding runtime configuration for `BackupRestoreManager`.
 
@@ -117,7 +117,7 @@ A dataclass holding runtime configuration for `BackupRestoreManager`.
 | `dry_run` | `bool` | `False` | When `True`, no mutating commands or file operations are executed |
 | `elevated` | `bool` | `False` | When `True`, mutating commands and file operations use the runner's elevation mechanism |
 | `default_compression` | `BackupCompression` | `BackupCompression.NONE` | Default compression (`none`, `gzip`, `zstd`, `xz`) |
-| `repository_root` | `Path` | `Path("/var/lib/automojo/backups")` | Default repository root used when a method is not given an explicit one |
+| `repository_root` | `Path` | `Path("/var/lib/ccai/backups")` | Default repository root used when a method is not given an explicit one |
 
 ---
 
@@ -330,7 +330,7 @@ under `tmp/` SHALL be removed via the file operator before the method returns.
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 `BackupRestoreManager` depends on this interface, injected at construction time.
 
@@ -348,7 +348,7 @@ class ICommandRunner(Protocol):
 The `stdin_data` parameter is used to deliver the encryption passphrase to `openssl enc`
 without placing it on the command line.
 
-### `IFileOperator` (from `automojo-interfaces`)
+### `IFileOperator` (from `codecraftai-interfaces`)
 
 `BackupRestoreManager` also depends on this interface, injected at construction time.
 
@@ -367,7 +367,7 @@ class IFileOperator(Protocol):
     def list_dir(self, path: Path, elevated: bool = False) -> list[Path]: ...
 ```
 
-### `RunResult` (from `automojo-interfaces`)
+### `RunResult` (from `codecraftai-interfaces`)
 
 ```python
 @dataclass
@@ -458,12 +458,12 @@ returns `SKIPPED` without invoking the runner or mutating the file operator.
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── backuprestore.py              ← BackupRestoreManager, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_backuprestore.py     ← unit + property-based tests using mocks
 ```
 
@@ -535,9 +535,9 @@ inputs.
 ```python
 from pathlib import Path
 
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.fileoperators import LocalFileOperator, LocalFileOperatorConfig
-from automojo.sysman.linux.redhat.backuprestore import (
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.fileoperators import LocalFileOperator, LocalFileOperatorConfig
+from ccai.sysman.linux.redhat.backuprestore import (
     BackupRestoreManager,
     BackupRestoreManagerConfig,
     BackupCompression,
@@ -552,12 +552,12 @@ config = BackupRestoreManagerConfig(
     dry_run=False,
     elevated=True,
     default_compression=BackupCompression.ZSTD,
-    repository_root=Path("/var/lib/automojo/backups"),
+    repository_root=Path("/var/lib/ccai/backups"),
 )
 manager = BackupRestoreManager(runner, fileop, config)
 
 # Initialize the repository
-init_result = manager.init_repository(root=Path("/var/lib/automojo/backups"))
+init_result = manager.init_repository(root=Path("/var/lib/ccai/backups"))
 print(f"Init: {init_result.status}")
 
 # Archive /etc
@@ -586,9 +586,9 @@ for entry in entries_list:
 ```python
 from pathlib import Path
 
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.backuprestore import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.backuprestore import (
     BackupRestoreManager,
     BackupRestoreManagerConfig,
 )
@@ -632,20 +632,20 @@ print(f"Average duration: {metrics.avg_duration_ms:.2f}ms")
 ```python
 from pathlib import Path
 
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
-from automojo.sysman.linux.redhat.aspects import (
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.fileoperators import SSHFileOperator, SSHFileOperatorConfig
+from ccai.sysman.linux.redhat.aspects import (
     PersistenceAspect, PersistenceAspectConfig,
     RetryAspect, RetryAspectConfig,
     TimeoutAspect, TimeoutAspectConfig,
 )
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.backuprestore import (
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.backuprestore import (
     BackupRestoreManager,
     BackupRestoreManagerConfig,
     BackupCompression,
 )
-from automojo.secrets import SecretStr
+from ccai.secrets import SecretStr
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))
@@ -675,12 +675,12 @@ manager = BackupRestoreManager(
     BackupRestoreManagerConfig(
         elevated=True,
         default_compression=BackupCompression.ZSTD,
-        repository_root=Path("/var/lib/automojo/backups"),
+        repository_root=Path("/var/lib/ccai/backups"),
     ),
 )
 
 # Load passphrase from a secure source (environment vault, etc.)
-passphrase = SecretStr.from_env("AUTOMOJO_BACKUP_PASSPHRASE")
+passphrase = SecretStr.from_env("CCAI_BACKUP_PASSPHRASE")
 
 # Create an encrypted archive; the passphrase is delivered via stdin only
 create_result = manager.create_archive(

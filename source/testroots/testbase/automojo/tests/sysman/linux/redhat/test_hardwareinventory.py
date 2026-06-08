@@ -5,13 +5,13 @@ import json
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.hardwareinventory import (
+from ccai.sysman.linux.redhat.hardwareinventory import (
     HardwareInventoryConfig,
     HardwareInventoryManager,
 )
-from automojo.sysman.linux.redhat.runners.models import RunResult
+from ccai.sysman.linux.redhat.runners.models import RunResult
 
 
 @dataclass

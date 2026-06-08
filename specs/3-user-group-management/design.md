@@ -3,7 +3,7 @@
 ## Overview
 
 The user and group management feature is implemented as two cooperating classes in a single
-module, `automojo.sysman.linux.redhat.usergroupmanagement`:
+module, `ccai.sysman.linux.redhat.usergroupmanagement`:
 
 - **`UserManager`** — handles user lifecycle, group membership, SSH keys, lock state, and
   password expiry.
@@ -85,7 +85,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `UserManager`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/usergroupmanagement.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/usergroupmanagement.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -322,7 +322,7 @@ class GroupInfo:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -432,13 +432,13 @@ Directory and file creation for missing `.ssh` paths follows this sequence:
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── usergroupmanagement.py        ← UserManager, GroupManager, all specs,
                                      result types, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_usergroupmanagement.py
 ```
 

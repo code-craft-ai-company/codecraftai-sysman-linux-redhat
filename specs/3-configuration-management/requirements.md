@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The configuration management feature provides the `automojo-sysman-linux-redhat` package
+The configuration management feature provides the `codecraftai-sysman-linux-redhat` package
 with the ability to write, update, backup, restore, diff, and validate configuration files
 on Red Hat Linux systems.  It supports common on-disk formats used by system software:
 INI/key-value, JSON, YAML, and plain text rendered from templates.
@@ -10,7 +10,7 @@ INI/key-value, JSON, YAML, and plain text rendered from templates.
 A maintenance coordinator running in an external package drives all operations by calling
 into this feature's public interfaces.  The feature does not decide *which* files to manage
 — it provides the capability to *do it* reliably, idempotently, and with full auditability.
-All file system mutations are executed through the `automojo-interfaces` command-runner
+All file system mutations are executed through the `codecraftai-interfaces` command-runner
 abstraction so that dry-run simulation, auditing, and test mocking apply uniformly across
 all operations.
 

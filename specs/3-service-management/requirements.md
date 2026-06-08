@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The service management feature provides the `automojo-sysman-linux-redhat` package with the
+The service management feature provides the `codecraftai-sysman-linux-redhat` package with the
 ability to start, stop, restart, reload, enable, disable, mask, and query `systemd` services
 on Red Hat Linux systems.  It also supports reloading the systemd daemon after unit file
 changes and querying service journal output.
@@ -10,7 +10,7 @@ changes and querying service journal output.
 A maintenance coordinator running in an external package drives all operations by calling
 into this feature's public interfaces.  The feature does not decide *which* services to
 manage — it provides the capability to *do it* reliably, idempotently, and with full
-auditability.  All system commands are executed exclusively through the `automojo-interfaces`
+auditability.  All system commands are executed exclusively through the `codecraftai-interfaces`
 command-runner abstraction, enabling dry-run simulation, auditing, and test mocking without
 requiring a live system.
 

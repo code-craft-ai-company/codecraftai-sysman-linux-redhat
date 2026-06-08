@@ -82,8 +82,8 @@ items (`[ ]`) identify remaining work.
 
 ## Follow-ups
 
-- [ ] 31. **automojo-* reuse check**: `3-cockpit-management` also
+- [ ] 31. **codecraftai-* reuse check**: `3-cockpit-management` also
   spells out `firewall-cmd` directly — consider having it delegate to
   `FirewallManager.add_service("cockpit", zone)` to avoid drift
   between the two features.  Also check whether any sibling
-  `automojo-*` package offers a firewall-facing helper already.
+  `codecraftai-*` package offers a firewall-facing helper already.

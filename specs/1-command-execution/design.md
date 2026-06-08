@@ -3,7 +3,7 @@
 ## Overview
 
 The command execution feature is implemented as a single module,
-`automojo.sysman.linux.redhat.commandexecution`, that exposes a `CommandExecutor` class.
+`ccai.sysman.linux.redhat.commandexecution`, that exposes a `CommandExecutor` class.
 The coordinator instantiates `CommandExecutor` and calls its methods to run commands,
 sequences, and shell scripts through the `ICommandRunner` abstraction.
 
@@ -39,7 +39,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            CommandExecutor                                  │
-│  automojo.sysman.linux.redhat.commandexecution             │
+│  ccai.sysman.linux.redhat.commandexecution             │
 │                                                             │
 │  run()          run_sequence()                              │
 │  run_script()                                               │
@@ -77,7 +77,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `CommandExecutor`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/commandexecution.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/commandexecution.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -143,7 +143,7 @@ class SequenceResult:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -292,12 +292,12 @@ When `CommandExecutorConfig.dry_run=True`:
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── commandexecution.py         ← CommandExecutor, config, models
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_commandexecution.py
 ```
 
@@ -310,8 +310,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig, CommandSpec
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig, CommandSpec
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -338,8 +338,8 @@ print(f"All succeeded: {seq_result.all_succeeded}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -375,11 +375,11 @@ print(f"Connection retries: {metrics.retry_count}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.commandexecution import CommandExecutor, CommandExecutorConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))
@@ -439,8 +439,8 @@ assert result.success == True  # Synthetic success in dry-run
 ### Unit Testing (Implemented)
 
 Tests live in
-`source/testroots/testbase/automojo/tests/sysman/linux/redhat/test_commandexecution.py`
-and use the `automojo.testbase` assertion helpers.
+`source/testroots/testbase/ccai/tests/sysman/linux/redhat/test_commandexecution.py`
+and use the `ccai.testbase` assertion helpers.
 
 - A local `_MockRunner` dataclass stubs `ICommandRunner`, letting each test queue a
   sequence of `RunResult` instances and inspect the call history.

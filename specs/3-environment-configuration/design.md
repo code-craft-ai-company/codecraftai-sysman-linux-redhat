@@ -3,13 +3,13 @@
 ## Overview
 
 The environment configuration feature is implemented as a single module,
-`automojo.sysman.linux.redhat.environmentconfiguration`, that exposes an
+`ccai.sysman.linux.redhat.environmentconfiguration`, that exposes an
 `EnvironmentConfigurator` class. The coordinator instantiates `EnvironmentConfigurator`
 and calls its methods to set, unset, and query environment variables in system-wide and
 per-user configuration files.
 
 All file reads and writes go through the `IFileOperator` abstraction from
-`automojo-interfaces`. User home directory resolution is the only place where
+`codecraftai-interfaces`. User home directory resolution is the only place where
 `pwd.getpwnam` is called directly, isolated in a private helper. No subprocess calls
 are made; no direct open/write calls touch the filesystem outside the file operator.
 
@@ -36,7 +36,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │        EnvironmentConfigurator                              │
-│  automojo.sysman.linux.redhat.environmentconfiguration     │
+│  ccai.sysman.linux.redhat.environmentconfiguration     │
 │                                                             │
 │  set_system_var()   unset_system_var()                     │
 │  set_etc_env_var()  unset_etc_env_var()                    │
@@ -86,7 +86,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `EnvironmentConfigurator`
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/environmentconfiguration.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/environmentconfiguration.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -521,12 +521,12 @@ determine what *would* happen, enabling accurate `SKIPPED` vs `DRY_RUN` reportin
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── environmentconfiguration.py   ← EnvironmentConfigurator, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_environmentconfiguration.py
 ```
 
@@ -539,8 +539,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
 
 # Create local runner and file operator
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -562,8 +562,8 @@ print(f"User vars: {user_vars}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(
@@ -593,11 +593,11 @@ print(f"Connection retries: {metrics.retry_count}")
 ### SSH Execution with Aspects
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
-from automojo.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
-from automojo.sysman.linux.redhat.storage import SQLiteStorage
-from automojo.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.aspects import PersistenceAspect, RetryAspect, TimeoutAspect
+from ccai.sysman.linux.redhat.aspects import PersistenceAspectConfig, RetryAspectConfig, TimeoutAspectConfig
+from ccai.sysman.linux.redhat.storage import SQLiteStorage
+from ccai.sysman.linux.redhat.environmentconfiguration import EnvironmentConfigurator, EnvironmentConfiguratorConfig
 
 # Create SSH runner
 runner = SSHCommandRunner(SSHRunnerConfig(host="remote-server", username="admin"))

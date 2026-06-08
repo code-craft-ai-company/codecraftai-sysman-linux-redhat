@@ -2,7 +2,7 @@
 
 ## Module and Types
 
-- [x] 1. Create the `automojo.sysman.linux.redhat.vpnclientmanagement` module.
+- [x] 1. Create the `ccai.sysman.linux.redhat.vpnclientmanagement` module.
 
 - [x] 2. Re-export `RedHatVPNActionStatus`, `RedHatVPNActionResult`,
   `RedHatVPNClientStatus`, `RedHatVPNClientQueryError` from the shared base

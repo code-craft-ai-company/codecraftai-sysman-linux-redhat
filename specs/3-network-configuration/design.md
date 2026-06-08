@@ -3,7 +3,7 @@
 ## Overview
 
 The network configuration feature is implemented as a single module,
-`automojo.sysman.linux.redhat.networkconfiguration`, that exposes a `NetworkManager` class.
+`ccai.sysman.linux.redhat.networkconfiguration`, that exposes a `NetworkManager` class.
 The coordinator instantiates `NetworkManager` and calls its methods to perform discrete
 maintenance actions across hostname, hosts file, DNS resolver, NTP/Chrony, and
 NetworkManager connection management.
@@ -39,7 +39,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │          NetworkManager                                     │
-│  automojo.sysman.linux.redhat.networkconfiguration         │
+│  ccai.sysman.linux.redhat.networkconfiguration         │
 │                                                             │
 │  set_hostname()    query_hostname()                         │
 │  add_hosts_entry() remove_hosts_entry()                     │
@@ -83,7 +83,7 @@ details on local/SSH execution, reliability tracking, and aspect configuration.
 
 ### `NetworkManager` (class)
 
-**Location:** `source/packages/automojo/sysman/linux/redhat/networkconfiguration.py`
+**Location:** `source/packages/ccai/sysman/linux/redhat/networkconfiguration.py`
 
 | Method | Signature | Description |
 |---|---|---|
@@ -181,7 +181,7 @@ class NmConnectionInfo:
 
 ## Interfaces
 
-### `ICommandRunner` (from `automojo-interfaces`)
+### `ICommandRunner` (from `codecraftai-interfaces`)
 
 ```python
 class ICommandRunner(Protocol):
@@ -551,12 +551,12 @@ All other failures from write operations are surfaced as `NetworkActionResult` w
 ## Module Layout
 
 ```
-source/packages/automojo/sysman/linux/redhat/
+source/packages/ccai/sysman/linux/redhat/
 ├── __init__.py
 └── networkconfiguration.py       ← NetworkManager class, config, models, exceptions
 
 source/testroots/testbase/
-└── automojo/tests/sysman/linux/redhat/
+└── ccai/tests/sysman/linux/redhat/
     └── test_networkconfiguration.py
 ```
 
@@ -569,8 +569,8 @@ source/testroots/testbase/
 ### Local Execution (Default)
 
 ```python
-from automojo.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
-from automojo.sysman.linux.redhat.networkconfiguration import NetworkManager, NetworkManagerConfig
+from ccai.sysman.linux.redhat.runners import LocalCommandRunner, LocalRunnerConfig
+from ccai.sysman.linux.redhat.networkconfiguration import NetworkManager, NetworkManagerConfig
 
 # Create local runner
 runner = LocalCommandRunner(LocalRunnerConfig())
@@ -609,8 +609,8 @@ print(f"NTP sync: {ntp_status.synchronized}")
 ### SSH Execution with Reliability Tracking
 
 ```python
-from automojo.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
-from automojo.sysman.linux.redhat.networkconfiguration import NetworkManager, NetworkManagerConfig
+from ccai.sysman.linux.redhat.runners import SSHCommandRunner, SSHRunnerConfig
+from ccai.sysman.linux.redhat.networkconfiguration import NetworkManager, NetworkManagerConfig
 
 # Create SSH runner for remote system
 ssh_config = SSHRunnerConfig(

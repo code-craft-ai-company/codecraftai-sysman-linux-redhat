@@ -3,14 +3,14 @@
 ## Introduction
 
 The Samba server management feature provides the
-`automojo-sysman-linux-redhat` package with the ability to manage
+`codecraftai-sysman-linux-redhat` package with the ability to manage
 a local Samba (SMB/CIFS) file server on Red Hat Linux systems.
 It covers `smb.conf` management, share CRUD, Samba-user password
 management via `smbpasswd`, configuration validation via
 `testparm`, and AD-domain join via `net ads join`.
 
 All system commands (`testparm`, `smbpasswd`, `net`, `wbinfo`,
-`pdbedit`) are executed through the `automojo-interfaces`
+`pdbedit`) are executed through the `codecraftai-interfaces`
 command-runner abstraction.  `/etc/samba/smb.conf` and drop-ins
 under `/etc/samba/smb.conf.d/` route through the runner
 (`cat`/`tee`).  All mutating operations respect dry-run mode.

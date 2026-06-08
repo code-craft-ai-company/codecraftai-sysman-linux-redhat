@@ -5,14 +5,14 @@ import subprocess
 from dataclasses import dataclass
 from unittest import mock
 
-from automojo import testbase
+from ccai import testbase
 
-from automojo.sysman.linux.redhat.aspects.base import IExecutionAspect
-from automojo.sysman.linux.redhat.runners.local import (
+from ccai.sysman.linux.redhat.aspects.base import IExecutionAspect
+from ccai.sysman.linux.redhat.runners.local import (
     LocalCommandRunner,
     LocalRunnerConfig,
 )
-from automojo.sysman.linux.redhat.runners.models import ExecutionContext, RunResult
+from ccai.sysman.linux.redhat.runners.models import ExecutionContext, RunResult
 
 
 @dataclass
