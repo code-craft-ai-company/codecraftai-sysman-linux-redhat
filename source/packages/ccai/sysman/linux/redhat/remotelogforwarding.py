@@ -18,6 +18,7 @@
 # ``test -e`` / ``install`` through the runner.
 
 import os
+import re
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -56,6 +57,11 @@ _DEFAULT_RSYSLOG_SERVICE = "rsyslog"
 _DEFAULT_UPLOAD_SERVICE = "systemd-journal-upload"
 
 _PROBE_TIMEOUT_SECONDS = "5"
+
+# A collector host lands inside an openssl argument and (for plain TCP) inside a
+# bash -c '/dev/tcp' redirect, so it must be restricted to hostname/IP characters
+# to prevent shell-metacharacter injection.
+_PROBE_HOST_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
 
 _CONF_SUFFIX = ".conf"
 
@@ -1077,8 +1083,21 @@ class RemoteLogForwardingManager(BaseFeatureManager):
 
             :returns: The :class:`LogForwardingHealth`.
         """
+        # Refuse hosts containing shell metacharacters (treated as unreachable,
+        # honoring the "never raises" contract) -- host enters a shell command below.
+        if not _PROBE_HOST_RE.match(host):
+            rtnval = LogForwardingHealth(
+                host=host,
+                port=port,
+                reachable=False,
+                tls_verified=(False if tls else None),
+                raw="Invalid collector host; probe refused.",
+            )
+            return rtnval
+
         if tls:
             command = [
+                _TIMEOUT, _PROBE_TIMEOUT_SECONDS,
                 _OPENSSL, "s_client",
                 "-connect", "{}:{}".format(host, port),
                 "-verify", "1",

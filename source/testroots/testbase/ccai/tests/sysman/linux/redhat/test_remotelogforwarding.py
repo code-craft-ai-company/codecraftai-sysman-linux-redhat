@@ -1097,6 +1097,7 @@ def test_probe_collector_tls_verified():
     """
     runner = _MockRunner()
     runner.results[(
+        "timeout", "5",
         "openssl", "s_client",
         "-connect", "secure.example.com:6514",
         "-verify", "1", "-brief",
@@ -1121,6 +1122,7 @@ def test_probe_collector_tls_unverified():
     """
     runner = _MockRunner()
     runner.results[(
+        "timeout", "5",
         "openssl", "s_client",
         "-connect", "secure.example.com:6514",
         "-verify", "1", "-brief",
