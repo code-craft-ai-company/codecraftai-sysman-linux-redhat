@@ -6,7 +6,8 @@ import unittest
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
 
-from hypothesis import given, settings as hyp_settings, strategies as st
+from ccai.testbase.properties import given
+from ccai.testbase.properties import strategies as st
 
 from ccai.aspects.aspects import Aspects
 
