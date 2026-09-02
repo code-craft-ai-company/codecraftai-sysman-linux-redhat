@@ -4,7 +4,7 @@ Code Craft AI Sysman Linux Red Hat
 
 ``codecraftai-sysman-linux-redhat`` is a Python library for automating the maintenance of software configurations on Red Hat Enterprise Linux systems. It provides a catalogue of domain primitives — covering packages, repositories, services, users, filesystems, storage, networks, firewalls, kernel parameters, logs, scheduled tasks, security compliance, containers, boot configuration, Cockpit, Insights, subscriptions, and more — that an external maintenance coordinator invokes to apply a declared system posture.
 
-The package does not decide *what* maintenance to perform; it provides the capability to *do it* reliably, idempotently, and with full auditability. All system mutations flow through the ``codecraftai-interfaces`` command-runner and file-operator abstractions, and through the local-/SSH-runner architecture defined under ``specs/1-command-runner-architecture``. Every feature supports dry-run simulation, command auditing, and test mocking uniformly.
+The package does not decide *what* maintenance to perform; it provides the capability to *do it* reliably, idempotently, and with full auditability. All system mutations flow through the ``codecraftai-foundations`` command-runner and file-operator abstractions, and through the local-/SSH-runner architecture defined under ``specs/1-command-runner-architecture``. Every feature supports dry-run simulation, command auditing, and test mocking uniformly.
 
 Highlights
 ==========
