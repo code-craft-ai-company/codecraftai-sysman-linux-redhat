@@ -156,12 +156,12 @@ def test_by_layer_filters_correctly():
 
 def test_default_registry_populated_with_all_implemented_features():
     """
-        The seed registry contains exactly the 46 implemented features
+        The seed registry contains exactly the 47 implemented features
         (2 Layer 1 + 1 Layer 2 + 43 Layer 3).
     """
     registry = build_default_registry()
     names = registry.names()
-    testbase.assert_equal(len(names), 46)
+    testbase.assert_equal(len(names), 47)
     testbase.assert_true("command-execution" in names)
     testbase.assert_true("maintenance-reporting" in names)
     testbase.assert_true("package-management" in names)
@@ -182,7 +182,7 @@ def test_default_registry_populated_with_all_implemented_features():
     testbase.assert_true("virtualization-management" in names)
     testbase.assert_equal(len(registry.by_layer(layer=1)), 2)
     testbase.assert_equal(len(registry.by_layer(layer=2)), 1)
-    testbase.assert_equal(len(registry.by_layer(layer=3)), 43)
+    testbase.assert_equal(len(registry.by_layer(layer=3)), 44)
     return
 
 

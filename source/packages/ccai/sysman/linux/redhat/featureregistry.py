@@ -453,6 +453,13 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
         summary="tuned.service active profile + custom profiles.",
     ),
     FeatureDescriptor(
+        name="python-environment-management",
+        layer=3,
+        module="ccai.sysman.linux.redhat.pythonenvironmentmanagement",
+        class_name="RedHatPythonEnvironmentManager",
+        summary="Python virtual environments: venv create/remove, pip install/uninstall, deploy from spec.",
+    ),
+    FeatureDescriptor(
         name="user-group-management",
         layer=3,
         module="ccai.sysman.linux.redhat.usergroupmanagement",
@@ -472,7 +479,7 @@ _DEFAULT_REGISTRY_SEED: list[FeatureDescriptor] = [
 def build_default_registry() -> FeatureRegistry:
     """
         Build a :class:`FeatureRegistry` pre-populated with every
-        implemented feature in this package (the 46 source-backed
+        implemented feature in this package (the 47 source-backed
         entries).  Spec-only features are deliberately excluded to
         avoid :class:`ImportError` at resolution time.
     """

@@ -400,6 +400,18 @@ owner-scoped operations.  Does not manage systemd services — that's
 - [design.md](3-process-management/design.md)
 - [tasks.md](3-process-management/tasks.md)
 
+### 3-python-environment-management
+
+Python virtual environments: `venv` create / remove, `pip` install /
+uninstall / requirements / upgrade, declarative `deploy` from a
+`PythonEnvSpec`, and dnf prerequisites.  Verbs are implemented once in
+`codecraftai-sysman-common` (`PythonEnvironmentManagementBase`); this
+package adds the POSIX layout and `ensure_prerequisites`.
+
+- [requirements.md](3-python-environment-management/requirements.md)
+- [design.md](3-python-environment-management/design.md)
+- [tasks.md](3-python-environment-management/tasks.md)
+
 ### 3-remote-log-forwarding
 
 Ships logs off-host — counterpart to `3-log-management`'s local
