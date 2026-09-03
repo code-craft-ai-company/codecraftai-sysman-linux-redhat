@@ -709,8 +709,7 @@ class TestParsers(unittest.TestCase):
 
 class TestPropertyIdempotency(unittest.TestCase):
 
-    @given(channel=st.sampled_from(["stable", "unstable"]))
-    @hyp_settings(max_examples=10, deadline=None)
+    @given(channel=st.sampled_from(["stable", "unstable"]), constraints={"max_examples": 10})
     def test_property_install_tailscale_idempotent(self, channel: str) -> None:
         # First call: not installed -> SUCCESS. Then "package exists" -> SKIPPED.
         runner = _MockRunner()
@@ -746,8 +745,7 @@ class TestPropertyIdempotency(unittest.TestCase):
         self.assertEqual(second.status, VPNActionStatus.SKIPPED)
         return
 
-    @given(provider=st.sampled_from([VPNProvider.TAILSCALE, VPNProvider.TWINGATE]))
-    @hyp_settings(max_examples=10, deadline=None)
+    @given(provider=st.sampled_from([VPNProvider.TAILSCALE, VPNProvider.TWINGATE]), constraints={"max_examples": 10})
     def test_property_uninstall_idempotent(self, provider: VPNProvider) -> None:
         runner = _MockRunner()
         installed_state = {"installed": True}
@@ -774,8 +772,7 @@ class TestPropertyIdempotency(unittest.TestCase):
         self.assertEqual(second.status, VPNActionStatus.SKIPPED)
         return
 
-    @given(hostname=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=20))
-    @hyp_settings(max_examples=10, deadline=None)
+    @given(hostname=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=20), constraints={"max_examples": 10})
     def test_property_bring_up_idempotent_on_matching_state(self, hostname: str) -> None:
         runner = _MockRunner()
         runner.prefix.append((("rpm", "-q"), _RunResult(exit_code=0, stdout="1.66.0")))
@@ -796,8 +793,7 @@ class TestPropertyIdempotency(unittest.TestCase):
         self.assertEqual(result.status, VPNActionStatus.SKIPPED)
         return
 
-    @given(version=st.one_of(st.none(), st.sampled_from(["1.0.0", "1.66.0", "2.0.0"])))
-    @hyp_settings(max_examples=10, deadline=None)
+    @given(version=st.one_of(st.none(), st.sampled_from(["1.0.0", "1.66.0", "2.0.0"])), constraints={"max_examples": 10})
     def test_property_dry_run_never_invokes_runner(self, version: Optional[str]) -> None:
         runner = _MockRunner()
         manager = _make_manager(runner=runner, dry_run=True)
