@@ -707,101 +707,105 @@ class TestParsers(unittest.TestCase):
 # ----------------------------------------------------------------------
 
 
-class TestPropertyIdempotency(unittest.TestCase):
+# Module-level on purpose: the testbase sequencer collects module-level
+# ``test_*`` and drives ``@given`` from the metadata the decorator records.
+# A @given-decorated TestCase *method* never receives its generated
+# arguments, so it cannot run at all.
 
-    @given(channel=st.sampled_from(["stable", "unstable"]), constraints={"max_examples": 10})
-    def test_property_install_tailscale_idempotent(self, channel: str) -> None:
-        # First call: not installed -> SUCCESS. Then "package exists" -> SKIPPED.
-        runner = _MockRunner()
-        installed_state = {"installed": False}
 
-        def _rpm_response() -> _RunResult:
-            if installed_state["installed"] is True:
-                return _RunResult(exit_code=0, stdout="1.66.0")
+@given(channel=st.sampled_from(["stable", "unstable"]), constraints={"max_examples": 10})
+def test_property_install_tailscale_idempotent(channel: str) -> None:
+    # First call: not installed -> SUCCESS. Then "package exists" -> SKIPPED.
+    runner = _MockRunner()
+    installed_state = {"installed": False}
+
+    def _rpm_response() -> _RunResult:
+        if installed_state["installed"] is True:
+            return _RunResult(exit_code=0, stdout="1.66.0")
+        return _RunResult(exit_code=1)
+
+    # Programmable: rpm responses driven by a closure
+    original_run = _MockRunner.run
+
+    def custom_run(self, args, **kw):  # type: ignore[no-redef]
+        self.calls.append({"args": list(args), "elevated": kw.get("elevated", False), "stdin": kw.get("stdin")})
+        tup = tuple(args)
+        if tup[:2] == ("rpm", "-q"):
+            return _rpm_response()
+        if tup[:1] == ("tee",):
+            return _RunResult(exit_code=0)
+        if tup[:2] == ("dnf", "install"):
+            installed_state["installed"] = True
+            return _RunResult(exit_code=0)
+        return _RunResult(exit_code=0)
+
+    runner.run = custom_run.__get__(runner, _MockRunner)  # type: ignore[attr-defined]
+
+    manager = _make_manager(runner=runner)
+    first = manager.install_tailscale(version=None, channel=channel, aspects=_aspects())
+    second = manager.install_tailscale(version=None, channel=channel, aspects=_aspects())
+
+    assert first.status == VPNActionStatus.SUCCESS
+    assert second.status == VPNActionStatus.SKIPPED
+    return
+
+@given(provider=st.sampled_from([VPNProvider.TAILSCALE, VPNProvider.TWINGATE]), constraints={"max_examples": 10})
+def test_property_uninstall_idempotent(provider: VPNProvider) -> None:
+    runner = _MockRunner()
+    installed_state = {"installed": True}
+
+    def custom_run(self, args, **kw):  # type: ignore[no-redef]
+        self.calls.append({"args": list(args), "elevated": kw.get("elevated", False), "stdin": kw.get("stdin")})
+        tup = tuple(args)
+        if tup[:2] == ("rpm", "-q"):
+            if installed_state["installed"]:
+                return _RunResult(exit_code=0, stdout="1.0.0")
             return _RunResult(exit_code=1)
-
-        # Programmable: rpm responses driven by a closure
-        original_run = _MockRunner.run
-
-        def custom_run(self, args, **kw):  # type: ignore[no-redef]
-            self.calls.append({"args": list(args), "elevated": kw.get("elevated", False), "stdin": kw.get("stdin")})
-            tup = tuple(args)
-            if tup[:2] == ("rpm", "-q"):
-                return _rpm_response()
-            if tup[:1] == ("tee",):
-                return _RunResult(exit_code=0)
-            if tup[:2] == ("dnf", "install"):
-                installed_state["installed"] = True
-                return _RunResult(exit_code=0)
+        if tup[:2] in (("dnf", "remove"), ("yum", "remove")):
+            installed_state["installed"] = False
             return _RunResult(exit_code=0)
+        return _RunResult(exit_code=0)
 
-        runner.run = custom_run.__get__(runner, _MockRunner)  # type: ignore[attr-defined]
+    runner.run = custom_run.__get__(runner, _MockRunner)  # type: ignore[attr-defined]
 
-        manager = _make_manager(runner=runner)
-        first = manager.install_tailscale(version=None, channel=channel, aspects=_aspects())
-        second = manager.install_tailscale(version=None, channel=channel, aspects=_aspects())
+    manager = _make_manager(runner=runner)
+    first = manager.uninstall(provider=provider, purge=False, aspects=_aspects())
+    second = manager.uninstall(provider=provider, purge=False, aspects=_aspects())
 
-        self.assertEqual(first.status, VPNActionStatus.SUCCESS)
-        self.assertEqual(second.status, VPNActionStatus.SKIPPED)
-        return
+    assert first.status == VPNActionStatus.SUCCESS
+    assert second.status == VPNActionStatus.SKIPPED
+    return
 
-    @given(provider=st.sampled_from([VPNProvider.TAILSCALE, VPNProvider.TWINGATE]), constraints={"max_examples": 10})
-    def test_property_uninstall_idempotent(self, provider: VPNProvider) -> None:
-        runner = _MockRunner()
-        installed_state = {"installed": True}
+@given(hostname=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=20), constraints={"max_examples": 10})
+def test_property_bring_up_idempotent_on_matching_state(hostname: str) -> None:
+    runner = _MockRunner()
+    runner.prefix.append((("rpm", "-q"), _RunResult(exit_code=0, stdout="1.66.0")))
+    runner.prefix.append((("tailscale", "status"), _RunResult(
+        exit_code=0, stdout=_tailscale_status_running(hostname=hostname),
+    )))
 
-        def custom_run(self, args, **kw):  # type: ignore[no-redef]
-            self.calls.append({"args": list(args), "elevated": kw.get("elevated", False), "stdin": kw.get("stdin")})
-            tup = tuple(args)
-            if tup[:2] == ("rpm", "-q"):
-                if installed_state["installed"]:
-                    return _RunResult(exit_code=0, stdout="1.0.0")
-                return _RunResult(exit_code=1)
-            if tup[:2] in (("dnf", "remove"), ("yum", "remove")):
-                installed_state["installed"] = False
-                return _RunResult(exit_code=0)
-            return _RunResult(exit_code=0)
+    manager = _make_manager(runner=runner)
+    result = manager.bring_up(
+        provider=VPNProvider.TAILSCALE,
+        authkey="key",
+        hostname=hostname,
+        advertise_tags=None,
+        advertise_routes=None,
+        exit_node=False,
+        aspects=_aspects(),
+    )
+    assert result.status == VPNActionStatus.SKIPPED
+    return
 
-        runner.run = custom_run.__get__(runner, _MockRunner)  # type: ignore[attr-defined]
-
-        manager = _make_manager(runner=runner)
-        first = manager.uninstall(provider=provider, purge=False, aspects=_aspects())
-        second = manager.uninstall(provider=provider, purge=False, aspects=_aspects())
-
-        self.assertEqual(first.status, VPNActionStatus.SUCCESS)
-        self.assertEqual(second.status, VPNActionStatus.SKIPPED)
-        return
-
-    @given(hostname=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=20), constraints={"max_examples": 10})
-    def test_property_bring_up_idempotent_on_matching_state(self, hostname: str) -> None:
-        runner = _MockRunner()
-        runner.prefix.append((("rpm", "-q"), _RunResult(exit_code=0, stdout="1.66.0")))
-        runner.prefix.append((("tailscale", "status"), _RunResult(
-            exit_code=0, stdout=_tailscale_status_running(hostname=hostname),
-        )))
-
-        manager = _make_manager(runner=runner)
-        result = manager.bring_up(
-            provider=VPNProvider.TAILSCALE,
-            authkey="key",
-            hostname=hostname,
-            advertise_tags=None,
-            advertise_routes=None,
-            exit_node=False,
-            aspects=_aspects(),
-        )
-        self.assertEqual(result.status, VPNActionStatus.SKIPPED)
-        return
-
-    @given(version=st.one_of(st.none(), st.sampled_from(["1.0.0", "1.66.0", "2.0.0"])), constraints={"max_examples": 10})
-    def test_property_dry_run_never_invokes_runner(self, version: Optional[str]) -> None:
-        runner = _MockRunner()
-        manager = _make_manager(runner=runner, dry_run=True)
-        manager.install_tailscale(version=version, channel="stable", aspects=_aspects())
-        manager.install_twingate_connector(version=version, aspects=_aspects())
-        manager.uninstall(provider=VPNProvider.TAILSCALE, purge=True, aspects=_aspects())
-        self.assertEqual(runner.calls, [])
-        return
+@given(version=st.one_of(st.none(), st.sampled_from(["1.0.0", "1.66.0", "2.0.0"])), constraints={"max_examples": 10})
+def test_property_dry_run_never_invokes_runner(version: Optional[str]) -> None:
+    runner = _MockRunner()
+    manager = _make_manager(runner=runner, dry_run=True)
+    manager.install_tailscale(version=version, channel="stable", aspects=_aspects())
+    manager.install_twingate_connector(version=version, aspects=_aspects())
+    manager.uninstall(provider=VPNProvider.TAILSCALE, purge=True, aspects=_aspects())
+    assert runner.calls == []
+    return
 
 
 class TestAuditRegressions(unittest.TestCase):
