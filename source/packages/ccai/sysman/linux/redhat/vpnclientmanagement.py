@@ -336,7 +336,7 @@ class RedHatVPNClientManager(VPNClientManagementBase):
                 channel, distro, release,
             ),
         ]
-        body = os.linesep.join(baseurl_lines) + os.linesep
+        body = "\n".join(baseurl_lines) + "\n"
         command = ["tee", repo_path]
 
         run_elevated = self._should_elevate(kind=VERB_KIND_WRITE)
@@ -385,7 +385,7 @@ class RedHatVPNClientManager(VPNClientManagementBase):
             "gpgcheck=1",
             "gpgkey=https://packages.twingate.com/rpm/gpg.key",
         ]
-        body = os.linesep.join(lines) + os.linesep
+        body = "\n".join(lines) + "\n"
         command = ["tee", repo_path]
 
         run_elevated = self._should_elevate(kind=VERB_KIND_WRITE)
@@ -1232,7 +1232,7 @@ def _render_twingate_conf(*, settings: Dict[str, str]) -> str:
         value = settings[key]
         lines.append("{}={}".format(key, value))
 
-    body = os.linesep.join(lines) + os.linesep
+    body = "\n".join(lines) + "\n"
     return body
 
 

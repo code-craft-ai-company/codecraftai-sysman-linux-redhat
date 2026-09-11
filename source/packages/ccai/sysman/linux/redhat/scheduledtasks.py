@@ -3,7 +3,7 @@
 # ScheduledTaskManager manages cron drop-in files and systemd timers
 # through the ICommandRunner abstraction.
 
-import os
+import posixpath
 import re
 
 from dataclasses import dataclass
@@ -147,7 +147,7 @@ class ScheduledTaskManager(BaseFeatureManager):
             Write a cron drop-in file for ``entry``.
         """
         _ensure_valid_name(entry.name)
-        path = os.path.join(self._config.cron_dir, entry.name)
+        path = posixpath.join(self._config.cron_dir, entry.name)
         desired = _render_cron(entry=entry)
         current = self._read(path=path)
         if current == desired:
@@ -170,7 +170,7 @@ class ScheduledTaskManager(BaseFeatureManager):
             Delete a cron drop-in file.
         """
         _ensure_valid_name(name)
-        path = os.path.join(self._config.cron_dir, name)
+        path = posixpath.join(self._config.cron_dir, name)
         current = self._read(path=path)
         if len(current) == 0:
             return ScheduledTaskResult(success=True, name=name)
@@ -193,10 +193,10 @@ class ScheduledTaskManager(BaseFeatureManager):
             Write a systemd timer + service pair and optionally enable it.
         """
         _ensure_valid_name(entry.name)
-        service_path = os.path.join(
+        service_path = posixpath.join(
             self._config.unit_dir, "{}.service".format(entry.name),
         )
-        timer_path = os.path.join(
+        timer_path = posixpath.join(
             self._config.unit_dir, "{}.timer".format(entry.name),
         )
         service_body, timer_body = _render_systemd_unit(entry=entry)
@@ -266,8 +266,8 @@ class ScheduledTaskManager(BaseFeatureManager):
         _ensure_valid_name(name)
         timer_unit = "{}.timer".format(name)
         service_unit = "{}.service".format(name)
-        timer_path = os.path.join(self._config.unit_dir, timer_unit)
-        service_path = os.path.join(self._config.unit_dir, service_unit)
+        timer_path = posixpath.join(self._config.unit_dir, timer_unit)
+        service_path = posixpath.join(self._config.unit_dir, service_unit)
         if self._config.dry_run:
             return ScheduledTaskResult(success=True, name=name, dry_run=True)
         # Part C: stop + disable via ServiceManager (replaces
@@ -286,7 +286,7 @@ class ScheduledTaskManager(BaseFeatureManager):
             Return :class:`ScheduledTaskInfo` for a cron drop-in or None.
         """
         _ensure_valid_name(name)
-        path = os.path.join(self._config.cron_dir, name)
+        path = posixpath.join(self._config.cron_dir, name)
         content = self._read(path=path)
         if len(content) == 0:
             return None
@@ -307,13 +307,13 @@ class ScheduledTaskManager(BaseFeatureManager):
         """
         _ensure_valid_name(name)
         timer_unit = "{}.timer".format(name)
-        path = os.path.join(
+        path = posixpath.join(
             self._config.unit_dir, "{}.service".format(name),
         )
         service_content = self._read(path=path)
         if len(service_content) == 0:
             return None
-        timer_path = os.path.join(self._config.unit_dir, timer_unit)
+        timer_path = posixpath.join(self._config.unit_dir, timer_unit)
         timer_content = self._read(path=timer_path)
         parsed_service = _parse_ini_section(
             content=service_content, section="Service",
