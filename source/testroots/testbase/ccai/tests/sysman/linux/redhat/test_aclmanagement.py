@@ -10,8 +10,6 @@ from ccai.sysman.linux.redhat.aclmanagement import (
     AclEntry,
     AclManager,
     AclManagerConfig,
-    FileAttributes,
-    FileCapabilities,
 )
 from ccai.sysman.linux.redhat.runners.models import RunResult
 

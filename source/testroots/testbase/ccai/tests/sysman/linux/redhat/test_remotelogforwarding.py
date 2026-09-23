@@ -12,7 +12,6 @@ from ccai.sysman.linux.redhat.featurebase import (
 from ccai.sysman.linux.redhat.remotelogforwarding import (
     ForwarderQueryError,
     ForwardingTarget,
-    LogForwardingActionResult,
     LogForwardingActionStatus,
     LogForwardingHealth,
     RemoteLogForwardingConfig,

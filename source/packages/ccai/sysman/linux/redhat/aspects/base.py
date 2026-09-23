@@ -23,7 +23,6 @@ class IExecutionAspect(Protocol):
 
             :param context: The execution context for the pending command.
         """
-        ...
 
     def after_execute(
         self,
@@ -39,7 +38,6 @@ class IExecutionAspect(Protocol):
 
             :returns: The (possibly modified) :class:`RunResult`.
         """
-        ...
 
     @property
     def enabled(self) -> bool:
@@ -47,4 +45,3 @@ class IExecutionAspect(Protocol):
             Whether this aspect is currently enabled.  Disabled aspects are
             skipped by the runner.
         """
-        ...

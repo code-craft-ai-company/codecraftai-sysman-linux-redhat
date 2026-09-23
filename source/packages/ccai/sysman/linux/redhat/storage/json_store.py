@@ -10,7 +10,6 @@ import threading
 import time
 
 from dataclasses import asdict
-from typing import Optional
 
 from ccai.sysman.linux.redhat.runners.models import RunResult
 from ccai.sysman.linux.redhat.storage.base import CommandLogEntry

@@ -34,22 +34,18 @@ class ICommandRunner(Protocol):
         """
             Execute a command and return a :class:`RunResult`.
         """
-        ...
 
     def add_aspect(self, aspect: "IExecutionAspect") -> None:
         """
             Register an execution aspect on this runner.
         """
-        ...
 
     def remove_aspect(self, aspect: "IExecutionAspect") -> None:
         """
             Unregister a previously registered execution aspect.
         """
-        ...
 
     def get_metrics(self) -> Optional[SSHReliabilityMetrics]:
         """
             Return reliability metrics for this runner, or None if none are tracked.
         """
-        ...

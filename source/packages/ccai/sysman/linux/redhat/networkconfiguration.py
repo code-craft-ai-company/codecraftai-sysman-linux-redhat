@@ -277,6 +277,7 @@ class NetworkConfigurator(BaseFeatureManager):
                             offset = -offset
                         info.system_time_offset_seconds = offset
                     except ValueError:
+                        # Best-effort parse: an unparseable offset leaves the 0.0 default in place.
                         pass
             elif line.startswith("Leap status"):
                 _, _, value = line.partition(":")
@@ -481,11 +482,9 @@ def _replace_resolv_directives(
         Replace all occurrences of ``directive`` lines with the given values.
     """
     kept: list[str] = []
-    seen_any = False
     for raw in content.splitlines():
         stripped = raw.strip()
         if stripped.startswith("{} ".format(directive)):
-            seen_any = True
             continue
         kept.append(raw)
     for value in values:

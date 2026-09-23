@@ -59,10 +59,8 @@ class ICommandStorage(Protocol):
         """
             Persist a new log entry, returning its identifier.
         """
-        ...
 
     def update_command(self, entry_id: str, result: RunResult) -> None:
         """
             Update a previously logged entry with the final execution result.
         """
-        ...

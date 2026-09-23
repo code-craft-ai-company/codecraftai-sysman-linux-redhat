@@ -725,8 +725,6 @@ def test_property_install_tailscale_idempotent(channel: str) -> None:
         return _RunResult(exit_code=1)
 
     # Programmable: rpm responses driven by a closure
-    original_run = _MockRunner.run
-
     def custom_run(self, args, **kw):  # type: ignore[no-redef]
         self.calls.append({"args": list(args), "elevated": kw.get("elevated", False), "stdin": kw.get("stdin")})
         tup = tuple(args)

@@ -14,17 +14,13 @@ from ccai import testbase
 from ccai.sysman.linux.redhat.runners.models import RunResult
 
 from ccai.sysman.linux.redhat.encryptionmanagement import (
-    CryptBinding,
     CryptFormatSpec,
     CrypttabEntry,
-    EncryptionActionResult,
     EncryptionActionStatus,
     EncryptionCredentialError,
     EncryptionManager,
     EncryptionManagerConfig,
     EncryptionToolNotAvailableError,
-    KeySlotInfo,
-    LuksHeader,
     _parse_clevis_luks_list,
     _parse_crypttab,
     _parse_luks_dump,

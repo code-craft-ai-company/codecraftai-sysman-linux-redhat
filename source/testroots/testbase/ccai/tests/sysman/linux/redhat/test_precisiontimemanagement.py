@@ -9,11 +9,7 @@ from ccai.sysman.linux.redhat.featurebase import ActionStatus
 from ccai.sysman.linux.redhat.precisiontimemanagement import (
     PrecisionTimeManager,
     PrecisionTimeManagerConfig,
-    PtpActionResult,
     PtpActionStatus,
-    PtpCurrentDataSet,
-    PtpParentDataSet,
-    PtpPortDataSet,
     _parse_ptp4l_conf,
     _render_ptp4l_conf,
     _parse_sysconfig_options,

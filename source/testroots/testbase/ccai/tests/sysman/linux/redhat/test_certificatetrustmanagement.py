@@ -14,16 +14,11 @@ from typing import Callable, Optional
 from ccai import testbase
 
 from ccai.sysman.linux.redhat.certificatetrustmanagement import (
-    CertificateTrustActionResult,
     CertificateTrustManager,
     CertificateTrustManagerConfig,
-    CertMetadata,
     CertTrustActionStatus,
     CertTrustPathNotFoundError,
     CertTrustQueryError,
-    CertVerifyResult,
-    TrustAnchor,
-    TrustStoreState,
 )
 from ccai.sysman.linux.redhat.runners.models import RunResult
 

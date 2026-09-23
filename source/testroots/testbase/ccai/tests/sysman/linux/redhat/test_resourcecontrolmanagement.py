@@ -6,8 +6,6 @@ from typing import Callable, Optional
 from ccai import testbase
 
 from ccai.sysman.linux.redhat.resourcecontrolmanagement import (
-    CgroupUsage,
-    ResourceActionResult,
     ResourceActionStatus,
     ResourceControlManager,
     ResourceControlManagerConfig,

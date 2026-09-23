@@ -41,10 +41,8 @@ _DEFAULT_CONNECTION_URI = "qemu:///system"
 # human form ``shut off``; ``virsh snapshot-list`` collapses the space
 # to ``shutoff``.
 _LIBVIRT_RUNNING = "running"
-_LIBVIRT_PAUSED = "paused"
 _LIBVIRT_SHUT_OFF = "shut off"
 _LIBVIRT_SHUTOFF_COLLAPSED = "shutoff"
-_LIBVIRT_PMSUSPENDED = "pmsuspended"
 
 
 # ----------------------------------------------------------------------
@@ -1435,8 +1433,11 @@ class VirtualizationManager(BaseFeatureManager):
             try:
                 os.unlink(tmp_path)
             except FileNotFoundError:
+                # The temporary XML file is already gone, so there is nothing left to clean up.
                 pass
             except OSError:
+                # Best-effort cleanup; a failure to unlink the temporary XML file must not mask
+                # the virsh result or the original error.
                 pass
         return rtnval
 

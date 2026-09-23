@@ -1761,7 +1761,6 @@ def _upsert_ini_directive(
     if in_target_section and not replaced:
         # Trailing target section — append the directive.
         new_lines.append("{} = {}".format(key, value))
-        replaced = True
 
     if not found_target_section:
         if len(new_lines) > 0 and len(new_lines[-1].strip()) > 0:

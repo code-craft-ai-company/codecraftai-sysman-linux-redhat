@@ -528,6 +528,8 @@ def _parse_df_output(*, stdout: str, path: str) -> DiskUsageInfo:
                 pct_token = parts[3].rstrip("%")
                 percent = int(pct_token)
             except ValueError:
+                # Best-effort parse: df reports '-' for columns it cannot compute (e.g. pseudo
+                # filesystems), so non-numeric columns leave the zero defaults in place.
                 pass
     info = DiskUsageInfo(
         path=path,

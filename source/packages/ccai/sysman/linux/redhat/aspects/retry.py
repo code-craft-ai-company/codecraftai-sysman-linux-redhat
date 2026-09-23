@@ -188,7 +188,6 @@ class RetryAspect:
             :returns: The :class:`RunResult` from the final attempt.
         """
         current_attempt = 0
-        last_result: Optional[RunResult] = None
         while True:
             result = runner.run(  # type: ignore[attr-defined]
                 args,
@@ -198,7 +197,6 @@ class RetryAspect:
                 timeout=timeout,
             )
             result.retry_count = current_attempt
-            last_result = result
 
             decision = self.should_retry(result=result, attempt=current_attempt)
             if not decision.should_retry:

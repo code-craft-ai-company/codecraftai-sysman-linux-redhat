@@ -6,7 +6,6 @@
 import os
 
 from dataclasses import dataclass
-from typing import Optional
 
 from ccai.sysman.linux.redhat.featurebase import (
     ActionStatus,

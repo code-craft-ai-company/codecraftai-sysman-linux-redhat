@@ -46,7 +46,6 @@ _RESERVED_SECTION_NAMES = ("global", "homes", "printers")
 # RHEL systemd unit names (NOT smbd / nmbd as on Debian).
 _SMB_UNIT = "smb"
 _NMB_UNIT = "nmb"
-_WINBIND_UNIT = "winbind"
 
 
 # ----------------------------------------------------------------------

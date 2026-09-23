@@ -31,7 +31,6 @@ from typing import Optional
 from ccai.errors.exceptions import SemanticError
 
 from ccai.sysman.linux.redhat.featurebase import (
-    ActionStatus,
     BaseFeatureManager,
     FeatureActionResult,
     FeatureConfig,

@@ -328,7 +328,6 @@ class NfsServerManager(BaseFeatureManager):
 
             :returns: The :class:`NfsActionResult`.
         """
-        cfg = self._typed_config()
         dropin_path = self._dropin_path()
         write_command = [_TEE, dropin_path]
 

@@ -23,7 +23,6 @@ import os
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from enum import Enum
 from typing import Optional
 
 from ccai.errors.exceptions import SemanticError
@@ -41,7 +40,6 @@ from ccai.sysman.linux.redhat.featurebase import (
 # Module-level command constants
 # ----------------------------------------------------------------------
 
-_CAT     = "cat"
 _TEE     = "tee"
 _RM      = "rm"
 _TEST    = "test"

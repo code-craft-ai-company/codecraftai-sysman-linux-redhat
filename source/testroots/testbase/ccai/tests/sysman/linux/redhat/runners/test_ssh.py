@@ -223,7 +223,7 @@ def test_agent_is_lazy_built_when_not_supplied():
             _fake_agent_factory, _AspectsCmd, _FakeCredential, None,
         )
 
-        runner = SSHCommandRunner(SSHRunnerConfig(
+        SSHCommandRunner(SSHRunnerConfig(
             host="host.example.com", username="root", port=2222,
         ))
     testbase.assert_equal(captured["host"], "host.example.com")

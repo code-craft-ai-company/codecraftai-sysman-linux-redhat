@@ -6,14 +6,9 @@ from typing import Callable, Optional
 from ccai import testbase
 
 from ccai.sysman.linux.redhat.filesystemquotas import (
-    FilesystemQuotaActionResult,
     FilesystemQuotaManager,
     FilesystemQuotaManagerConfig,
-    GracePeriod,
-    ProjectDefinition,
     QuotaActionStatus,
-    QuotaEntry,
-    QuotaEnforcement,
     QuotaFilesystemNotMountedError,
     QuotaLimits,
     QuotaQueryError,

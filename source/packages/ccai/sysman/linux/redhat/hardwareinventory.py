@@ -469,16 +469,19 @@ def _parse_lscpu_json(*, stdout: str) -> CpuInfo:
             try:
                 info.cpus = int(value)
             except ValueError:
+                # Best-effort parse: a non-numeric 'CPU(s)' value leaves the field at its default.
                 pass
         elif field_name == "Core(s) per socket":
             try:
                 info.cores_per_socket = int(value)
             except ValueError:
+                # Best-effort parse: a non-numeric 'Core(s) per socket' value leaves the field at its default.
                 pass
         elif field_name == "Socket(s)":
             try:
                 info.sockets = int(value)
             except ValueError:
+                # Best-effort parse: a non-numeric 'Socket(s)' value leaves the field at its default.
                 pass
         elif field_name == "Vendor ID":
             info.vendor = value
@@ -488,6 +491,7 @@ def _parse_lscpu_json(*, stdout: str) -> CpuInfo:
             try:
                 info.mhz = float(value)
             except ValueError:
+                # Best-effort parse: a non-numeric 'CPU MHz' value leaves the field at its default.
                 pass
         elif field_name == "Flags":
             info.flags = value.split()
@@ -514,6 +518,7 @@ def _parse_proc_cpuinfo(*, stdout: str) -> CpuInfo:
             try:
                 info.mhz = float(value)
             except ValueError:
+                # Best-effort parse: a non-numeric 'cpu MHz' value leaves the field at its default.
                 pass
         elif key == "flags":
             info.flags = value.split()
